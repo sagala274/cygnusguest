@@ -39,7 +39,8 @@
     <section class="content" style="max-width: 800px;">
       <h1 class="page-title">Konfigurasi AI</h1>
       <p class="page-description">
-        Atur model dan API key Claude (Anthropic) yang digunakan oleh menu AI Chat.
+        Atur model dan API key <a class="link" href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a> yang digunakan oleh menu AI Chat.
+        OpenRouter memberi akses ke berbagai model AI dari banyak vendor (Anthropic, OpenAI, Google, Meta, dan lainnya) lewat satu API key.
         Khusus dapat diakses oleh Administrator.
       </p>
 
@@ -55,17 +56,15 @@
           <h2 class="section-title">Pengaturan Model</h2>
           <form id="aiConfigForm" class="grid">
             <div class="field full">
-              <label for="apiKey">API KEY ANTHROPIC <span class="label-note">Kosongkan jika tidak ingin mengubah</span></label>
-              <input id="apiKey" type="password" placeholder="sk-ant-...">
+              <label for="apiKey">API KEY OPENROUTER <span class="label-note">Kosongkan jika tidak ingin mengubah</span></label>
+              <input id="apiKey" type="password" placeholder="sk-or-v1-...">
             </div>
 
             <div class="field full">
               <label for="model">MODEL <span class="required">*</span></label>
-              <select id="model" required>
-                <option value="claude-opus-5">Claude Opus 5 &mdash; paling mumpuni ($5/$25 per 1M token)</option>
-                <option value="claude-sonnet-5">Claude Sonnet 5 &mdash; seimbang ($2/$10 per 1M token)</option>
-                <option value="claude-haiku-4-5">Claude Haiku 4.5 &mdash; tercepat & termurah ($1/$5 per 1M token)</option>
-              </select>
+              <input id="model" list="modelOptions" required placeholder="mis. anthropic/claude-opus-5" autocomplete="off">
+              <datalist id="modelOptions"></datalist>
+              <div class="photo-hint" id="modelHint">Ketik untuk mencari dari katalog OpenRouter, atau isi manual format "vendor/model".</div>
             </div>
 
             <div class="field full">

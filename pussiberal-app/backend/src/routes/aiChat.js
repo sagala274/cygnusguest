@@ -1,5 +1,4 @@
 const express = require('express');
-const Anthropic = require('@anthropic-ai/sdk');
 const pool = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const asyncHandler = require('../utils/asyncHandler');
@@ -97,38 +96,56 @@ router.post('/query', asyncHandler(async (req, res) => {
   const context = await buildPlatformContext();
   const systemPrompt = [BASE_SYSTEM_PROMPT, settings.system_prompt || '', context].filter(Boolean).join('\n\n');
 
-  const client = new Anthropic({ apiKey });
-
-  let response;
+  let apiResponse;
   try {
-    response = await client.messages.create({
-      model: settings.model,
-      max_tokens: 16000,
-      system: systemPrompt,
-      messages: [...safeHistory, { role: 'user', content: message.trim() }],
+    apiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        'X-Title': 'PUSSIBERAL Guest Management - AI Chat',
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        max_tokens: 8000,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...safeHistory,
+          { role: 'user', content: message.trim() },
+        ],
+      }),
     });
   } catch (err) {
-    if (err instanceof Anthropic.AuthenticationError) {
-      return res.status(400).json({ error: 'API key AI tidak valid. Periksa kembali di menu Konfigurasi AI.' });
-    }
-    if (err instanceof Anthropic.RateLimitError) {
-      return res.status(429).json({ error: 'Terlalu banyak permintaan ke layanan AI. Coba lagi sesaat lagi.' });
-    }
-    if (err instanceof Anthropic.APIError) {
-      return res.status(502).json({ error: `Layanan AI mengembalikan kesalahan: ${err.message}` });
-    }
-    throw err;
+    return res.status(502).json({ error: 'Gagal menghubungi OpenRouter. Periksa koneksi server.' });
   }
 
-  const reply = response.content
-    .filter((block) => block.type === 'text')
-    .map((block) => block.text)
-    .join('\n')
-    .trim();
+  if (!apiResponse.ok) {
+    let errorMessage = `OpenRouter mengembalikan kesalahan (${apiResponse.status})`;
+    try {
+      const errBody = await apiResponse.json();
+      if (errBody && errBody.error && errBody.error.message) errorMessage = errBody.error.message;
+    } catch (err) {
+      /* body bukan JSON, gunakan pesan default */
+    }
 
-  await logAudit(req.user.sub, 'ai_chat_query', 'ai_chat', null, { message: message.trim().slice(0, 500) });
+    if (apiResponse.status === 401) {
+      return res.status(400).json({ error: 'API key OpenRouter tidak valid. Periksa kembali di menu Konfigurasi AI.' });
+    }
+    if (apiResponse.status === 402) {
+      return res.status(400).json({ error: 'Kredit OpenRouter tidak mencukupi untuk memproses permintaan ini.' });
+    }
+    if (apiResponse.status === 429) {
+      return res.status(429).json({ error: 'Terlalu banyak permintaan ke OpenRouter. Coba lagi sesaat lagi.' });
+    }
+    return res.status(502).json({ error: `Layanan AI mengembalikan kesalahan: ${errorMessage}` });
+  }
 
-  res.json({ data: { reply, model: response.model } });
+  const body = await apiResponse.json();
+  const reply = (body.choices && body.choices[0] && body.choices[0].message && body.choices[0].message.content || '').trim();
+
+  await logAudit(req.user.sub, 'ai_chat_query', 'ai_chat', null, { message: message.trim().slice(0, 500), model: settings.model });
+
+  res.json({ data: { reply, model: body.model || settings.model } });
 }));
 
 module.exports = router;

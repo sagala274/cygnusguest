@@ -1,15 +1,14 @@
 const pool = require('../db');
 const { encrypt, decrypt } = require('./crypto');
 
-const VALID_MODELS = ['claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5'];
-const DEFAULT_MODEL = 'claude-opus-5';
+const DEFAULT_MODEL = 'anthropic/claude-opus-5';
 
 async function ensureAiSettingsTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ai_settings (
       id TINYINT PRIMARY KEY DEFAULT 1,
-      provider VARCHAR(50) NOT NULL DEFAULT 'anthropic',
-      model VARCHAR(100) NOT NULL DEFAULT '${DEFAULT_MODEL}',
+      provider VARCHAR(50) NOT NULL DEFAULT 'openrouter',
+      model VARCHAR(150) NOT NULL DEFAULT '${DEFAULT_MODEL}',
       api_key_encrypted TEXT NULL,
       system_prompt TEXT NULL,
       updated_by INT NULL,
@@ -18,9 +17,16 @@ async function ensureAiSettingsTable() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
   await pool.query(
-    `INSERT INTO ai_settings (id, provider, model) VALUES (1, 'anthropic', '${DEFAULT_MODEL}')
+    `INSERT INTO ai_settings (id, provider, model) VALUES (1, 'openrouter', '${DEFAULT_MODEL}')
      ON DUPLICATE KEY UPDATE id = id`
   );
+  // Migrasi ringan: instalasi lama pernah diset ke provider Anthropic langsung
+  // (model tanpa prefix vendor, mis. "claude-opus-5"). Hanya diperbaiki jika
+  // belum pernah dikonfigurasi API key-nya, agar tidak menimpa konfigurasi nyata.
+  await pool.query(`
+    UPDATE ai_settings SET provider = 'openrouter', model = '${DEFAULT_MODEL}'
+    WHERE id = 1 AND api_key_encrypted IS NULL AND model NOT LIKE '%/%'
+  `);
 }
 
 async function getAiSettings() {
@@ -34,4 +40,4 @@ async function getDecryptedApiKey() {
   return decrypt(settings.api_key_encrypted);
 }
 
-module.exports = { ensureAiSettingsTable, getAiSettings, getDecryptedApiKey, encrypt, VALID_MODELS, DEFAULT_MODEL };
+module.exports = { ensureAiSettingsTable, getAiSettings, getDecryptedApiKey, encrypt, DEFAULT_MODEL };
