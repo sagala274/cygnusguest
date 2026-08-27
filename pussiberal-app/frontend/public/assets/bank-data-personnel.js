@@ -27,6 +27,9 @@ async function load() {
     document.getElementById('personNik').textContent = `NIK: ${p.nik}`;
 
     document.getElementById('nikWarning').style.display = p.nik_shared_by_multiple_names ? 'block' : 'none';
+    document.getElementById('nikWarningScope').textContent = p.nik_shared_by_multiple_names
+      ? `Ringkasan di bawah ini hanya mencakup kunjungan atas nama "${p.full_name}" — lihat tabel Riwayat Kunjungan untuk melihat seluruh nama yang tercatat pada NIK ini.`
+      : '';
 
     document.getElementById('summaryRows').innerHTML = `
       <div class="detail-row"><span class="detail-label">Jabatan Terakhir</span><span class="detail-value">${escapeHtml(p.position)}</span></div>

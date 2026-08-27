@@ -41,24 +41,35 @@ async function fetchAllRecords() {
   `);
 
   // MySQL tidak mendukung COUNT(DISTINCT ..) sebagai window function --
-  // dihitung manual di sini untuk mendeteksi NIK yang dipakai >1 nama berbeda.
+  // dihitung manual di sini. "nik_shared_by_multiple_names" sengaja tetap
+  // dihitung per-NIK saja (untuk mendeteksi anomali: NIK yang sama dipakai
+  // >1 nama berbeda). Tapi visit_count/last_visit_at dihitung per identitas
+  // (NIK + nama, dinormalisasi) -- bukan per-NIK saja -- supaya statistik
+  // kunjungan satu nama TIDAK ikut tercampur dengan nama lain yang kebetulan
+  // berbagi NIK yang sama (mis. NIK dummy/placeholder yang dipakai berulang).
   const namesByNik = new Map();
-  const visitCountByNik = new Map();
-  const lastVisitByNik = new Map();
+  const visitCountByIdentity = new Map();
+  const lastVisitByIdentity = new Map();
   rows.forEach((r) => {
     if (!namesByNik.has(r.nik)) namesByNik.set(r.nik, new Set());
-    namesByNik.get(r.nik).add(r.full_name.trim().toLowerCase());
-    visitCountByNik.set(r.nik, (visitCountByNik.get(r.nik) || 0) + 1);
-    const prev = lastVisitByNik.get(r.nik);
-    if (!prev || new Date(r.created_at) > new Date(prev)) lastVisitByNik.set(r.nik, r.created_at);
+    const normalizedName = r.full_name.trim().toLowerCase();
+    namesByNik.get(r.nik).add(normalizedName);
+
+    const identityKey = `${r.nik}|${normalizedName}`;
+    visitCountByIdentity.set(identityKey, (visitCountByIdentity.get(identityKey) || 0) + 1);
+    const prev = lastVisitByIdentity.get(identityKey);
+    if (!prev || new Date(r.created_at) > new Date(prev)) lastVisitByIdentity.set(identityKey, r.created_at);
   });
 
-  return rows.map((r) => ({
-    ...r,
-    visit_count: visitCountByNik.get(r.nik),
-    last_visit_at: lastVisitByNik.get(r.nik),
-    nik_shared_by_multiple_names: namesByNik.get(r.nik).size > 1,
-  }));
+  return rows.map((r) => {
+    const identityKey = `${r.nik}|${r.full_name.trim().toLowerCase()}`;
+    return {
+      ...r,
+      visit_count: visitCountByIdentity.get(identityKey),
+      last_visit_at: lastVisitByIdentity.get(identityKey),
+      nik_shared_by_multiple_names: namesByNik.get(r.nik).size > 1,
+    };
+  });
 }
 
 function groupByCompany(records) {
@@ -146,7 +157,15 @@ router.get('/personnel/:nik', asyncHandler(async (req, res) => {
   // dari kunjungan lain yang kebetulan lebih baru.
   const requestedMemberId = req.query.member_id ? Number(req.query.member_id) : null;
   const headline = (requestedMemberId && visits.find((v) => v.id === requestedMemberId)) || visits[0];
-  const companies = [...new Set(visits.map((r) => r.company.trim()))];
+
+  // Ringkasan (Perusahaan Terkait, Jumlah Kunjungan, dst) di-scope ke nama
+  // headline saja -- bukan seluruh riwayat NIK -- supaya saat satu NIK
+  // dipakai >1 nama berbeda (anomali), ringkasan tidak mencampur riwayat
+  // orang lain yang kebetulan berbagi NIK yang sama. Tabel "visits" di bawah
+  // tetap menampilkan SELURUH riwayat NIK (semua nama) untuk transparansi.
+  const headlineName = headline.full_name.trim().toLowerCase();
+  const sameIdentityVisits = visits.filter((r) => r.full_name.trim().toLowerCase() === headlineName);
+  const companies = [...new Set(sameIdentityVisits.map((r) => r.company.trim()))];
 
   res.json({
     data: {
@@ -159,7 +178,7 @@ router.get('/personnel/:nik', asyncHandler(async (req, res) => {
       security_category: headline.security_category,
       analysis_notes: headline.analysis_notes,
       visit_count: headline.visit_count,
-      first_visit_at: visits[visits.length - 1].created_at,
+      first_visit_at: sameIdentityVisits[sameIdentityVisits.length - 1].created_at,
       last_visit_at: headline.last_visit_at,
       companies,
       nik_shared_by_multiple_names: headline.nik_shared_by_multiple_names,
