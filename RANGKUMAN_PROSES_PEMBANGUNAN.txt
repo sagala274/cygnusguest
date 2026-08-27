@@ -1,0 +1,776 @@
+====================================================================
+RANGKUMAN PROSES PEMBANGUNAN
+PUSSIBERAL GUEST MANAGEMENT SYSTEM
+====================================================================
+Disusun: 28 Agustus 2026
+Tujuan dokumen: rangkuman naratif kronologis, ditulis supaya proses
+pembangunan aplikasi ini bisa dipelajari ulang -- apa yang dibangun,
+kenapa dibangun seperti itu, bug apa yang muncul, dan bagaimana
+cara berpikir menyelesaikannya. Setiap fase menyertakan PROMPT ASLI
+(kutipan langsung dari yang Anda ketik, digali dari transcript
+percakapan -- bukan dari ingatan) supaya mudah menghubungkan kembali
+satu kalimat instruksi dengan hasil pekerjaannya. Prompt yang
+dipotong otomatis oleh sistem (karena terlalu panjang) ditandai
+"..." di akhir. Untuk dokumentasi teknis yang lebih detail dan
+formal, lihat berkas 01 sampai 06 (*.md) di folder yang sama dengan
+berkas ini.
+
+Catatan keamanan: satu prompt di riwayat percakapan berisi token
+GitHub asli (personal access token). Token itu SENGAJA TIDAK dikutip
+di mana pun dalam dokumen ini. Kalau masih aktif, sebaiknya di-revoke
+lewat GitHub Settings karena sempat tertulis sebagai teks biasa.
+
+
+--------------------------------------------------------------------
+GAMBARAN UMUM SISTEM
+--------------------------------------------------------------------
+
+PUSSIBERAL Guest Management adalah aplikasi web untuk mengelola
+pendaftaran tamu di sebuah fasilitas dengan kebutuhan keamanan
+(security clearance tamu, kategori risiko, dsb). Tiga peran pengguna:
+
+  - Administrator : akses penuh ke semua fitur
+  - Verifikator   : menyetujui/menolak pendaftaran, lihat laporan
+  - Pos Depan     : mendaftarkan tamu, check-in/check-out
+
+Stack teknologi:
+  - Frontend : HTML/CSS/JavaScript murni (tanpa framework), multi-page
+  - Backend  : Node.js 20 + Express 4 (REST API)
+  - Database : MySQL 8.0
+  - Deploy   : Docker Compose (3 container: mysql, backend, frontend)
+               di satu server Ubuntu, di belakang Nginx sebagai
+               reverse proxy + terminasi TLS
+
+Alasan stack ini dipilih: sederhana, tidak butuh build tooling
+kompleks (tidak ada React/Vue/bundler), mudah di-maintain oleh tim
+yang mungkin tidak selalu punya latar belakang frontend modern, dan
+cukup untuk kebutuhan aplikasi internal skala kecil-menengah.
+
+
+--------------------------------------------------------------------
+FASE 1 -- PEMBANGUNAN AWAL (MVP)
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "install nginx diserver itu"
+  "username root"
+  "install nginx dan docker"
+  "sudah lakukan test?"
+  "hello worldnya buat bisa diakses ke IP Public"
+  "buatkan website ini sesuai dengan requirement dan contoh yang
+   saya berikan jangan lupa dengan database mysql dan docker
+   compose, jika sudah selesai semua langsung deploy ke server yang
+   tadi."
+  "lanjutkan"
+  "buatkan username : Kaurpam dan password admin"
+
+Aplikasi dibangun dari sebuah dokumen requirement dan contoh desain
+HTML yang diberikan di awal. Sebelum masuk ke aplikasi, server-nya
+sendiri disiapkan dulu langkah demi langkah (install Nginx, lalu
+Docker, verifikasi dengan halaman "hello world" bisa diakses dari
+internet) -- baru setelah server siap, perintah besar "buatkan
+website ini..." dieksekusi. Urutan kerja:
+
+  1. Setup server: install Docker Engine + Docker Compose plugin di
+     Ubuntu 24.04 LTS, verifikasi dasar.
+  2. Rancang skema database: tabel users, guests (representasi SATU
+     PENDAFTARAN, bisa berisi banyak orang), guest_members (identitas
+     per-orang), vehicles, visits (check-in/check-out), audit_logs.
+  3. Bangun backend Express: autentikasi JWT, endpoint CRUD tamu,
+     middleware otorisasi berbasis role.
+  4. Bangun frontend sesuai desain contoh yang diberikan: halaman
+     login, dashboard, pendaftaran, daftar tamu, verifikasi, laporan.
+  5. Docker Compose untuk orkestrasi 3 service, deploy pertama ke
+     server.
+  6. Akun Administrator pertama (username "Kaurpam") dibuatkan
+     lewat seed data saat aplikasi pertama kali start.
+
+Pelajaran penting di fase ini: keputusan untuk memodelkan "guests"
+sebagai SATU PENDAFTARAN (bukan satu orang) -- karena di dunia nyata,
+rombongan dari satu perusahaan sering datang bersamaan dan perlu
+diproses sebagai satu unit verifikasi, bukan didaftarkan satu-satu.
+Ini adalah keputusan desain database yang mempengaruhi hampir semua
+fitur setelahnya.
+
+
+--------------------------------------------------------------------
+FASE 2 -- RBAC DAN MANAJEMEN PENGGUNA
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "tambahkan role user dimana: - User Verifikator yang
+   memverifikasi status (disetujui,tidak disetujui, dll.) - User
+   biasa untuk mendaftarkan tamu (Pos Depan) - dan User
+   Administrator yang mengatur seluruh..."
+  "tambahkan agar manajemen pengguna dapat diedit dan dihapus"
+
+  (Catatan: pemasangan sertifikat TLS/HTTPS tidak punya satu prompt
+  tersendiri yang tercatat -- kemungkinan sudah termasuk dalam
+  cakupan instruksi besar Fase 1, atau dilakukan sebagai bagian
+  wajar dari deploy tanpa perlu diminta ulang.)
+
+  - Dipasang sertifikat TLS self-signed (server belum punya domain
+    terdaftar -- Let's Encrypt butuh domain, tidak bisa untuk alamat
+    IP telanjang). HTTP otomatis redirect ke HTTPS.
+  - Role di-redesain dari versi awal (Admin/Petugas/Pimpinan) menjadi
+    (Administrator/Verifikator/Pos Depan) dengan alur verifikasi
+    bertingkat: Pos Depan daftarkan -> status "Menunggu Verifikasi"
+    -> Verifikator setujui/tolak -> baru bisa check-in.
+  - Ditambahkan halaman Manajemen Pengguna: CRUD akun, dengan
+    pengaman "self-protection" (admin tidak bisa hapus/nonaktifkan
+    akun sendiri) dan "referential integrity" (akun yang sudah punya
+    riwayat aktivitas tidak bisa dihapus permanen, hanya bisa
+    dinonaktifkan -- supaya audit log tidak pernah menjadi yatim).
+
+Pelajaran penting: otorisasi role WAJIB ditegakkan di backend, bukan
+cuma disembunyikan di frontend. Setiap endpoint API di aplikasi ini
+memvalidasi role lewat middleware `requireRole(...)` di server --
+menyembunyikan tombol di UI hanyalah kenyamanan visual, bukan lapisan
+keamanan.
+
+
+--------------------------------------------------------------------
+FASE 3 -- RESPONSIF, KAMERA, DAN KEBIJAKAN PERANGKAT ELEKTRONIK
+--------------------------------------------------------------------
+
+PROMPT ASLI (satu rangkaian permintaan yang saling menyempurnakan):
+  "buat dia responsif supaya dia bisa dibuka dibrowser hp
+   tambahkan untuk akses kamera dan upload foto"
+  "pada user administrator bisa menghapus foto tamu."
+  "tolong update pada pendaftaran tamu apabila: - Jumlah Tamu dari
+   suatu perusahaan lebih dari 1 orang dan jadikan dalam 1
+   pendaftaran untuk diverifikasi - Tambahkan foto dan upload foto
+   KTP yang mana si..."
+  "tambahkan pada pendaftaran tamu, setiap tamu yang datang : -
+   wajib menginput nomor HP yang bisa dihubungi bersifat wajib  1.
+   Kebijakan  Terapkan aturan berikut:  Setiap tamu yang membawa
+   perangkat ele..."
+  "ubah kebijakan elektronik dimasukkan tergabung dalam bagian data
+   tamu"
+  "buatkan tampilan checkbox dibuatkan lebih simple, dan merupakan
+   bagian kolom data tamu yg harus diisi."
+  "tolong ditambahkan pada masing2 data tamu untuk kebijakan
+   elektronik. karena setiap tamu yang dtang pasti membawa hp dan
+   perangkat elektronik lainnya.  jadi setiap tambah tamu, tamu yg
+   mengisi data wa..."
+  "tolong diubah: - tulisan merapat pada checkbox - pada tulisan
+   \"tetap membawa hp\" diganti dengan tetap membawa hp/perangkat
+   elektronik lainnya. karena biasanya tamu bukan hanya membawa hp
+   kalau ke Puss..."
+
+Fase ini terlihat jelas sebagai proses ITERATIF -- bukan satu
+permintaan besar sekaligus jadi, tapi serangkaian penyempurnaan kecil
+berturut-turut sampai fiturnya pas. Hasil akhirnya:
+
+  - Breakpoint responsif untuk tablet dan HP: sidebar collapse jadi
+    ikon saja di layar sempit, tabel jadi scroll horizontal.
+  - Fitur ambil foto tamu langsung dari kamera browser (getUserMedia)
+    atau unggah dari galeri, dikompresi otomatis di sisi client
+    sebelum dikirim ke server (supaya tidak membebani database
+    dengan file besar). Foto KTP ditambahkan dengan pola yang sama.
+  - Kontrol khusus: hanya Administrator yang boleh mengubah/menghapus
+    foto (dan foto KTP) tamu yang sudah tersimpan -- pengamanan
+    tambahan karena foto adalah data sensitif.
+  - Pendaftaran tamu diubah mendukung MULTI-TAMU dalam satu
+    pendaftaran (rombongan dari satu perusahaan yang sama, sesuai
+    keputusan desain di Fase 1) -- setiap anggota rombongan punya
+    field sendiri: nama, NIK (16 digit, tervalidasi), nomor HP wajib
+    (tervalidasi format Indonesia), jabatan, nomor ID karyawan
+    (opsional), foto, dan foto KTP.
+  - Kebijakan perangkat elektronik: setiap tamu wajib memilih salah
+    satu dari 3 status -- "tidak membawa", "dititipkan di pos
+    penjagaan", atau "tetap membawa HP/perangkat elektronik lainnya
+    (alasan khusus)". Kalau pilih opsi ketiga, wajib isi alasan
+    (minimal 20 karakter) -- field ini awalnya terpisah dari form
+    data tamu, lalu digabungkan supaya jadi satu kesatuan yang wajib
+    diisi bersamaan saat menambah tamu, sesuai revisi di prompt-
+    prompt terakhir rangkaian ini.
+
+Pelajaran penting: requirement dari lapangan sering datang bertahap
+sambil pengguna membayangkan detailnya lebih jelas ("kebijakan
+elektronik" awalnya diminta terpisah, lalu diminta digabung ke form
+utama) -- desain form yang fleksibel untuk diubah struktur/urutan
+elemen tanpa bongkar total penting untuk menangani proses seperti ini.
+
+
+--------------------------------------------------------------------
+FASE 4 -- DASHBOARD, BANK DATA, LAPORAN, LOG AKTIVITAS & BACKUP
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "buatkan log akitivtas seluruh pengguna, yang hanya administrator
+   yang bisa akses"
+  "buatkan grafik batang untuk jumlah kunjungan tamu yang datang ke
+   Mabesal yang bisa dilihat dalam per minggu atau perbulan dan
+   tampilkan pada dashboard utama. yang dapat melihat grafik
+   tersebut hanya..."
+  "tolong juga buatkan grafik per hari, sehingga dalam 1 minggu
+   dapat terlihat jumlah kedatangan tamu dalam 1 minggu."
+  "buatkan fitur bank data yang hanya dapat diakses oleh verifikator
+   dan administrator. yang mana bank data ini langsung
+   mengelompokan tamu berdasarkan nama Perusahaan, bagi tamu yang
+   independen dimasuk..."
+  "coba ditambahkan: - Ketika kita mengklik nama personil muncul
+   sebagai report keseluruhan - buatkan format laporan dalam bentuk
+   PDF untuk dapat diunduh. yang mana bisa merekap seluruh bank data
+   yang ad..."
+  "Buatkan menu khusus administrator, untuk proses backup daily,
+   weekly dan monthly. Yang tersimpan dalam bentuk format .sql.
+   Yang bisa saya download sewaktu-waktu."
+  "ya commit dan push"
+  "saya tidak menemukan menu back up database di halaman
+   administrator (Kaurpam), tidak ada menu daily, weekly, monthly
+   dalam menu backup"                              [-> bug dilaporkan]
+
+Fase paling padat fitur dalam pembangunan awal. Yang dibangun:
+
+  - Log Aktivitas (khusus Administrator): menampilkan seluruh isi
+    tabel audit_logs dengan filter aksi/tanggal/pencarian.
+  - Grafik batang kunjungan tamu di dashboard utama, dengan toggle
+    periode (harian / mingguan / bulanan) -- diminta dua kali secara
+    terpisah: pertama versi minggu/bulan, lalu ditambahkan versi
+    harian supaya tren 1 minggu terakhir bisa terlihat jelas per
+    hari. Hanya bisa dilihat role tertentu (Administrator).
+  - Bank Data: kumpulan seluruh personel tamu yang PERNAH terdaftar,
+    dikelompokkan otomatis berdasarkan nama perusahaan. Tamu yang
+    perusahaannya bersifat independen/perorangan dikelompokkan
+    tersendiri ke grup "Lainnya", bukan dicampur ke perusahaan lain.
+    Sengaja TIDAK digabung berdasarkan NIK -- karena NIK yang sama
+    pernah terpakai oleh nama berbeda pada data nyata (potensi typo
+    atau upaya penyamaran identitas), dan menggabungkannya justru
+    akan MENYEMBUNYIKAN kejanggalan itu. Sebaliknya, sistem
+    mendeteksi dan menandai kasus "satu NIK dipakai lebih dari satu
+    nama" sebagai potensi anomali yang perlu diperiksa manual.
+  - Laporan personel lengkap: klik satu nama di Bank Data -> muncul
+    seluruh riwayat kunjungan orang itu (lintas pendaftaran/
+    perusahaan), lengkap dengan hasil analisa keamanan tiap
+    kunjungan. Bisa diunduh sebagai PDF dalam 3 cakupan berbeda:
+    satu personel, satu perusahaan, atau seluruh Bank Data sekaligus.
+  - Backup database otomatis: harian (01:00, simpan 7 file terakhir),
+    mingguan (Minggu 01:30, simpan 8 file), bulanan (tanggal 1 pukul
+    02:00, simpan 12 file), format .sql, bisa diunduh kapan saja.
+    Dijadwalkan dengan node-cron di backend.
+
+Bug kecil yang dilaporkan pengguna sendiri di fase ini: menu Backup
+Database sempat tidak muncul sama sekali di halaman Administrator
+setelah fitur ini "selesai" dibangun -- pola yang SAMA dengan bug
+besar di Fase 7 nanti (fitur backend sudah jadi, tapi belum
+benar-benar ter-deploy/terlihat di frontend). Diperbaiki saat itu
+juga sebelum lanjut ke fase berikutnya.
+
+Pelajaran penting: keputusan untuk TIDAK menyembunyikan anomali data
+(NIK dobel nama) demi kenyamanan tampilan adalah pilihan desain yang
+sadar -- untuk aplikasi keamanan, data yang "rapi tapi menyembunyikan
+kejanggalan" lebih berbahaya daripada data yang terlihat sedikit
+berantakan tapi jujur.
+
+
+--------------------------------------------------------------------
+FASE 5 -- HARDENING KEAMANAN & DOKUMENTASI PERTAMA (BERKAS 04)
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "analisa dari hasil pentesting ini, lalu perbaiki dari temuan
+   vulnerability serta terapkan security code basic"
+  "buatkan dokumentasi dalam bentuk .md mulai dari tahap arsitektur
+   website ini sampai dengan hasil perbaikan vulnerability hasil
+   webscanner"                                    [-> lahirnya berkas 04]
+  "ya bisa juga publikasikan halaman web artifact"
+
+Pihak eksternal melakukan scan (Pentest-Tools.com, Light scan, 40
+test) terhadap server. Hasil laporan itu diberikan, lalu diminta
+dianalisa dan diperbaiki. Hasil awal: 0 Critical, 0 High, 1 Medium,
+5 Low, 1 Info. Perbaikan yang dilakukan:
+
+  - Header keamanan HTTP ditambahkan di Nginx: Content-Security-
+    Policy (ketat, script-src hanya 'self' -- tidak ada inline
+    script sama sekali di seluruh aplikasi), Strict-Transport-
+    Security, X-Content-Type-Options, Referrer-Policy.
+  - `server_tokens off` -- versi Nginx tidak lagi terekspos di
+    header respons.
+  - Bug XSS ditemukan lewat audit kode mandiri (bukan dari laporan
+    scanner-nya sendiri): fungsi escapeHtml() versi awal memakai
+    trik textContent->innerHTML yang TIDAK meng-escape tanda kutip,
+    jadi tidak aman dipakai di dalam atribut HTML (mis.
+    data-username="..."). Diperbaiki jadi escape manual yang aman
+    di semua konteks.
+  - Satu temuan (sertifikat SSL tidak dipercaya) sengaja dibiarkan
+    terbuka karena akar masalahnya butuh domain resmi terdaftar,
+    yang belum tersedia untuk server ini.
+
+Setelah semua perbaikan selesai, diminta dokumentasi teknis formal
+-- inilah asal-usul `04_dokumentasi_teknis_dan_keamanan.md`, yang
+kemudian jadi acuan gaya penulisan untuk seluruh dokumentasi
+berikutnya (05 dan 06). Dokumentasi ini juga sempat dipublikasikan
+sebagai halaman web (Artifact) selain berkas .md-nya.
+
+Pelajaran penting: laporan vulnerability scanner otomatis (apalagi
+"Light scan") tidak menguji semua kelas kerentanan secara mendalam.
+Audit kode manual tetap diperlukan untuk area yang tidak tercakup,
+seperti SQL Injection (di aplikasi ini dicegah lewat parameterized
+query di semua query database, tanpa kecuali) dan XSS.
+
+
+====================================================================
+BAGIAN KEDUA: FITUR AI DAN INTEGRASI EKSTERNAL
+(Sesi kerja 27-28 Agustus 2026)
+====================================================================
+
+--------------------------------------------------------------------
+FASE 6 -- FITUR AI CHAT (VERSI AWAL: ANTHROPIC LANGSUNG)
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "buatkan saya 1 menu khusus AI Chat, yang nanti bisa saya gunakan
+   untuk menganalisis platform ini, dan buatkan sekalian menu untuk
+   konfigurasi model AInya"
+
+Diminta dua menu baru khusus Administrator: "AI Chat" untuk
+menganalisa data platform, dan "Konfigurasi AI" untuk mengatur model
+serta API key yang dipakai.
+
+Sebelum membangun, dilakukan klarifikasi dulu dengan pengguna --
+fitur ini punya implikasi penting (biaya pemakaian API, penyimpanan
+API key, dan AI yang "melihat" data tamu asli), jadi tidak langsung
+diimplementasikan tanpa memastikan skenario penggunaannya jelas.
+
+Implementasi versi pertama:
+  - Tabel `ai_settings` (satu baris saja, id selalu 1) untuk simpan
+    provider, model, API key (terenkripsi), instruksi tambahan.
+  - API key dienkripsi dengan AES-256-GCM, kuncinya diturunkan dari
+    JWT_SECRET yang sudah ada -- supaya tidak perlu tambah variabel
+    rahasia baru di .env.
+  - Backend membangun "ringkasan data platform" real-time (total
+    tamu, distribusi kategori keamanan, anomali NIK, dst) untuk
+    dikirim sebagai konteks ke AI, bukan mengirim seluruh isi
+    database mentah.
+  - Panggilan langsung ke Claude API (Anthropic) lewat SDK resmi.
+
+Satu bug tersembunyi ditemukan dan diperbaiki SEBELUM sempat dipakai
+produksi: Claude versi terbaru (Opus 5/Sonnet 5) mengaktifkan
+"adaptive thinking" secara default, dan menolak permintaan yang
+menyertakan parameter `temperature` bersamaan dengan mode itu (error
+400). Field temperature yang awalnya direncanakan di halaman
+konfigurasi dihapus sebelum sempat dipakai, karena akan merusak
+fitur untuk 2 dari 3 model yang direkomendasikan.
+
+
+--------------------------------------------------------------------
+FASE 7 -- BUG KRITIKAL: SEMUA MENU HILANG
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "dimana menu chat AInya?"
+  "deploy sekarang, jangan lupa config AInya."
+  "perbaiki banyak eror, seluruh menu tidak muncul"
+
+Setelah deploy pertama fitur AI Chat, SELURUH halaman kehilangan
+styling dan menu sidebar kosong total -- bukan cuma menu baru, semua
+menu lama pun ikut hilang.
+
+Investigasi (bukan tebak-tebakan, langsung cek langsung ke server):
+  1. Cek apakah file assets (app.js, style.css) bisa diakses -> semua
+     mengembalikan HTTP 404.
+  2. Cek isi container frontend -> ternyata direktori
+     frontend/public/assets/ punya permission 700 (hanya bisa dibaca
+     root), padahal proses Nginx di dalam container jalan sebagai
+     user non-root.
+
+Root cause: proses transfer file dari Windows ke server memakai
+`scp -r`, dan itu membuat permission direktori yang salah (700,
+bukan 755 yang seharusnya).
+
+Perbaikan darurat: chmod manual di server, lalu build ulang TANPA
+cache (build pertama sempat masih memakai layer lama yang membawa
+permission salah).
+
+Pelajaran penting: satu kesalahan kecil di lapisan infrastruktur
+(permission file) bisa membuat SELURUH aplikasi terlihat rusak total,
+padahal kode aplikasinya sendiri sama sekali tidak bermasalah. Ini
+juga jadi alasan kuat kenapa Fase 8 (migrasi ke git) penting -- bukan
+cuma soal kerapian, tapi menghilangkan seluruh kelas bug ini secara
+permanen.
+
+
+--------------------------------------------------------------------
+FASE 8 -- MIGRASI DEPLOYMENT: SCP MANUAL -> GIT PULL
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "commit dan push lalu fixkan di server"
+  "https://github.com/sagala274/cygnusguest.git"
+  "lanjutkan, ssh key sudah saya masukkan"
+
+Setelah insiden Fase 7, alur deploy diubah total.
+
+Temuan menarik saat proses ini: ternyata SUDAH ADA repository git
+sebelumnya (tersembunyi, satu level di atas folder aplikasi),
+terhubung ke GitHub (github.com/sagala274/cygnusguest), berisi 2
+commit riwayat dari pembangunan awal aplikasi -- dibuat sendiri oleh
+pengguna lewat GitHub sejak awal proyek (terlihat dari riwayat
+prompt paling awal yang berisi perintah `git init` bawaan GitHub).
+Sempat keliru membuat repository BARU di tempat yang salah sebelum
+menyadari ini -- lalu dibersihkan dan memakai repository asli yang
+sudah ada.
+
+Langkah migrasi:
+  1. Kode di-commit dan di-push ke GitHub (autentikasi lewat SSH key
+     yang didaftarkan pengguna sendiri di GitHub).
+  2. Server: clone repository ke lokasi baru, lalu direktori aplikasi
+     lama (/opt/pussiberal) diubah jadi SYMLINK yang menunjuk ke hasil
+     clone -- supaya semua path lama (docker-compose.yml, volume
+     backup, dst) tetap bekerja tanpa perlu diubah satu-satu.
+  3. Data runtime yang TIDAK boleh ikut ke git (.env berisi password
+     database, backups/ berisi data pribadi tamu asli, certs/ berisi
+     kunci privat TLS) dipindahkan dengan hati-hati ke lokasi baru,
+     dan tetap dijaga lewat .gitignore supaya tidak pernah ter-commit.
+  4. Direktori lama disimpan sebagai cadangan (.pre-git-bak), tidak
+     langsung dihapus, sebagai jaring pengaman.
+
+Alur deploy baru, jauh lebih sederhana dan tidak lagi rawan bug
+permission:
+
+    # Di komputer lokal:
+    git add -A && git commit -m "..." && git push origin main
+
+    # Di server:
+    cd /opt/cygnusguest && git pull
+    cd pussiberal-app && docker compose build && docker compose up -d
+
+Pelajaran penting: `git clone`/`git pull` TIDAK PERNAH membawa
+permission aneh seperti yang terjadi dengan `scp` dari Windows --
+migrasi ini bukan cuma memperbaiki gejala, tapi menghilangkan akar
+masalahnya secara permanen untuk semua deploy ke depannya.
+
+
+--------------------------------------------------------------------
+FASE 9 -- MIGRASI AI CHAT: ANTHROPIC LANGSUNG -> OPENROUTER
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "untuk konfigurasi AI, jangan hanya berpatokan pada anthropic.
+   Saya mau memakai segala jenis AI yg ada di openrouter."
+
+Atas permintaan eksplisit, integrasi AI diubah total dari memanggil
+Claude langsung, menjadi memakai OpenRouter -- sebuah gateway yang
+meneruskan ke ratusan model dari berbagai vendor (Anthropic, OpenAI,
+Google, Meta, dll) lewat satu API key, dengan format request yang
+kompatibel dengan standar OpenAI.
+
+Dampak teknis:
+  - Dependency SDK Anthropic dihapus total, diganti pemanggilan
+    `fetch` native Node.js langsung ke endpoint OpenRouter -- tidak
+    ada dependency baru yang perlu ditambahkan.
+  - Field "Model" di halaman Konfigurasi AI diubah dari daftar
+    dropdown tetap (3 model Claude) menjadi kolom pencarian yang
+    terhubung ke katalog LIVE OpenRouter -- admin bisa pilih model
+    apa pun dari vendor mana pun.
+  - Endpoint baru: GET /api/ai-settings/models, mem-proxy katalog
+    OpenRouter ke frontend.
+
+Satu bug lagi ditemukan dan diperbaiki: beberapa model (terutama
+tier gratis) kadang mengembalikan HTTP 200 yang sukses tapi TANPA
+isi balasan yang valid saat sedang sibuk. Awalnya ini membuat chat
+menampilkan bubble kosong tanpa penjelasan -- diperbaiki supaya
+sistem mendeteksi kondisi ini dan menampilkan pesan error yang jelas
+ke pengguna.
+
+
+--------------------------------------------------------------------
+FASE 10 -- RISET MODEL GRATIS OPENROUTER
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "carikan saya model free yang bisa dipakai di sistem ini dari
+   openrouter"
+
+Proses:
+  1. Query langsung ke katalog live OpenRouter (417 model total),
+     saring yang harganya $0 (20 model), lalu saring lagi yang
+     benar-benar model chat berbasis teks (bukan model musik/audio
+     seperti Google Lyria yang ikut muncul di daftar gratis).
+  2. Dari kandidat yang tersisa, dipilih 5 model paling menjanjikan,
+     lalu diuji RELIABILITASNYA SECARA NYATA lewat endpoint produksi
+     (3x percobaan per model, pertanyaan identik) -- bukan cuma
+     asumsi dari nama/ukuran model.
+
+Hasil uji nyata (penting -- ini menunjukkan model "gratis" sangat
+bervariasi kualitasnya):
+
+    nvidia/nemotron-3-ultra-550b-a55b:free  -> gagal 2 dari 3 kali
+    z-ai/glm-5.2:free                       -> gagal semua (rate limit)
+    google/gemma-4-31b-it:free              -> gagal semua (rate limit)
+    openrouter/free (auto-router)           -> berhasil semua
+    minimax/minimax-m3:free                 -> berhasil semua, jawaban
+                                                paling lengkap & akurat
+
+Model `minimax/minimax-m3:free` dipilih sebagai default produksi,
+dengan `openrouter/free` sebagai cadangan.
+
+Pelajaran penting: jangan pernah berasumsi soal reliabilitas layanan
+eksternal (apalagi yang gratis) dari nama atau ukurannya saja -- uji
+langsung dengan skenario nyata sebelum memutuskan.
+
+
+--------------------------------------------------------------------
+FASE 11 -- DOKUMENTASI TEKNIS KEDUA (BERKAS 05) & PERTANYAAN SKEMA DB
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "dokumentasikan apa yang telah dikerjakan hari ini dalam bentuk
+   .md"                                           [-> lahirnya berkas 05]
+  "coba berikan saya struktur tabelnya"
+  "saya mau tau relasi semua tabel"
+
+Seluruh pekerjaan Fase 6-10 didokumentasikan secara formal dalam
+`05_ai_chat_dan_migrasi_deployment.md`, mengikuti gaya dokumentasi
+proyek yang sudah ada (Bahasa Indonesia, tabel, diagram arsitektur).
+Lalu di-commit dan di-push ke GitHub.
+
+Pengguna juga sempat bertanya soal struktur tabel `ai_settings` dan
+relasi ANTAR SEMUA tabel di database -- dijawab langsung dengan
+diagram relasi (ASCII, karena percakapan berlangsung di terminal,
+bukan halaman web) yang menunjukkan `guests` sebagai pusat dari
+hampir semua relasi (CASCADE ke guest_members/vehicles/visits saat
+dihapus), sementara relasi ke arah `users` semuanya RESTRICT (demi
+menjaga jejak audit log tidak pernah menjadi yatim).
+
+
+--------------------------------------------------------------------
+FASE 12 -- INTEGRASI NOTIFIKASI & BOT TELEGRAM
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "saya mau dapat memantau :
+   - Pendaftaran tamu
+   - Log akses di sistem ini
+   melalui aplikasi telegram. Buatkan sinkronisasinya dan BOT
+   telegramnya serta berikan langkah2 untuk setup di telegramnya,
+   mulai dari pembuatan BOT di telegram. Sehingga dapat
+   terintegrasi semuanya dengan aplikasi ini."
+  "dimenu notifikasi hanya ada pengaturan private chats, vibrate,
+   ringtone."           [-> ternyata salah buka menu Settings bawaan
+                             Telegram, bukan chat dengan bot -- lihat
+                             klarifikasi di Fase 12 bagian akhir]
+
+Desain yang dibangun:
+  - Tabel `telegram_settings` (pola sama seperti ai_settings): bot
+    token terenkripsi, Chat ID tujuan, toggle notifikasi per jenis
+    event.
+  - Notifikasi PUSH otomatis dikirim langsung dari backend saat ada
+    pendaftaran tamu baru atau login -- sifatnya "fire-and-forget",
+    dirancang supaya kalau Telegram sedang error, itu TIDAK PERNAH
+    menggagalkan proses pendaftaran/login itu sendiri.
+  - Bot Telegram yang benar-benar interaktif, bukan cuma pengirim
+    notifikasi satu arah: mendukung perintah /status, /tamu, /log,
+    /help, dijalankan lewat teknik LONG POLLING (bukan webhook --
+    webhook butuh sertifikat TLS yang dipercaya publik, sementara
+    server masih pakai sertifikat self-signed).
+  - Pengaman: perintah bot (selain /start) hanya dilayani untuk Chat
+    ID yang sudah terdaftar resmi di sistem -- mencegah orang lain
+    yang menemukan bot ini menarik data internal.
+  - Alur "deteksi Chat ID otomatis" dirancang supaya admin tidak
+    perlu mencari Chat ID secara manual: kirim /start ke bot -> bot
+    simpan Chat ID pengirim ke database -> halaman Konfigurasi
+    Telegram menampilkan tombol "Gunakan Chat Terdeteksi".
+
+Detail teknis menarik yang ditemukan saat development: Telegram
+memakai format teks "MarkdownV2" yang sangat ketat soal karakter apa
+saja yang wajib di-escape dengan tanda backslash. Aturannya berbeda
+untuk teks yang ditaruh di dalam "code span" (teks berformat kode,
+ditandai backtick) dibanding teks biasa -- memakai fungsi escape yang
+sama untuk keduanya akan membuat karakter backslash tampil secara
+literal di pesan (misalnya nomor registrasi tamu tampil sebagai
+"REG\-20260827\-000005", bukan "REG-20260827-000005"). Diperbaiki
+dengan membuat dua fungsi escape terpisah untuk dua konteks berbeda.
+
+Sempat terjadi salah paham navigasi: setelah fitur ini jadi, dikira
+"menu notifikasi" yang dimaksud adalah pengaturan bawaan aplikasi
+Telegram (Settings -> Notifications, isinya cuma Private
+Chats/Vibrate/Ringtone) -- padahal yang perlu dibuka adalah CHAT
+LANGSUNG dengan bot yang baru dibuat (cari usernamenya, kirim
+/start), bukan menu Settings Telegram itu sendiri.
+
+
+--------------------------------------------------------------------
+FASE 13 -- BUG: MENU TELEGRAM TIDAK MUNCUL
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "tidak ada menu notifikasi telegram di website guest management"
+
+Setelah fitur Telegram di-deploy, pengguna melapor menu "Notifikasi
+Telegram" tidak muncul sama sekali di sidebar.
+
+Investigasi langsung ke server: file `telegram-settings.html`
+mengembalikan 404, dan `app.js` yang ter-deploy TIDAK mengandung
+kode terkait Telegram sama sekali.
+
+Root cause: perintah deploy sebelumnya HANYA menjalankan
+`docker compose build backend` -- lupa bahwa fitur ini juga mengubah
+banyak berkas di sisi FRONTEND (halaman HTML baru, JS baru, menu
+sidebar baru). Image frontend tidak pernah di-rebuild, jadi
+container masih menjalankan versi lama.
+
+Perbaikan: `docker compose build frontend && docker compose up -d`.
+
+
+--------------------------------------------------------------------
+FASE 14 -- BUG: CACHE BROWSER MENAHAN UPDATE
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "masih belum ada untuk telegram"
+
+Setelah Fase 13 diperbaiki di server, pengguna MASIH melihat menu
+lama saat membuka aplikasi di browser (disertai tangkapan layar).
+Digali lebih dalam:
+
+Root cause yang lebih dalam: Nginx tidak pernah mengirim header
+`Cache-Control` untuk file HTML/JS/CSS. Tanpa header ini, browser
+modern melakukan "heuristic caching" -- boleh menyimpan file lama
+tanpa aturan jelas kapan harus dianggap kedaluwarsa. Ini artinya
+masalah "fitur baru tidak muncul" ini BERPOTENSI TERULANG di SETIAP
+deploy berikutnya, bukan cuma sekali ini saja.
+
+Perbaikan: tambah `Cache-Control: no-cache` -- ini tetap mengizinkan
+browser menyimpan cache (efisien), tapi MEWAJIBKAN validasi ulang ke
+server di setiap request, sehingga versi terbaru selalu terdeteksi
+otomatis tanpa perlu hard-refresh manual.
+
+Satu bug tambahan sempat diperkenalkan SENDIRI di tengah proses
+perbaikan ini: percobaan pertama menaruh header Cache-Control di
+dalam sebuah blok `location` khusus di konfigurasi Nginx -- ternyata
+ini justru MENGHAPUS seluruh header keamanan (hasil hardening di
+Fase 5) untuk request yang cocok dengan lokasi tersebut. Penyebabnya
+perilaku Nginx yang tidak intuitif: `add_header` di dalam sebuah
+`location` TIDAK mewarisi daftar `add_header` dari blok `server`
+induknya, melainkan MENGGANTIKANNYA total. Ditemukan lewat verifikasi
+langsung (`curl -I` mengecek header apa saja yang benar-benar
+dikirim), lalu diperbaiki dengan memindahkan header Cache-Control ke
+level `server`, sejajar dengan header keamanan lain.
+
+Ada juga pertanyaan lepas terkait fitur ini yang dijawab langsung
+tanpa perlu perubahan kode:
+  "cara akses mendapatkan chat id di telegram"
+
+Pelajaran penting dari Fase 13-14: SETIAP KALI selesai deploy,
+verifikasi LANGSUNG ke server (bukan cuma percaya command berhasil
+tanpa error) -- cek file benar-benar ter-update, cek header respons
+benar-benar sesuai harapan. Asumsi adalah sumber bug paling umum
+dalam proses deployment.
+
+
+--------------------------------------------------------------------
+FASE 15 -- DOKUMENTASI TEKNIS KETIGA (BERKAS 06)
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "dokumentasikan dan push ke github untuk perubahan terakhir."
+
+Seluruh pekerjaan Fase 12-14 didokumentasikan dalam
+`06_integrasi_telegram.md`, termasuk diagram alur (sequence diagram)
+untuk proses deteksi Chat ID, dan penjelasan detail ketiga bug di
+atas beserta akar masalah dan cara perbaikannya. Di-commit dan
+di-push ke GitHub.
+
+
+--------------------------------------------------------------------
+FASE 16 -- RANGKUMAN PEMBELAJARAN (BERKAS INI)
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "buatkan rangkuman dari semua percakapan kita dari awal mula
+   proses sampai dengan tahap saat ini.  Buatkan rangkuman ini
+   dalam bentuk .txt sehingga bisa saya pelajari dan semakin
+   memahami proses pembuatan website ini."
+  "tolong edit rangkuman .txt ditambahkan prompting2 yang saya
+   tulis."
+  "edit setiap prompt asli dimasukkan kedalam tiap2 fase supaya
+   semakin memudahkan dan mengingat apa yg saya kerjakna"
+
+Rangkuman versi pertama dibuat sebagai narasi terpisah dari
+prompt-nya. Direvisi dua kali: pertama menambahkan lampiran berisi
+seluruh prompt asli di bagian akhir dokumen, lalu direvisi lagi
+(hasil akhirnya adalah dokumen yang sedang Anda baca ini) supaya
+setiap prompt langsung menyatu di dalam fase yang relevan -- tidak
+perlu bolak-balik antara narasi dan lampiran.
+
+
+====================================================================
+RINGKASAN POLA & PELAJARAN LINTAS-FASE
+====================================================================
+
+Beberapa pola yang berulang dan layak diingat baik-baik:
+
+1. BUG INFRASTRUKTUR SERING TERLIHAT SEPERTI BUG APLIKASI.
+   Tiga insiden besar (menu backup hilang di Fase 4, semua menu
+   hilang di Fase 7, dan menu Telegram tidak muncul di Fase 13-14)
+   SAMA SEKALI bukan masalah di kode aplikasi -- soal permission
+   file, lupa rebuild image Docker yang tepat, dan cache HTTP. Kalau
+   panik dan langsung mengubah-ubah kode aplikasi tanpa investigasi
+   yang benar, bug seperti ini bisa sangat membuang waktu.
+
+2. SELALU VERIFIKASI LANGSUNG KE SUMBERNYA, JANGAN BERASUMSI.
+   Setiap dugaan root cause di dokumen ini dikonfirmasi lewat
+   pengecekan langsung (curl ke server, baca isi container, cek
+   struktur tabel database) -- bukan tebakan. Ini yang membuat
+   perbaikan tepat sasaran, bukan coba-coba.
+
+3. KEAMANAN DAN KENYAMANAN SERING TARIK-MENARIK, DAN KEDUANYA PENTING.
+   Header Cache-Control yang baik untuk kenyamanan (update cepat
+   terlihat) sempat tanpa sengaja menghapus header keamanan yang
+   sudah susah payah diperbaiki di fase sebelumnya. Perbaikan yang
+   benar bukan memilih salah satu, tapi memastikan keduanya berjalan
+   bersamaan dengan struktur konfigurasi yang benar.
+
+4. LAYANAN EKSTERNAL (API PIHAK KETIGA) PERLU DIUJI NYATA, BUKAN
+   DIASUMSIKAN. Baik soal model AI gratis (Fase 10) maupun batasan
+   API Claude yang berubah dari waktu ke waktu (Fase 6) -- keduanya
+   menunjukkan pentingnya verifikasi langsung ke dokumentasi/perilaku
+   terkini, bukan mengandalkan asumsi lama.
+
+5. SETIAP FITUR SENSITIF (API KEY, PASSWORD) SELALU DIENKRIPSI DI
+   DATABASE, TIDAK PERNAH DIKEMBALIKAN APA ADANYA LEWAT API. Pola
+   ini konsisten dipakai untuk API key AI (Fase 6) maupun bot token
+   Telegram (Fase 12) -- kunci enkripsi diturunkan dari secret yang
+   sudah ada, supaya tidak menambah kompleksitas konfigurasi.
+
+6. PROSES YANG ITERATIF ITU NORMAL, BUKAN TANDA PERENCANAAN YANG
+   BURUK. Fase 3 dan Fase 12 menunjukkan pola yang sama: permintaan
+   awal disempurnakan lewat beberapa prompt susulan begitu hasilnya
+   terlihat nyata. Requirement yang sepenuhnya sempurna sejak
+   prompt pertama jarang terjadi -- yang penting desainnya cukup
+   fleksibel untuk menampung revisi tanpa bongkar total.
+
+
+====================================================================
+STATUS SISTEM SAAT INI (28 Agustus 2026)
+====================================================================
+
+Menu yang tersedia di aplikasi:
+  - Dashboard, Pendaftaran Tamu, Daftar Tamu, Verifikasi Tamu,
+    Laporan, Bank Data          (fitur inti manajemen tamu)
+  - AI Chat, Konfigurasi AI      (analisa data lewat AI, via OpenRouter)
+  - Manajemen Pengguna, Log Aktivitas, Notifikasi Telegram,
+    Backup Database             (khusus Administrator)
+
+Alur deploy saat ini:
+    git add -A && git commit -m "..." && git push origin main
+    ssh ke server -> cd /opt/cygnusguest && git pull
+                   -> cd pussiberal-app
+                   -> docker compose build   (tanpa argumen = build semua)
+                   -> docker compose up -d
+
+Yang masih perlu tindak lanjut dari pengguna:
+  - Selesaikan setup bot Telegram (buat bot lewat @BotFather, kirim
+    /start, sambungkan Chat ID lewat menu Notifikasi Telegram).
+  - Pantau reliabilitas model AI gratis (minimax/minimax-m3:free)
+    dari waktu ke waktu -- kalau mulai sering gagal, ganti model di
+    menu Konfigurasi AI.
+  - Pertimbangkan sertifikat TLS resmi (Let's Encrypt) begitu server
+    ini punya domain terdaftar -- saat ini masih pakai self-signed.
+  - Revoke token GitHub lama yang sempat tertulis polos di chat
+    (lihat catatan keamanan di awal dokumen ini), kalau belum.
+
+====================================================================

@@ -63,8 +63,33 @@
           </div>
 
           <div class="field full" style="margin-top:21px;">
-            <label for="purpose">KEPERLUAN MENGHADAP <span class="required">*</span></label>
-            <textarea id="purpose" name="purpose" placeholder="Deskripsikan tujuan kunjungan dan pihak yang dituju secara spesifik..." required></textarea>
+            <label>TUJUAN MENGHADAP KEPADA <span class="required">*</span><span class="label-note">Boleh pilih lebih dari satu</span></label>
+            <div class="device-options" id="target_officials">
+              <label class="device-option"><input type="checkbox" class="m-target-official" value="danpussiberal"><span>Danpussiberal</span></label>
+              <label class="device-option"><input type="checkbox" class="m-target-official" value="wadan_pussiberal"><span>Wadan Pussiberal</span></label>
+              <label class="device-option"><input type="checkbox" class="m-target-official" value="dirbinminlogpers"><span>Dirbinminlogpers</span></label>
+              <label class="device-option"><input type="checkbox" class="m-target-official" value="dirbinkamsiber"><span>Dirbinkamsiber</span></label>
+              <label class="device-option"><input type="checkbox" class="m-target-official" value="dansatdak"><span>Dansatdak</span></label>
+              <label class="device-option"><input type="checkbox" class="m-target-official" value="dansatinasi"><span>Dansatinasi</span></label>
+              <label class="device-option"><input type="checkbox" class="m-target-official" value="dansathan"><span>Dansathan</span></label>
+            </div>
+          </div>
+
+          <div class="field full" style="margin-top:21px;">
+            <label>KATEGORI KEPERLUAN <span class="required">*</span></label>
+            <div class="device-options" id="purpose_category">
+              <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="audiensi"><span>Audiensi</span></label>
+              <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="rapat_koordinasi"><span>Rapat/Koordinasi</span></label>
+              <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="diskusi_teknis"><span>Diskusi Teknis</span></label>
+              <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="maintenance"><span>Maintenance</span></label>
+              <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="pengiriman"><span>Pengiriman</span></label>
+              <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="lainnya"><span>Lainnya</span></label>
+            </div>
+          </div>
+
+          <div class="field full" style="margin-top:21px;">
+            <label for="purpose">DETAIL TUJUAN MENGHADAP <span class="required">*</span></label>
+            <textarea id="purpose" name="purpose" placeholder="Jelaskan lebih detail keperluan kunjungan. Untuk kategori &quot;Lainnya&quot;, sebutkan kegiatannya secara spesifik (mis. kegiatan cukur rambut, pengukuran baju, dll)..." required></textarea>
           </div>
         </section>
 

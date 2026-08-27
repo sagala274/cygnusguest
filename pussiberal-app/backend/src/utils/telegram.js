@@ -1,5 +1,6 @@
 const pool = require('../db');
 const { encrypt, decrypt } = require('./crypto');
+const { TARGET_OFFICIAL_LABELS } = require('./guestFields');
 
 async function ensureTelegramSettingsTable() {
   await pool.query(`
@@ -83,18 +84,21 @@ async function sendTelegramMessage(text) {
   }
 }
 
-async function notifyNewRegistration({ registrationNumber, company, purpose, memberCount, memberNames, createdByName }) {
+async function notifyNewRegistration({ registrationNumber, company, targetOfficials, purpose, memberCount, memberNames, createdByName }) {
   const settings = await getTelegramSettings();
   if (!settings || !settings.notify_new_registration) return;
+
+  const officialLabels = (targetOfficials || []).map((v) => TARGET_OFFICIAL_LABELS[v] || v).join(', ');
 
   const lines = [
     '🆕 *Pendaftaran Tamu Baru*',
     '',
     `No\\. Registrasi: \`${escapeMarkdownCode(registrationNumber)}\``,
     `Perusahaan: ${escapeMarkdown(company)}`,
+    `Tujuan Menghadap Kepada: ${escapeMarkdown(officialLabels)}`,
     `Jumlah Tamu: ${escapeMarkdown(String(memberCount))}`,
     `Nama: ${escapeMarkdown(memberNames.join(', '))}`,
-    `Keperluan: ${escapeMarkdown(purpose)}`,
+    `Detail Keperluan: ${escapeMarkdown(purpose)}`,
     `Didaftarkan oleh: ${escapeMarkdown(createdByName)}`,
     `Waktu: ${escapeMarkdown(new Date().toLocaleString('id-ID'))}`,
   ];

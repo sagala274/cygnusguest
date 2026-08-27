@@ -12,6 +12,7 @@ const {
 } = require('../utils/validators');
 const { logAudit } = require('../utils/audit');
 const { notifyNewRegistration } = require('../utils/telegram');
+const { PURPOSE_CATEGORIES, isValidTargetOfficials } = require('../utils/guestFields');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
@@ -144,7 +145,9 @@ router.get('/:id', asyncHandler(async (req, res) => {
       id: g.id,
       registration_number: g.registration_number,
       company: g.company,
+      target_officials: g.target_officials ? g.target_officials.split(',') : [],
       purpose: g.purpose,
+      purpose_category: g.purpose_category,
       device_status: g.device_status,
       device_reason: g.device_reason,
       status: g.status,
@@ -161,11 +164,13 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
 // POST /api/guests  (Pos Depan mendaftarkan 1+ tamu dari perusahaan yang sama -> masuk antrian verifikasi)
 router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
-  const { company, purpose, vehicle_type, plate_number, members } = req.body || {};
+  const { company, target_officials, purpose, purpose_category, vehicle_type, plate_number, members } = req.body || {};
 
   const errors = {};
   if (!company || !String(company).trim()) errors.company = 'Perusahaan/instansi wajib diisi';
-  if (!purpose || !String(purpose).trim()) errors.purpose = 'Keperluan menghadap wajib diisi';
+  if (!isValidTargetOfficials(target_officials)) errors.target_officials = 'Pilih minimal satu tujuan menghadap kepada';
+  if (!purpose_category || !PURPOSE_CATEGORIES.includes(purpose_category)) errors.purpose_category = 'Pilih kategori keperluan';
+  if (!purpose || !String(purpose).trim()) errors.purpose = 'Detail tujuan menghadap wajib diisi';
 
   if (!Array.isArray(members) || members.length === 0) {
     errors.members = 'Minimal satu tamu harus diisi';
@@ -195,9 +200,9 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
     await conn.beginTransaction();
 
     const [result] = await conn.execute(
-      `INSERT INTO guests (registration_number, company, purpose, status, created_by)
-       VALUES ('', :company, :purpose, 'Menunggu Verifikasi', :created_by)`,
-      { company, purpose, created_by: req.user.sub }
+      `INSERT INTO guests (registration_number, company, target_officials, purpose, purpose_category, status, created_by)
+       VALUES ('', :company, :target_officials, :purpose, :purpose_category, 'Menunggu Verifikasi', :created_by)`,
+      { company, target_officials: target_officials.join(','), purpose, purpose_category, created_by: req.user.sub }
     );
 
     const guestId = result.insertId;
@@ -243,6 +248,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
     notifyNewRegistration({
       registrationNumber: regNumber,
       company,
+      targetOfficials: target_officials,
       purpose,
       memberCount: members.length,
       memberNames: members.map((m) => m.full_name),
@@ -260,7 +266,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
 
 // PUT /api/guests/:id  (edit data pendaftaran -- bukan status verifikasi)
 router.put('/:id', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
-  const { company, purpose, vehicle_type, plate_number } = req.body || {};
+  const { company, target_officials, purpose, purpose_category, vehicle_type, plate_number } = req.body || {};
   const id = req.params.id;
 
   const fields = [];
@@ -270,8 +276,16 @@ router.put('/:id', requireRole('admin', 'pos_depan'), asyncHandler(async (req, r
     if (!String(company).trim()) return res.status(400).json({ error: 'Perusahaan/instansi wajib diisi' });
     fields.push('company = :company'); params.company = company;
   }
+  if (target_officials !== undefined) {
+    if (!isValidTargetOfficials(target_officials)) return res.status(400).json({ error: 'Pilih minimal satu tujuan menghadap kepada' });
+    fields.push('target_officials = :target_officials'); params.target_officials = target_officials.join(',');
+  }
+  if (purpose_category !== undefined) {
+    if (!PURPOSE_CATEGORIES.includes(purpose_category)) return res.status(400).json({ error: 'Kategori keperluan tidak valid' });
+    fields.push('purpose_category = :purpose_category'); params.purpose_category = purpose_category;
+  }
   if (purpose !== undefined) {
-    if (!String(purpose).trim()) return res.status(400).json({ error: 'Keperluan menghadap wajib diisi' });
+    if (!String(purpose).trim()) return res.status(400).json({ error: 'Detail tujuan menghadap wajib diisi' });
     fields.push('purpose = :purpose'); params.purpose = purpose;
   }
 

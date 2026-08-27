@@ -18,6 +18,7 @@ const { startBackupScheduler } = require('./utils/backupScheduler');
 const { ensureAiSettingsTable } = require('./utils/aiSettings');
 const { ensureTelegramSettingsTable } = require('./utils/telegram');
 const { startTelegramPolling } = require('./utils/telegramBot');
+const { ensureGuestExtraColumns } = require('./utils/guestFields');
 
 const app = express();
 
@@ -95,6 +96,7 @@ async function start() {
   await ensureAdminSeed();
   await ensureAiSettingsTable();
   await ensureTelegramSettingsTable();
+  await ensureGuestExtraColumns();
   startBackupScheduler();
   startTelegramPolling();
   app.listen(port, () => console.log(`Backend berjalan di port ${port}`));

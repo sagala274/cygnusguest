@@ -124,6 +124,36 @@ function securityCategoryBadgeClass(category) {
   }[category] || 'badge-gray';
 }
 
+const TARGET_OFFICIAL_LABELS = {
+  danpussiberal: 'Danpussiberal',
+  wadan_pussiberal: 'Wadan Pussiberal',
+  dirbinminlogpers: 'Dirbinminlogpers',
+  dirbinkamsiber: 'Dirbinkamsiber',
+  dansatdak: 'Dansatdak',
+  dansatinasi: 'Dansatinasi',
+  dansathan: 'Dansathan',
+};
+
+function targetOfficialLabel(value) {
+  return TARGET_OFFICIAL_LABELS[value] || value;
+}
+
+function targetOfficialsLabel(values) {
+  if (!values || !values.length) return '-';
+  return values.map(targetOfficialLabel).join(', ');
+}
+
+function purposeCategoryLabel(category) {
+  return {
+    audiensi: 'Audiensi',
+    rapat_koordinasi: 'Rapat/Koordinasi',
+    diskusi_teknis: 'Diskusi Teknis',
+    maintenance: 'Maintenance',
+    pengiriman: 'Pengiriman',
+    lainnya: 'Lainnya',
+  }[category] || '-';
+}
+
 function actionLabel(action) {
   const map = {
     login: 'Login',

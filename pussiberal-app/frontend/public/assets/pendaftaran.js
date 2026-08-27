@@ -364,6 +364,24 @@ function showFieldError(field, message) {
   fieldEl.appendChild(msg);
 }
 
+function validateTargetOfficials() {
+  const checked = document.querySelectorAll('.m-target-official:checked');
+  if (checked.length === 0) {
+    showFieldError('target_officials', 'Pilih minimal satu tujuan menghadap kepada');
+    return false;
+  }
+  return true;
+}
+
+function validatePurposeCategory() {
+  const selected = document.querySelector('.m-purpose-category:checked');
+  if (!selected) {
+    showFieldError('purpose_category', 'Pilih kategori keperluan');
+    return false;
+  }
+  return true;
+}
+
 function validateAllDevicePolicies() {
   let valid = true;
 
@@ -429,15 +447,23 @@ form.addEventListener('submit', async (e) => {
   resultBox.style.display = 'none';
   resultBox.classList.remove('error-box');
 
-  if (!validateAllDevicePolicies()) {
+  const targetOfficialsOk = validateTargetOfficials();
+  const purposeCategoryOk = validatePurposeCategory();
+  const devicePoliciesOk = validateAllDevicePolicies();
+
+  if (!targetOfficialsOk || !purposeCategoryOk || !devicePoliciesOk) {
     resultBox.style.display = 'block';
     resultBox.classList.add('error-box');
-    resultBox.textContent = 'Lengkapi kebijakan perangkat elektronik untuk setiap tamu sebelum menyimpan.';
+    resultBox.textContent = 'Lengkapi seluruh field yang wajib diisi sebelum menyimpan.';
     return;
   }
 
+  const selectedPurposeCategory = document.querySelector('.m-purpose-category:checked');
+
   const payload = {
     company: document.getElementById('company').value.trim(),
+    target_officials: Array.from(document.querySelectorAll('.m-target-official:checked')).map((el) => el.value),
+    purpose_category: selectedPurposeCategory ? selectedPurposeCategory.value : undefined,
     purpose: document.getElementById('purpose').value.trim(),
     vehicle_type: document.getElementById('vehicle').value || undefined,
     plate_number: document.getElementById('plate').value.trim() || undefined,

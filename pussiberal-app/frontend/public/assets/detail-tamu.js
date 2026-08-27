@@ -67,7 +67,9 @@ async function load() {
 
     document.getElementById('detailRows').innerHTML = `
       <div class="detail-row"><span class="detail-label">Perusahaan / Instansi</span><span class="detail-value">${escapeHtml(g.company)}</span></div>
-      <div class="detail-row"><span class="detail-label">Keperluan</span><span class="detail-value">${escapeHtml(g.purpose)}</span></div>
+      <div class="detail-row"><span class="detail-label">Tujuan Menghadap Kepada</span><span class="detail-value">${escapeHtml(targetOfficialsLabel(g.target_officials))}</span></div>
+      <div class="detail-row"><span class="detail-label">Kategori Keperluan</span><span class="detail-value">${escapeHtml(purposeCategoryLabel(g.purpose_category))}</span></div>
+      <div class="detail-row"><span class="detail-label">Detail Tujuan Menghadap</span><span class="detail-value">${escapeHtml(g.purpose)}</span></div>
       <div class="detail-row"><span class="detail-label">Kendaraan</span><span class="detail-value">${escapeHtml(g.vehicle_type || '-')} ${g.plate_number ? '&middot; ' + escapeHtml(g.plate_number) : ''}</span></div>
       <div class="detail-row"><span class="detail-label">Status Pendaftaran</span><span class="detail-value"><span class="badge ${statusBadgeClass(g.status)}">${escapeHtml(g.status)}</span></span></div>
       <div class="detail-row"><span class="detail-label">Status Kunjungan</span><span class="detail-value">${escapeHtml(g.visit_status || '-')}</span></div>
