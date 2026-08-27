@@ -187,4 +187,7 @@ document.getElementById('downloadAllBtn').addEventListener('click', async () => 
   }
 });
 
+const initialQuery = new URLSearchParams(window.location.search).get('q');
+if (initialQuery) searchInput.value = initialQuery;
+
 load();

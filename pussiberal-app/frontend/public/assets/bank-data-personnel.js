@@ -27,9 +27,14 @@ async function load() {
     document.getElementById('personNik').textContent = `NIK: ${p.nik}`;
 
     document.getElementById('nikWarning').style.display = p.nik_shared_by_multiple_names ? 'block' : 'none';
-    document.getElementById('nikWarningScope').textContent = p.nik_shared_by_multiple_names
-      ? `Ringkasan di bawah ini hanya mencakup kunjungan atas nama "${p.full_name}" — lihat tabel Riwayat Kunjungan untuk melihat seluruh nama yang tercatat pada NIK ini.`
-      : '';
+    if (p.nik_shared_by_multiple_names) {
+      const others = (p.other_names_same_nik || []).map(escapeHtml).join(', ');
+      document.getElementById('nikWarningScope').innerHTML =
+        `Laporan ini hanya mencakup kunjungan atas nama "${escapeHtml(p.full_name)}". NIK yang sama juga tercatat atas nama: <strong>${others}</strong> — ` +
+        `<a class="link" href="bank-data.html?q=${encodeURIComponent(p.nik)}">cari NIK ini di Bank Data</a> untuk menelusuri seluruh riwayatnya.`;
+    } else {
+      document.getElementById('nikWarningScope').textContent = '';
+    }
 
     document.getElementById('summaryRows').innerHTML = `
       <div class="detail-row"><span class="detail-label">Jabatan Terakhir</span><span class="detail-value">${escapeHtml(p.position)}</span></div>
@@ -53,7 +58,7 @@ async function load() {
     document.getElementById('visitsTableBody').innerHTML = p.visits
       .map(
         (v) => `
-      <tr${String(v.member_id) === memberId ? ' style="background:#fafbff;"' : ''}>
+      <tr>
         <td>${formatDateTime(v.created_at)}</td>
         <td>${escapeHtml(v.full_name)}</td>
         <td>${escapeHtml(v.registration_number)}</td>

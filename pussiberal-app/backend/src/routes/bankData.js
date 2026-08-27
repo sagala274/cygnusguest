@@ -158,13 +158,21 @@ router.get('/personnel/:nik', asyncHandler(async (req, res) => {
   const requestedMemberId = req.query.member_id ? Number(req.query.member_id) : null;
   const headline = (requestedMemberId && visits.find((v) => v.id === requestedMemberId)) || visits[0];
 
-  // Ringkasan (Perusahaan Terkait, Jumlah Kunjungan, dst) di-scope ke nama
+  // SELURUH laporan (ringkasan maupun riwayat kunjungan) di-scope ke nama
   // headline saja -- bukan seluruh riwayat NIK -- supaya saat satu NIK
-  // dipakai >1 nama berbeda (anomali), ringkasan tidak mencampur riwayat
-  // orang lain yang kebetulan berbagi NIK yang sama. Tabel "visits" di bawah
-  // tetap menampilkan SELURUH riwayat NIK (semua nama) untuk transparansi.
+  // dipakai >1 nama berbeda (anomali, biasanya NIK dummy/placeholder yang
+  // dipakai berulang), riwayat orang lain yang kebetulan berbagi NIK yang
+  // sama TIDAK ikut tercampur ke laporan personel ini. Nama-nama lain yang
+  // tercatat dengan NIK yang sama tetap disurfacekan lewat
+  // "other_names_same_nik" (bukan disembunyikan) supaya anomalinya tetap
+  // bisa ditelusuri lebih lanjut lewat pencarian NIK di Bank Data.
   const headlineName = headline.full_name.trim().toLowerCase();
   const sameIdentityVisits = visits.filter((r) => r.full_name.trim().toLowerCase() === headlineName);
+  const otherNamesSameNik = [...new Set(
+    visits
+      .filter((r) => r.full_name.trim().toLowerCase() !== headlineName)
+      .map((r) => r.full_name.trim())
+  )];
   const companies = [...new Set(sameIdentityVisits.map((r) => r.company.trim()))];
 
   res.json({
@@ -182,7 +190,8 @@ router.get('/personnel/:nik', asyncHandler(async (req, res) => {
       last_visit_at: headline.last_visit_at,
       companies,
       nik_shared_by_multiple_names: headline.nik_shared_by_multiple_names,
-      visits: visits.map((r) => ({
+      other_names_same_nik: otherNamesSameNik,
+      visits: sameIdentityVisits.map((r) => ({
         guest_id: r.guest_id,
         member_id: r.id,
         registration_number: r.registration_number,
@@ -333,10 +342,12 @@ router.get('/export', asyncHandler(async (req, res) => {
 
     const requestedMemberId = member_id ? Number(member_id) : null;
     const headlineRecord = (requestedMemberId && visits.find((v) => v.id === requestedMemberId)) || visits[0];
+    const headlineName = headlineRecord.full_name.trim().toLowerCase();
+    const sameIdentityVisits = visits.filter((r) => r.full_name.trim().toLowerCase() === headlineName);
 
     layout = 'portrait';
     filename = `bank-data-${sanitizeFilename(headlineRecord.full_name)}.pdf`;
-    renderFn = (doc) => renderPersonnelPDF(doc, visits, headlineRecord);
+    renderFn = (doc) => renderPersonnelPDF(doc, sameIdentityVisits, headlineRecord);
   } else if (scope === 'company') {
     if (!company) return res.status(400).json({ error: 'Parameter company wajib diisi' });
     const groupRecords = allRecords.filter((r) => {
