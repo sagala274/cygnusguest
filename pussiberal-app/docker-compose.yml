@@ -1,3 +1,5 @@
+name: pussiberal
+
 services:
   mysql:
     image: mysql:8.0
