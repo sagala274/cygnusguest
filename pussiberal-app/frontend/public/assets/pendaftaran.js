@@ -11,6 +11,17 @@ const addMemberBtn = document.getElementById('addMemberBtn');
 const memberWidgets = new Map();
 let memberSeq = 0;
 
+const targetOfficialOtherCheckbox = document.getElementById('targetOfficialOtherCheckbox');
+const targetOfficialOtherField = document.getElementById('targetOfficialOtherField');
+const targetOfficialOtherInput = document.getElementById('target_official_other');
+
+function updateTargetOfficialOtherVisibility() {
+  const needsOther = targetOfficialOtherCheckbox.checked;
+  targetOfficialOtherField.style.display = needsOther ? 'block' : 'none';
+  if (!needsOther) targetOfficialOtherInput.value = '';
+}
+targetOfficialOtherCheckbox.addEventListener('change', updateTargetOfficialOtherVisibility);
+
 function memberBlockHTML(seq) {
   return `
     <div class="member-card" data-seq="${seq}">
@@ -370,6 +381,10 @@ function validateTargetOfficials() {
     showFieldError('target_officials', 'Pilih minimal satu tujuan menghadap kepada');
     return false;
   }
+  if (targetOfficialOtherCheckbox.checked && !targetOfficialOtherInput.value.trim()) {
+    showFieldError('target_official_other', 'Sebutkan tujuan menghadap yang tidak ada dalam pilihan');
+    return false;
+  }
   return true;
 }
 
@@ -438,6 +453,7 @@ function resetForm() {
   membersContainer.innerHTML = '';
   memberWidgets.clear();
   memberSeq = 0;
+  updateTargetOfficialOtherVisibility();
   addMember();
 }
 
@@ -463,6 +479,7 @@ form.addEventListener('submit', async (e) => {
   const payload = {
     company: document.getElementById('company').value.trim(),
     target_officials: Array.from(document.querySelectorAll('.m-target-official:checked')).map((el) => el.value),
+    target_official_other: targetOfficialOtherCheckbox.checked ? targetOfficialOtherInput.value.trim() : undefined,
     purpose_category: selectedPurposeCategory ? selectedPurposeCategory.value : undefined,
     purpose: document.getElementById('purpose').value.trim(),
     vehicle_type: document.getElementById('vehicle').value || undefined,
@@ -476,10 +493,12 @@ form.addEventListener('submit', async (e) => {
     const count = res.data.member_count;
     resultBox.innerHTML = `Pendaftaran berhasil untuk ${count} tamu. Nomor registrasi: <strong>${escapeHtml(res.data.registration_number)}</strong> — <a class="link" href="detail-tamu.html?id=${res.data.id}">Lihat detail</a>`;
     resetForm();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (err) {
     resultBox.style.display = 'block';
     resultBox.classList.add('error-box');
     resultBox.textContent = err.message;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     if (err.fields) {
       Object.entries(err.fields).forEach(([field, message]) => showFieldError(field, message));
     }

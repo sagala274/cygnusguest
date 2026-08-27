@@ -132,15 +132,18 @@ const TARGET_OFFICIAL_LABELS = {
   dansatdak: 'Dansatdak',
   dansatinasi: 'Dansatinasi',
   dansathan: 'Dansathan',
+  lainnya: 'Lainnya',
 };
 
 function targetOfficialLabel(value) {
   return TARGET_OFFICIAL_LABELS[value] || value;
 }
 
-function targetOfficialsLabel(values) {
+function targetOfficialsLabel(values, otherDetail) {
   if (!values || !values.length) return '-';
-  return values.map(targetOfficialLabel).join(', ');
+  return values
+    .map((v) => (v === 'lainnya' && otherDetail ? `Lainnya (${otherDetail})` : targetOfficialLabel(v)))
+    .join(', ');
 }
 
 function purposeCategoryLabel(category) {

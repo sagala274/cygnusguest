@@ -84,11 +84,14 @@ async function sendTelegramMessage(text) {
   }
 }
 
-async function notifyNewRegistration({ registrationNumber, company, targetOfficials, purpose, memberCount, memberNames, createdByName }) {
+async function notifyNewRegistration({ registrationNumber, company, targetOfficials, targetOfficialOther, purpose, memberCount, memberNames, createdByName }) {
   const settings = await getTelegramSettings();
   if (!settings || !settings.notify_new_registration) return;
 
-  const officialLabels = (targetOfficials || []).map((v) => TARGET_OFFICIAL_LABELS[v] || v).join(', ');
+  let officialLabels = (targetOfficials || []).map((v) => TARGET_OFFICIAL_LABELS[v] || v).join(', ');
+  if ((targetOfficials || []).includes('lainnya') && targetOfficialOther) {
+    officialLabels += ` (${targetOfficialOther})`;
+  }
 
   const lines = [
     '🆕 *Pendaftaran Tamu Baru*',

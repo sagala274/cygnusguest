@@ -8,6 +8,7 @@ const TARGET_OFFICIALS = [
   'dansatdak',
   'dansatinasi',
   'dansathan',
+  'lainnya',
 ];
 
 const PURPOSE_CATEGORIES = [
@@ -30,18 +31,30 @@ async function columnExists(table, column) {
 
 // MySQL (beda dengan MariaDB) tidak mendukung "ADD COLUMN IF NOT EXISTS" --
 // dicek manual lewat information_schema supaya tetap idempoten dan aman
-// dijalankan di setiap startup backend.
+// dijalankan di setiap startup backend. Untuk kolom SET/ENUM, daftar
+// nilainya di-MODIFY ulang setiap start -- supaya kalau daftar pilihan
+// (mis. TARGET_OFFICIALS) bertambah di kemudian hari, database yang sudah
+// pernah di-deploy sebelumnya ikut ter-update otomatis, bukan cuma
+// instalasi baru.
 async function ensureGuestExtraColumns() {
-  if (!(await columnExists('guests', 'target_officials'))) {
-    await pool.query(`
-      ALTER TABLE guests ADD COLUMN target_officials
-        SET(${TARGET_OFFICIALS.map((v) => `'${v}'`).join(',')}) NOT NULL DEFAULT '' AFTER company
-    `);
+  const targetOfficialsType = `SET(${TARGET_OFFICIALS.map((v) => `'${v}'`).join(',')})`;
+  if (await columnExists('guests', 'target_officials')) {
+    await pool.query(`ALTER TABLE guests MODIFY COLUMN target_officials ${targetOfficialsType} NOT NULL DEFAULT ''`);
+  } else {
+    await pool.query(`ALTER TABLE guests ADD COLUMN target_officials ${targetOfficialsType} NOT NULL DEFAULT '' AFTER company`);
   }
-  if (!(await columnExists('guests', 'purpose_category'))) {
+
+  const purposeCategoryType = `ENUM(${PURPOSE_CATEGORIES.map((v) => `'${v}'`).join(',')})`;
+  if (await columnExists('guests', 'purpose_category')) {
+    await pool.query(`ALTER TABLE guests MODIFY COLUMN purpose_category ${purposeCategoryType} NULL`);
+  } else {
+    await pool.query(`ALTER TABLE guests ADD COLUMN purpose_category ${purposeCategoryType} NULL AFTER purpose`);
+  }
+
+  if (!(await columnExists('guests', 'target_official_other'))) {
     await pool.query(`
-      ALTER TABLE guests ADD COLUMN purpose_category
-        ENUM(${PURPOSE_CATEGORIES.map((v) => `'${v}'`).join(',')}) NULL AFTER purpose
+      ALTER TABLE guests ADD COLUMN target_official_other
+        VARCHAR(200) NULL AFTER target_officials
     `);
   }
 }
@@ -58,6 +71,7 @@ const TARGET_OFFICIAL_LABELS = {
   dansatdak: 'Dansatdak',
   dansatinasi: 'Dansatinasi',
   dansathan: 'Dansathan',
+  lainnya: 'Lainnya',
 };
 
 module.exports = {
