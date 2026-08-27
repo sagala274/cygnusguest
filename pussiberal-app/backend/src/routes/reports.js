@@ -92,7 +92,7 @@ async function fetchVisits(from, to) {
   if (to) { where += ' AND DATE(g.created_at) <= :to'; params.to = to; }
 
   const [rows] = await pool.query(
-    `SELECT g.registration_number, g.company, g.status, vi.check_in_at, vi.check_out_at,
+    `SELECT g.registration_number, g.company, g.status, MAX(vi.check_in_at) AS check_in_at, MAX(vi.check_out_at) AS check_out_at,
             COUNT(gm.id) AS member_count,
             GROUP_CONCAT(gm.full_name ORDER BY gm.id SEPARATOR ', ') AS member_names
      FROM guests g
