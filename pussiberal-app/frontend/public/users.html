@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen Pengguna - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">P</div>
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav"></nav>
+    <div class="logout">
+      <a class="nav-item" href="#" id="logoutBtn"><span class="nav-icon">⎋</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">Manajemen Pengguna</div>
+      <div class="top-right">
+        <div class="profile">
+          <div class="profile-text">
+            <div class="profile-name" id="profileName"></div>
+            <div class="profile-role" id="profileRole"></div>
+          </div>
+          <div class="avatar"></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content" style="max-width: 1120px;">
+      <h1 class="page-title">Manajemen Pengguna</h1>
+      <p class="page-description">Kelola akun Administrator, Verifikator, dan Petugas Pos Depan.</p>
+
+      <div id="resultBox" class="result-box" style="display:none;"></div>
+
+      <div class="form-card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Nama Lengkap</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="userTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="form-card" id="editUserCard" style="margin-top:24px; display:none;">
+        <div class="section">
+          <h2 class="section-title">Edit Pengguna: <span id="editUsername"></span></h2>
+          <form id="editUserForm" class="grid">
+            <div class="field">
+              <label for="editFullName">NAMA LENGKAP <span class="required">*</span></label>
+              <input id="editFullName" required>
+            </div>
+            <div class="field">
+              <label for="editRole">ROLE <span class="required">*</span></label>
+              <select id="editRole" required>
+                <option value="pos_depan">Petugas Pos Depan</option>
+                <option value="verifikator">Verifikator</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="editPassword">PASSWORD BARU <span class="label-note">Kosongkan jika tidak diubah</span></label>
+              <input id="editPassword" type="password" minlength="8">
+            </div>
+            <div class="full" style="display:flex; gap:12px;">
+              <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+              <button type="button" class="btn" id="cancelEditBtn">Batal</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="form-card" style="margin-top:24px;">
+        <div class="section">
+          <h2 class="section-title">Tambah Pengguna Baru</h2>
+          <form id="createUserForm" class="grid">
+            <div class="field">
+              <label for="newUsername">USERNAME <span class="required">*</span></label>
+              <input id="newUsername" required>
+            </div>
+            <div class="field">
+              <label for="newFullName">NAMA LENGKAP <span class="required">*</span></label>
+              <input id="newFullName" required>
+            </div>
+            <div class="field">
+              <label for="newPassword">PASSWORD <span class="required">*</span></label>
+              <input id="newPassword" type="password" minlength="8" required>
+            </div>
+            <div class="field">
+              <label for="newRole">ROLE <span class="required">*</span></label>
+              <select id="newRole" required>
+                <option value="pos_depan">Petugas Pos Depan</option>
+                <option value="verifikator">Verifikator</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </div>
+            <div class="full">
+              <button type="submit" class="btn btn-primary">Tambah Pengguna</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/users.js"></script>
+</body>
+</html>

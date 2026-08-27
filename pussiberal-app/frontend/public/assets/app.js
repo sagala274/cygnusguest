@@ -1,0 +1,230 @@
+const API_BASE = '/api';
+
+function getToken() {
+  return localStorage.getItem('token');
+}
+
+function getUser() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || 'null');
+  } catch (err) {
+    return null;
+  }
+}
+
+function setSession(token, user) {
+  localStorage.setItem('token', token);
+  localStorage.setItem('user', JSON.stringify(user));
+}
+
+function clearSession() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+}
+
+function requireAuth() {
+  if (!getToken()) {
+    window.location.href = 'login.html';
+  }
+}
+
+function requireRole(...roles) {
+  const user = getUser();
+  if (!user || !roles.includes(user.role)) {
+    window.location.href = 'dashboard.html';
+  }
+}
+
+async function api(path, options = {}) {
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+
+  if (res.status === 401) {
+    clearSession();
+    window.location.href = 'login.html';
+    throw new Error('Unauthorized');
+  }
+
+  const isJson = (res.headers.get('content-type') || '').includes('application/json');
+  const body = isJson ? await res.json() : null;
+
+  if (!res.ok) {
+    const message = (body && (body.error || body.message)) || `Request gagal (${res.status})`;
+    const err = new Error(message);
+    err.fields = body && body.fields;
+    err.status = res.status;
+    throw err;
+  }
+
+  return body;
+}
+
+async function downloadFile(path, filename) {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (res.status === 401) {
+    clearSession();
+    window.location.href = 'login.html';
+    throw new Error('Unauthorized');
+  }
+
+  if (!res.ok) {
+    let message = `Gagal mengunduh (${res.status})`;
+    try {
+      const body = await res.json();
+      message = body.error || message;
+    } catch (err) {
+      /* response bukan JSON, gunakan pesan default */
+    }
+    throw new Error(message);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function roleLabel(role) {
+  return { admin: 'Administrator', verifikator: 'Verifikator', pos_depan: 'Petugas Pos Depan' }[role] || role;
+}
+
+function deviceStatusLabel(status) {
+  return {
+    tidak_membawa: 'Tidak membawa perangkat elektronik',
+    dititipkan: 'Dititipkan di Pos Penjagaan',
+    dibawa_alasan_khusus: 'Tetap membawa HP/perangkat elektronik lainnya (alasan khusus)',
+  }[status] || status;
+}
+
+function securityCategoryLabel(category) {
+  return {
+    aman: 'Aman',
+    perlu_perhatian: 'Perlu Perhatian',
+    perlu_penanganan: 'Perlu Penanganan',
+  }[category] || 'Belum Dianalisa';
+}
+
+function securityCategoryBadgeClass(category) {
+  return {
+    aman: 'badge-green',
+    perlu_perhatian: 'badge-amber',
+    perlu_penanganan: 'badge-red',
+  }[category] || 'badge-gray';
+}
+
+function actionLabel(action) {
+  const map = {
+    login: 'Login',
+    create_guest: 'Daftarkan Tamu',
+    update_guest: 'Ubah Data Tamu',
+    verify_guest: 'Verifikasi Tamu',
+    check_in: 'Check-in Tamu',
+    check_out: 'Check-out Tamu',
+    delete_guest: 'Hapus Tamu',
+    create_user: 'Buat Pengguna',
+    update_user: 'Ubah Pengguna',
+    delete_user: 'Hapus Pengguna',
+  };
+  return map[action] || action;
+}
+
+function formatAuditDetail(raw) {
+  if (!raw) return '-';
+  try {
+    const obj = JSON.parse(raw);
+    const parts = Object.entries(obj)
+      .filter(([, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`);
+    return parts.length ? parts.join(', ') : '-';
+  } catch (err) {
+    return raw;
+  }
+}
+
+function statusBadgeClass(status) {
+  const map = {
+    Draft: 'badge-gray',
+    Terdaftar: 'badge-blue',
+    'Menunggu Verifikasi': 'badge-amber',
+    Disetujui: 'badge-green',
+    Ditolak: 'badge-red',
+    'Sedang Berkunjung': 'badge-purple',
+    Selesai: 'badge-gray',
+  };
+  return map[status] || 'badge-gray';
+}
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatDateTime(value) {
+  if (!value) return '-';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function renderNav(active) {
+  const user = getUser();
+  if (!user) return;
+
+  const links = [
+    { href: 'dashboard.html', label: 'Dashboard', icon: '◆', roles: ['admin', 'pos_depan', 'verifikator'] },
+    { href: 'pendaftaran.html', label: 'Pendaftaran Tamu', icon: '✎', roles: ['admin', 'pos_depan'] },
+    { href: 'daftar-tamu.html', label: 'Daftar Tamu', icon: '☰', roles: ['admin', 'pos_depan', 'verifikator'] },
+    { href: 'daftar-tamu.html?status=Menunggu%20Verifikasi', label: 'Verifikasi Tamu', icon: '✔', roles: ['admin', 'verifikator'], matchHref: 'daftar-tamu.html' },
+    { href: 'laporan.html', label: 'Laporan', icon: '▤', roles: ['admin', 'verifikator'] },
+    { href: 'bank-data.html', label: 'Bank Data', icon: '🗂', roles: ['admin', 'verifikator'] },
+    { href: 'users.html', label: 'Manajemen Pengguna', icon: '⚙', roles: ['admin'] },
+    { href: 'audit-log.html', label: 'Log Aktivitas', icon: '🕐', roles: ['admin'] },
+  ];
+
+  const nav = document.getElementById('mainNav');
+  if (nav) {
+    nav.innerHTML = links
+      .filter((l) => l.roles.includes(user.role))
+      .map((l) => {
+        const isActive = (l.matchHref || l.href) === active;
+        return `
+        <a class="nav-item ${isActive ? 'active' : ''}" href="${l.href}">
+          <span class="nav-icon">${l.icon}</span><span>${l.label}</span>
+          ${isActive ? '<span class="nav-dot"></span>' : ''}
+        </a>
+      `;
+      })
+      .join('');
+  }
+
+  const nameEl = document.getElementById('profileName');
+  const roleEl = document.getElementById('profileRole');
+  if (nameEl) nameEl.textContent = user.full_name;
+  if (roleEl) roleEl.textContent = roleLabel(user.role);
+
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      clearSession();
+      window.location.href = 'login.html';
+    });
+  }
+}

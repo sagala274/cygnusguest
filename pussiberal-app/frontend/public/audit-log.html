@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log Aktivitas - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">P</div>
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav"></nav>
+    <div class="logout">
+      <a class="nav-item" href="#" id="logoutBtn"><span class="nav-icon">⎋</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">Log Aktivitas</div>
+      <div class="top-right">
+        <div class="profile">
+          <div class="profile-text">
+            <div class="profile-name" id="profileName"></div>
+            <div class="profile-role" id="profileRole"></div>
+          </div>
+          <div class="avatar"></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content" style="max-width: 1160px;">
+      <h1 class="page-title">Log Aktivitas Pengguna</h1>
+      <p class="page-description">Riwayat seluruh aktivitas pengguna dalam sistem: login, pendaftaran tamu, verifikasi, check-in/out, dan perubahan data. Hanya dapat diakses oleh Administrator.</p>
+
+      <div class="toolbar">
+        <input id="searchInput" type="text" placeholder="Cari username / nama / aksi">
+        <select id="actionFilter">
+          <option value="">Semua Aksi</option>
+          <option value="login">Login</option>
+          <option value="create_guest">Daftarkan Tamu</option>
+          <option value="update_guest">Ubah Data Tamu</option>
+          <option value="verify_guest">Verifikasi Tamu</option>
+          <option value="check_in">Check-in Tamu</option>
+          <option value="check_out">Check-out Tamu</option>
+          <option value="delete_guest">Hapus Tamu</option>
+          <option value="create_user">Buat Pengguna</option>
+          <option value="update_user">Ubah Pengguna</option>
+          <option value="delete_user">Hapus Pengguna</option>
+        </select>
+        <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700;">Dari
+          <input id="fromDate" type="date">
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700;">Sampai
+          <input id="toDate" type="date">
+        </label>
+      </div>
+
+      <div class="form-card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Pengguna</th>
+                <th>Aksi</th>
+                <th>Objek</th>
+                <th>Detail</th>
+              </tr>
+            </thead>
+            <tbody id="logTableBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/audit-log.js"></script>
+</body>
+</html>

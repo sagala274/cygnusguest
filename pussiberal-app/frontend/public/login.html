@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body class="login-body">
+  <div class="login-card">
+    <div class="brand" style="justify-content:center; margin-bottom: 28px;">
+      <div class="brand-mark">P</div>
+      <div>
+        <div class="brand-name" style="color:#171c2d;">PUSSIBERAL</div>
+        <div class="brand-subtitle" style="color:#667085;">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+
+    <form id="loginForm">
+      <div class="field">
+        <label for="username">USERNAME</label>
+        <input id="username" name="username" type="text" autocomplete="username" required>
+      </div>
+      <div class="field" style="margin-top:18px;">
+        <label for="password">PASSWORD</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <div id="loginError" class="error-message" style="display:none; margin-top:14px;"></div>
+      <button type="submit" class="btn btn-primary" style="width:100%; margin-top:24px;">Masuk</button>
+    </form>
+  </div>
+
+  <script src="assets/app.js"></script>
+  <script src="assets/login.js"></script>
+</body>
+</html>

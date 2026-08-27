@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pendaftaran Tamu - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">P</div>
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav"></nav>
+    <div class="logout">
+      <a class="nav-item" href="#" id="logoutBtn"><span class="nav-icon">⎋</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">Guest Management</div>
+      <div class="top-right">
+        <div class="profile">
+          <div class="profile-text">
+            <div class="profile-name" id="profileName"></div>
+            <div class="profile-role" id="profileRole"></div>
+          </div>
+          <div class="avatar"></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content">
+      <h1 class="page-title">Formulir Pendaftaran Tamu</h1>
+      <p class="page-description">
+        Lengkapi data tamu secara akurat sesuai kartu identitas resmi. Jika tamu berjumlah
+        lebih dari satu orang dari perusahaan yang sama, tambahkan seluruhnya di sini —
+        akan diverifikasi sebagai satu pendaftaran. Formulir ini terekam dalam log sistem
+        keamanan PUSSIBERAL.
+      </p>
+
+      <div id="resultBox" class="result-box" style="display:none;"></div>
+
+      <form class="form-card" id="guestForm">
+
+        <section class="section">
+          <h2 class="section-title">
+            <span class="section-icon">◆</span>
+            Perusahaan &amp; Keperluan
+          </h2>
+
+          <div class="grid">
+            <div class="field">
+              <label for="company">PERUSAHAAN / INSTANSI ASAL <span class="required">*</span></label>
+              <input id="company" name="company" type="text" placeholder="Nama instansi" required>
+            </div>
+          </div>
+
+          <div class="field full" style="margin-top:21px;">
+            <label for="purpose">KEPERLUAN MENGHADAP <span class="required">*</span></label>
+            <textarea id="purpose" name="purpose" placeholder="Deskripsikan tujuan kunjungan dan pihak yang dituju secara spesifik..." required></textarea>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-header-row">
+            <h2 class="section-title">
+              <span class="section-icon">✎</span>
+              Data Tamu
+            </h2>
+            <button type="button" class="btn btn-small" id="addMemberBtn">+ Tambah Tamu</button>
+          </div>
+
+          <div class="callout warn">
+            <span class="callout-label">⚠ Perhatian — Kebijakan Perangkat Elektronik</span>
+            <p>Setiap tamu yang membawa perangkat elektronik <strong>wajib menitipkan perangkat tersebut di Pos Penjagaan</strong> sebelum memasuki area PUSSIBERAL. Termasuk namun tidak terbatas pada: Handphone/Smartphone, Tablet, Laptop, Smartwatch, Kamera, dan perangkat elektronik komunikasi atau perekaman lainnya.</p>
+            <p>Apabila terdapat kebutuhan khusus untuk tetap membawa HP/perangkat elektronik lainnya, tamu wajib mencantumkan alasannya dan menunggu persetujuan petugas. Setiap tamu wajib mengonfirmasi kebijakan ini secara terpisah pada kartu masing-masing di bawah.</p>
+          </div>
+
+          <div id="membersContainer"></div>
+        </section>
+
+        <section class="section">
+          <div class="section-header-row">
+            <h2 class="section-title">
+              <span class="section-icon">▣</span>
+              Data Kendaraan
+            </h2>
+            <span class="optional-badge">Opsional</span>
+          </div>
+
+          <div class="grid">
+            <div class="field">
+              <label for="vehicle">JENIS MOBIL</label>
+              <select id="vehicle" name="vehicle">
+                <option value="">Pilih klasifikasi kendaraan</option>
+                <option>Mobil Sedan</option>
+                <option>MPV</option>
+                <option>SUV</option>
+                <option>Pickup</option>
+                <option>Van</option>
+                <option>Lainnya</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="plate">NOMOR POLISI (PLAT)</label>
+              <input id="plate" name="plate" type="text" placeholder="CONTOH: B 1234 XYZ">
+            </div>
+          </div>
+        </section>
+
+        <div class="actions">
+          <button type="button" class="btn" id="cancelBtn">Batal</button>
+          <button type="submit" class="btn btn-primary">✔ &nbsp; Simpan Pendaftaran</button>
+        </div>
+
+      </form>
+    </section>
+  </main>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/pendaftaran.js"></script>
+</body>
+</html>

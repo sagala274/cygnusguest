@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daftar Tamu - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">P</div>
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav"></nav>
+    <div class="logout">
+      <a class="nav-item" href="#" id="logoutBtn"><span class="nav-icon">⎋</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">Daftar Tamu</div>
+      <div class="top-right">
+        <div class="profile">
+          <div class="profile-text">
+            <div class="profile-name" id="profileName"></div>
+            <div class="profile-role" id="profileRole"></div>
+          </div>
+          <div class="avatar"></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content" style="max-width: 1120px;">
+      <h1 class="page-title">Daftar Tamu</h1>
+      <p class="page-description">Cari dan kelola data tamu berdasarkan nama, NIK, perusahaan, atau nomor registrasi.</p>
+
+      <div class="toolbar">
+        <input id="searchInput" type="text" placeholder="Cari nama / NIK / perusahaan / no. registrasi">
+        <select id="statusFilter">
+          <option value="">Semua Status</option>
+          <option>Draft</option>
+          <option>Terdaftar</option>
+          <option>Menunggu Verifikasi</option>
+          <option>Disetujui</option>
+          <option>Ditolak</option>
+          <option>Sedang Berkunjung</option>
+          <option>Selesai</option>
+        </select>
+      </div>
+
+      <div class="form-card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No. Registrasi</th>
+                <th>Perusahaan</th>
+                <th>Tamu</th>
+                <th>Jml</th>
+                <th>Status</th>
+                <th>Terdaftar</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="guestTableBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/daftar-tamu.js"></script>
+</body>
+</html>

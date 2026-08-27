@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PUSSIBERAL - Guest Management</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --navy: #171c2d;
+      --navy-2: #1e2438;
+      --text: #111827;
+      --muted: #667085;
+      --line: #d9dde6;
+      --bg: #f5f7fa;
+      --white: #fff;
+      --purple: #7867e8;
+      --purple-soft: #dfe3ff;
+      --danger: #d92d20;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    .app {
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      min-height: 100vh;
+      background: var(--navy);
+      color: #aeb6cf;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 14px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 34px;
+      padding-left: 2px;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 3px;
+      background: #f7f8fb;
+      color: var(--navy);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 20px;
+    }
+
+    .brand-name {
+      color: #fff;
+      font-weight: 800;
+      font-size: 19px;
+      letter-spacing: .2px;
+    }
+
+    .brand-subtitle {
+      color: #78829f;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      margin-top: 5px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav-item {
+      height: 39px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 14px;
+      border-radius: 3px;
+      color: #8792b2;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .3px;
+    }
+
+    .nav-item:hover { background: #222a40; color: #fff; }
+
+    .nav-item.active {
+      background: #dfe3f6;
+      color: #5f6c8d;
+    }
+
+    .nav-icon {
+      width: 18px;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    .nav-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #8c5bea;
+      margin-left: auto;
+    }
+
+    .logout {
+      margin-top: auto;
+      border-top: 1px solid rgba(255,255,255,.08);
+      padding-top: 20px;
+    }
+
+    /* Main */
+    .main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .topbar {
+      height: 57px;
+      background: #fff;
+      border-bottom: 1px solid #cfd4df;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px 0 36px;
+    }
+
+    .top-title {
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+
+    .top-icon {
+      font-size: 21px;
+      color: #344054;
+    }
+
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .profile-text {
+      text-align: right;
+      line-height: 1.2;
+    }
+
+    .profile-name {
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    .profile-role {
+      font-size: 10px;
+      color: #667085;
+      margin-top: 4px;
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #ddd;
+      border: 1px solid #bfc4cc;
+    }
+
+    .content {
+      max-width: 900px;
+      margin: 38px auto 28px;
+      padding: 0 22px;
+    }
+
+    .page-title {
+      font-size: 28px;
+      line-height: 1.15;
+      margin: 0 0 10px;
+      font-weight: 800;
+      letter-spacing: -.6px;
+    }
+
+    .page-description {
+      margin: 0 0 30px;
+      color: #344054;
+      font-size: 14px;
+      line-height: 1.65;
+      max-width: 790px;
+    }
+
+    /* Form card */
+    .form-card {
+      background: #fff;
+      border: 1px solid #dce1e8;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(16,24,40,.04);
+    }
+
+    .section {
+      padding: 30px 28px;
+      border-bottom: 1px solid #dfe3ea;
+    }
+
+    .section:last-of-type { border-bottom: 0; }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin: 0 0 25px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .section-icon {
+      width: 20px;
+      text-align: center;
+      font-size: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 21px;
+      row-gap: 27px;
+    }
+
+    .field label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 17px;
+      margin-bottom: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+
+    .required { color: var(--danger); }
+
+    .label-note {
+      color: #667085;
+      font-size: 9px;
+      font-weight: 500;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid #c9ced8;
+      border-radius: 4px;
+      background: #fff;
+      color: #172033;
+      outline: none;
+      transition: border .15s, box-shadow .15s;
+    }
+
+    input, select {
+      height: 45px;
+      padding: 0 10px;
+      font-size: 13px;
+    }
+
+    textarea {
+      min-height: 87px;
+      padding: 12px 10px;
+      resize: vertical;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    input::placeholder, textarea::placeholder { color: #718096; }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #7b6cf0;
+      box-shadow: 0 0 0 2px rgba(123,108,240,.12);
+    }
+
+    .error input {
+      border-color: #f04438;
+      padding-right: 42px;
+    }
+
+    .input-wrap { position: relative; }
+
+    .error-icon {
+      position: absolute;
+      right: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--danger);
+      font-weight: 900;
+      font-size: 16px;
+    }
+
+    .error-message {
+      margin-top: 8px;
+      color: var(--danger);
+      font-size: 11px;
+      line-height: 1.45;
+      font-weight: 600;
+    }
+
+    .full { grid-column: 1 / -1; }
+
+    .optional-badge {
+      display: inline-block;
+      background: #e8e9ed;
+      color: #667085;
+      border-radius: 2px;
+      padding: 5px 8px;
+      font-size: 9px;
+      font-weight: 600;
+    }
+
+    .section-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 25px;
+    }
+
+    .section-header-row .section-title { margin: 0; }
+
+    .actions {
+      padding: 29px 28px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 14px;
+      background: #fafbfc;
+    }
+
+    .btn {
+      height: 48px;
+      min-width: 90px;
+      border-radius: 4px;
+      padding: 0 21px;
+      border: 1px solid #8d93a0;
+      background: #fff;
+      color: #172033;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      min-width: 254px;
+      background: #000;
+      border-color: #000;
+      color: #fff;
+    }
+
+    .btn:hover { opacity: .88; }
+
+    /* Responsive */
+    @media (max-width: 850px) {
+      .sidebar { width: 210px; }
+      .content { margin-top: 28px; }
+    }
+
+    @media (max-width: 700px) {
+      .sidebar {
+        width: 68px;
+        padding: 20px 8px;
+      }
+
+      .brand-name, .brand-subtitle, .nav-item span:not(.nav-icon),
+      .nav-dot { display: none; }
+
+      .brand { justify-content: center; }
+      .nav-item { justify-content: center; padding: 0; }
+      .logout .nav-item { justify-content: center; }
+
+      .topbar { padding: 0 16px; }
+      .top-title { font-size: 14px; }
+      .profile-text { display: none; }
+
+      .content { padding: 0 14px; }
+      .grid { grid-template-columns: 1fr; }
+      .full { grid-column: auto; }
+
+      .actions {
+        flex-direction: column-reverse;
+      }
+
+      .btn, .btn-primary { width: 100%; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">⬟</div>
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-item" href="#">
+        <span class="nav-icon">▦</span><span>Dashboard</span>
+      </a>
+
+      <a class="nav-item active" href="#">
+        <span class="nav-icon">♟</span><span>Pendaftaran Tamu</span>
+        <span class="nav-dot"></span>
+      </a>
+
+      <a class="nav-item" href="#">
+        <span class="nav-icon">♧</span><span>Daftar Tamu</span>
+      </a>
+
+      <a class="nav-item" href="#">
+        <span class="nav-icon">▥</span><span>Laporan</span>
+      </a>
+
+      <a class="nav-item" href="#">
+        <span class="nav-icon">♧</span><span>Manajemen Pengguna</span>
+      </a>
+    </nav>
+
+    <div class="logout">
+      <a class="nav-item" href="#">
+        <span class="nav-icon">↪</span><span>Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <header class="topbar">
+      <div class="top-title">Guest Management</div>
+
+      <div class="top-right">
+        <div class="top-icon">♧</div>
+        <div class="top-icon">⚙</div>
+
+        <div class="profile">
+          <div class="profile-text">
+            <div class="profile-name">Admin Jaga 1</div>
+            <div class="profile-role">Pos Utama</div>
+          </div>
+          <div class="avatar" aria-label="Foto pengguna"></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content">
+      <h1 class="page-title">Formulir Pendaftaran Tamu</h1>
+      <p class="page-description">
+        Lengkapi data identitas tamu secara akurat sesuai kartu identitas resmi.
+        Formulir ini terekam dalam log sistem keamanan PUSSIBERAL.
+      </p>
+
+      <form class="form-card" id="guestForm">
+
+        <!-- Identitas -->
+        <section class="section">
+          <h2 class="section-title">
+            <span class="section-icon">♙</span>
+            Identitas Pribadi
+          </h2>
+
+          <div class="grid">
+
+            <div class="field error">
+              <label for="nik">
+                <span>NIK KTP <span class="required">*</span></span>
+                <span class="label-note">16 Digit</span>
+              </label>
+
+              <div class="input-wrap">
+                <input
+                  id="nik"
+                  name="nik"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="16"
+                  value="327104120390"
+                  placeholder="Masukkan NIK KTP"
+                  aria-invalid="true"
+                >
+                <span class="error-icon">!</span>
+              </div>
+
+              <div class="error-message">
+                Invalid: NIK kurang 4 digit. Harap pastikan jumlah digit sesuai KTP.
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="name">NAMA LENGKAP <span class="required">*</span></label>
+              <input id="name" name="name" type="text" placeholder="Sesuai kartu identitas">
+            </div>
+
+            <div class="field">
+              <label for="company">PERUSAHAAN / INSTANSI ASAL</label>
+              <input id="company" name="company" type="text" placeholder="Nama instansi (jika ada)">
+            </div>
+
+            <div class="field">
+              <label for="position">JABATAN</label>
+              <input id="position" name="position" type="text" placeholder="Jabatan atau profesi">
+            </div>
+
+            <div class="field">
+              <label for="phone">NOMOR HANDPHONE <span class="required">*</span></label>
+              <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="08xxxxxxxxxx">
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Keperluan -->
+        <section class="section">
+          <h2 class="section-title">
+            <span class="section-icon">♧</span>
+            Detail Kunjungan
+          </h2>
+
+          <div class="field full">
+            <label for="purpose">KEPERLUAN MENGHADAP <span class="required">*</span></label>
+            <textarea
+              id="purpose"
+              name="purpose"
+              placeholder="Deskripsikan tujuan kunjungan dan pihak yang dituju secara spesifik..."
+            ></textarea>
+          </div>
+        </section>
+
+        <!-- Kendaraan -->
+        <section class="section">
+          <div class="section-header-row">
+            <h2 class="section-title">
+              <span class="section-icon">▣</span>
+              Data Kendaraan
+            </h2>
+            <span class="optional-badge">Opsional</span>
+          </div>
+
+          <div class="grid">
+            <div class="field">
+              <label for="vehicle">JENIS MOBIL</label>
+              <select id="vehicle" name="vehicle">
+                <option value="">Pilih klasifikasi kendaraan</option>
+                <option>Mobil Sedan</option>
+                <option>MPV</option>
+                <option>SUV</option>
+                <option>Pickup</option>
+                <option>Van</option>
+                <option>Lainnya</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="plate">NOMOR POLISI (PLAT)</label>
+              <input id="plate" name="plate" type="text" placeholder="CONTOH: B 1234 XYZ">
+            </div>
+          </div>
+        </section>
+
+        <div class="actions">
+          <button type="button" class="btn" id="cancelBtn">Batal</button>
+          <button type="submit" class="btn btn-primary">▣ &nbsp; Simpan Pendaftaran</button>
+        </div>
+
+      </form>
+    </section>
+  </main>
+</div>
+
+<script>
+  const form = document.getElementById('guestForm');
+  const nik = document.getElementById('nik');
+  const cancelBtn = document.getElementById('cancelBtn');
+
+  function validateNik() {
+    const wrapper = nik.closest('.field');
+    const existingError = wrapper.querySelector('.error-message');
+
+    if (nik.value.length !== 16) {
+      wrapper.classList.add('error');
+      nik.setAttribute('aria-invalid', 'true');
+
+      if (!existingError) {
+        const msg = document.createElement('div');
+        msg.className = 'error-message';
+        msg.textContent = `Invalid: NIK kurang ${Math.max(0, 16 - nik.value.length)} digit. Harap pastikan jumlah digit sesuai KTP.`;
+        nik.parentElement.insertAdjacentElement('afterend', msg);
+      }
+      return false;
+    }
+
+    wrapper.classList.remove('error');
+    nik.removeAttribute('aria-invalid');
+
+    if (existingError) existingError.remove();
+    const icon = wrapper.querySelector('.error-icon');
+    if (icon) icon.remove();
+
+    return true;
+  }
+
+  nik.addEventListener('input', () => {
+    nik.value = nik.value.replace(/\D/g, '').slice(0, 16);
+    validateNik();
+  });
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    if (!validateNik()) {
+      nik.focus();
+      return;
+    }
+
+    const required = ['name', 'phone', 'purpose'];
+    let valid = true;
+
+    required.forEach(id => {
+      const field = document.getElementById(id);
+      if (!field.value.trim()) {
+        field.style.borderColor = '#f04438';
+        valid = false;
+      } else {
+        field.style.borderColor = '';
+      }
+    });
+
+    if (!valid) return;
+
+    alert('Pendaftaran tamu berhasil disiapkan.');
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    if (confirm('Batalkan pengisian formulir?')) {
+      form.reset();
+      validateNik();
+    }
+  });
+</script>
+</body>
+</html>
