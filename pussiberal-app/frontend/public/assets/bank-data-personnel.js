@@ -4,6 +4,7 @@ renderNav('bank-data.html');
 
 const params = new URLSearchParams(window.location.search);
 const nik = params.get('nik');
+const memberId = params.get('member_id');
 const resultBox = document.getElementById('resultBox');
 
 if (!nik) {
@@ -18,7 +19,8 @@ function showMessage(message, isError) {
 
 async function load() {
   try {
-    const res = await api(`/bank-data/personnel/${encodeURIComponent(nik)}`);
+    const query = memberId ? `?member_id=${encodeURIComponent(memberId)}` : '';
+    const res = await api(`/bank-data/personnel/${encodeURIComponent(nik)}${query}`);
     const p = res.data;
 
     document.getElementById('personName').textContent = p.full_name;
@@ -48,8 +50,9 @@ async function load() {
     document.getElementById('visitsTableBody').innerHTML = p.visits
       .map(
         (v) => `
-      <tr>
+      <tr${String(v.member_id) === memberId ? ' style="background:#fafbff;"' : ''}>
         <td>${formatDateTime(v.created_at)}</td>
+        <td>${escapeHtml(v.full_name)}</td>
         <td>${escapeHtml(v.registration_number)}</td>
         <td>${escapeHtml(v.company)}</td>
         <td>${escapeHtml(v.position)}</td>
@@ -69,7 +72,7 @@ async function load() {
 document.getElementById('downloadBtn').addEventListener('click', async () => {
   resultBox.style.display = 'none';
   try {
-    const p = new URLSearchParams({ format: 'pdf', scope: 'personnel', nik });
+    const p = new URLSearchParams({ format: 'pdf', scope: 'personnel', nik, ...(memberId ? { member_id: memberId } : {}) });
     await downloadFile(`/bank-data/export?${p.toString()}`, `bank-data-personel-${nik}.pdf`);
   } catch (err) {
     showMessage(err.message, true);

@@ -138,24 +138,31 @@ router.get('/personnel/:nik', asyncHandler(async (req, res) => {
 
   if (!visits.length) return res.status(404).json({ error: 'Data personel tidak ditemukan' });
 
-  const latest = visits[0];
+  // Kalau diakses dari baris tertentu di Bank Data (member_id disertakan),
+  // pakai identitas baris itu sebagai "headline" laporan -- bukan selalu
+  // kunjungan terbaru. Penting saat satu NIK tercatat dengan >1 nama
+  // berbeda (lihat nik_shared_by_multiple_names): mengklik nama tertentu
+  // harus menampilkan laporan nama itu, bukan diam-diam beralih ke nama
+  // dari kunjungan lain yang kebetulan lebih baru.
+  const requestedMemberId = req.query.member_id ? Number(req.query.member_id) : null;
+  const headline = (requestedMemberId && visits.find((v) => v.id === requestedMemberId)) || visits[0];
   const companies = [...new Set(visits.map((r) => r.company.trim()))];
 
   res.json({
     data: {
-      nik: latest.nik,
-      full_name: latest.full_name,
-      phone_number: latest.phone_number,
-      position: latest.position,
-      employee_id: latest.employee_id,
-      affiliation: latest.affiliation,
-      security_category: latest.security_category,
-      analysis_notes: latest.analysis_notes,
-      visit_count: latest.visit_count,
+      nik: headline.nik,
+      full_name: headline.full_name,
+      phone_number: headline.phone_number,
+      position: headline.position,
+      employee_id: headline.employee_id,
+      affiliation: headline.affiliation,
+      security_category: headline.security_category,
+      analysis_notes: headline.analysis_notes,
+      visit_count: headline.visit_count,
       first_visit_at: visits[visits.length - 1].created_at,
-      last_visit_at: latest.last_visit_at,
+      last_visit_at: headline.last_visit_at,
       companies,
-      nik_shared_by_multiple_names: latest.nik_shared_by_multiple_names,
+      nik_shared_by_multiple_names: headline.nik_shared_by_multiple_names,
       visits: visits.map((r) => ({
         guest_id: r.guest_id,
         member_id: r.id,
@@ -215,12 +222,13 @@ const GROUP_COLUMNS = [
 ];
 
 const VISIT_HISTORY_COLUMNS = [
-  { header: 'Tanggal', width: 75, value: (r) => new Date(r.created_at).toLocaleDateString('id-ID') },
-  { header: 'No. Registrasi', width: 105, value: (r) => r.registration_number },
-  { header: 'Perusahaan', width: 130, value: (r) => r.company },
-  { header: 'Jabatan', width: 90, value: (r) => r.position },
-  { header: 'Kategori', width: 90, value: (r) => securityCategoryLabelId(r.security_category) },
-  { header: 'Status', width: 80, value: (r) => r.registration_status },
+  { header: 'Tanggal', width: 65, value: (r) => new Date(r.created_at).toLocaleDateString('id-ID') },
+  { header: 'Nama', width: 85, value: (r) => r.full_name },
+  { header: 'No. Registrasi', width: 90, value: (r) => r.registration_number },
+  { header: 'Perusahaan', width: 95, value: (r) => r.company },
+  { header: 'Jabatan', width: 65, value: (r) => r.position },
+  { header: 'Kategori', width: 75, value: (r) => securityCategoryLabelId(r.security_category) },
+  { header: 'Status', width: 65, value: (r) => r.registration_status },
 ];
 
 function renderFullBankDataPDF(doc, groups) {
@@ -245,8 +253,8 @@ function renderGroupPDF(doc, company, records) {
   drawPersonnelTable(doc, records, GROUP_COLUMNS);
 }
 
-function renderPersonnelPDF(doc, visits) {
-  const latest = visits[0];
+function renderPersonnelPDF(doc, visits, headlineRecord) {
+  const latest = headlineRecord || visits[0];
 
   doc.fontSize(16).font('Helvetica-Bold').text('Laporan Personel - Bank Data PUSSIBERAL', { align: 'center' });
   doc.fontSize(9).font('Helvetica').text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, { align: 'center' });
@@ -286,7 +294,7 @@ function renderPersonnelPDF(doc, visits) {
 
 // GET /api/bank-data/export?format=pdf&scope=all|company|personnel&company=&nik=&q=&category=
 router.get('/export', asyncHandler(async (req, res) => {
-  const { format, scope = 'all', company, nik, q, category } = req.query;
+  const { format, scope = 'all', company, nik, member_id, q, category } = req.query;
 
   if (format !== 'pdf') {
     return res.status(400).json({ error: 'Format tidak didukung. Gunakan format=pdf' });
@@ -304,9 +312,12 @@ router.get('/export', asyncHandler(async (req, res) => {
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     if (!visits.length) return res.status(404).json({ error: 'Data personel tidak ditemukan' });
 
+    const requestedMemberId = member_id ? Number(member_id) : null;
+    const headlineRecord = (requestedMemberId && visits.find((v) => v.id === requestedMemberId)) || visits[0];
+
     layout = 'portrait';
-    filename = `bank-data-${sanitizeFilename(visits[0].full_name)}.pdf`;
-    renderFn = (doc) => renderPersonnelPDF(doc, visits);
+    filename = `bank-data-${sanitizeFilename(headlineRecord.full_name)}.pdf`;
+    renderFn = (doc) => renderPersonnelPDF(doc, visits, headlineRecord);
   } else if (scope === 'company') {
     if (!company) return res.status(400).json({ error: 'Parameter company wajib diisi' });
     const groupRecords = allRecords.filter((r) => {
