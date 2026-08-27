@@ -30,6 +30,9 @@ services:
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       PORT: 3000
+      BACKUP_DIR: /app/backups
+    volumes:
+      - ./backups:/app/backups
     depends_on:
       mysql:
         condition: service_healthy

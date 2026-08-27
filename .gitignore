@@ -7,6 +7,9 @@ pussiberal-app/certs/
 *.key
 *.crt
 
+# Database backups -- berisi data pribadi tamu asli (NIK, HP, dll), jangan pernah dicommit
+pussiberal-app/backups/
+
 # Dependencies
 node_modules/
 pussiberal-app/backend/node_modules/

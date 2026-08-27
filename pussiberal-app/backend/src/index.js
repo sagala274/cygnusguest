@@ -10,6 +10,8 @@ const userRoutes = require('./routes/users');
 const reportRoutes = require('./routes/reports');
 const auditLogRoutes = require('./routes/auditLogs');
 const bankDataRoutes = require('./routes/bankData');
+const backupRoutes = require('./routes/backups');
+const { startBackupScheduler } = require('./utils/backupScheduler');
 
 const app = express();
 
@@ -35,6 +37,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/bank-data', bankDataRoutes);
+app.use('/api/backups', backupRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint tidak ditemukan' });
@@ -81,6 +84,7 @@ async function start() {
   const port = process.env.PORT || 3000;
   await waitForDatabase();
   await ensureAdminSeed();
+  startBackupScheduler();
   app.listen(port, () => console.log(`Backend berjalan di port ${port}`));
 }
 

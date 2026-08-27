@@ -136,6 +136,8 @@ function actionLabel(action) {
     create_user: 'Buat Pengguna',
     update_user: 'Ubah Pengguna',
     delete_user: 'Hapus Pengguna',
+    create_backup: 'Buat Backup Database',
+    download_backup: 'Unduh Backup Database',
   };
   return map[action] || action;
 }
@@ -196,6 +198,7 @@ function renderNav(active) {
     { href: 'bank-data.html', label: 'Bank Data', icon: '🗂', roles: ['admin', 'verifikator'] },
     { href: 'users.html', label: 'Manajemen Pengguna', icon: '⚙', roles: ['admin'] },
     { href: 'audit-log.html', label: 'Log Aktivitas', icon: '🕐', roles: ['admin'] },
+    { href: 'backup.html', label: 'Backup Database', icon: '💾', roles: ['admin'] },
   ];
 
   const nav = document.getElementById('mainNav');

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backup Database - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">P</div>
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav"></nav>
+    <div class="logout">
+      <a class="nav-item" href="#" id="logoutBtn"><span class="nav-icon">⎋</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">Backup Database</div>
+      <div class="top-right">
+        <div class="profile">
+          <div class="profile-text">
+            <div class="profile-name" id="profileName"></div>
+            <div class="profile-role" id="profileRole"></div>
+          </div>
+          <div class="avatar"></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content" style="max-width: 1000px;">
+      <h1 class="page-title">Backup Database</h1>
+      <p class="page-description">
+        Backup basis data (format .sql) dibuat otomatis sesuai jadwal dan dapat diunduh kapan saja.
+        Rotasi otomatis: harian menyimpan 7 file terakhir, mingguan 8 file terakhir, bulanan 12 file terakhir.
+        Khusus dapat diakses oleh Administrator.
+      </p>
+
+      <div id="resultBox" class="result-box" style="display:none;"></div>
+
+      <div class="form-card" style="margin-bottom:20px;">
+        <div class="section">
+          <div class="section-header-row">
+            <h2 class="section-title">Backup Harian</h2>
+            <button type="button" class="btn btn-small run-backup-btn" data-type="daily">Buat Backup Sekarang</button>
+          </div>
+          <p class="page-description" style="margin-bottom:16px;">Berjalan otomatis tiap hari pukul 01:00. Menyimpan 7 file terakhir.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nama File</th><th>Ukuran</th><th>Dibuat</th><th></th></tr></thead>
+              <tbody id="dailyTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card" style="margin-bottom:20px;">
+        <div class="section">
+          <div class="section-header-row">
+            <h2 class="section-title">Backup Mingguan</h2>
+            <button type="button" class="btn btn-small run-backup-btn" data-type="weekly">Buat Backup Sekarang</button>
+          </div>
+          <p class="page-description" style="margin-bottom:16px;">Berjalan otomatis tiap Minggu pukul 01:30. Menyimpan 8 file terakhir.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nama File</th><th>Ukuran</th><th>Dibuat</th><th></th></tr></thead>
+              <tbody id="weeklyTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="section">
+          <div class="section-header-row">
+            <h2 class="section-title">Backup Bulanan</h2>
+            <button type="button" class="btn btn-small run-backup-btn" data-type="monthly">Buat Backup Sekarang</button>
+          </div>
+          <p class="page-description" style="margin-bottom:16px;">Berjalan otomatis tanggal 1 tiap bulan pukul 02:00. Menyimpan 12 file terakhir.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nama File</th><th>Ukuran</th><th>Dibuat</th><th></th></tr></thead>
+              <tbody id="monthlyTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/backup.js"></script>
+</body>
+</html>
