@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konfigurasi AI - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">P</div>
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav"></nav>
+    <div class="logout">
+      <a class="nav-item" href="#" id="logoutBtn"><span class="nav-icon">⎋</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">Konfigurasi AI</div>
+      <div class="top-right">
+        <div class="profile">
+          <div class="profile-text">
+            <div class="profile-name" id="profileName"></div>
+            <div class="profile-role" id="profileRole"></div>
+          </div>
+          <div class="avatar"></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content" style="max-width: 800px;">
+      <h1 class="page-title">Konfigurasi AI</h1>
+      <p class="page-description">
+        Atur model dan API key Claude (Anthropic) yang digunakan oleh menu AI Chat.
+        Khusus dapat diakses oleh Administrator.
+      </p>
+
+      <div id="resultBox" class="result-box" style="display:none;"></div>
+
+      <div class="callout" id="apiKeyStatusCallout">
+        <span class="callout-label" id="apiKeyStatusLabel">Memuat status...</span>
+        <p id="apiKeyStatusText"></p>
+      </div>
+
+      <div class="form-card">
+        <div class="section">
+          <h2 class="section-title">Pengaturan Model</h2>
+          <form id="aiConfigForm" class="grid">
+            <div class="field full">
+              <label for="apiKey">API KEY ANTHROPIC <span class="label-note">Kosongkan jika tidak ingin mengubah</span></label>
+              <input id="apiKey" type="password" placeholder="sk-ant-...">
+            </div>
+
+            <div class="field full">
+              <label for="model">MODEL <span class="required">*</span></label>
+              <select id="model" required>
+                <option value="claude-opus-5">Claude Opus 5 &mdash; paling mumpuni ($5/$25 per 1M token)</option>
+                <option value="claude-sonnet-5">Claude Sonnet 5 &mdash; seimbang ($2/$10 per 1M token)</option>
+                <option value="claude-haiku-4-5">Claude Haiku 4.5 &mdash; tercepat & termurah ($1/$5 per 1M token)</option>
+              </select>
+            </div>
+
+            <div class="field full">
+              <label for="systemPrompt">INSTRUKSI TAMBAHAN <span class="label-note">Opsional, ditambahkan ke instruksi dasar asisten</span></label>
+              <textarea id="systemPrompt" rows="4" placeholder="Contoh: Selalu sertakan saran tindak lanjut di akhir jawaban."></textarea>
+            </div>
+
+            <div class="full">
+              <button type="submit" class="btn btn-primary">Simpan Konfigurasi</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/ai-config.js"></script>
+</body>
+</html>

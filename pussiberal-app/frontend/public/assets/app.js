@@ -138,6 +138,8 @@ function actionLabel(action) {
     delete_user: 'Hapus Pengguna',
     create_backup: 'Buat Backup Database',
     download_backup: 'Unduh Backup Database',
+    ai_chat_query: 'Tanya AI Chat',
+    update_ai_settings: 'Ubah Konfigurasi AI',
   };
   return map[action] || action;
 }
@@ -196,9 +198,11 @@ function renderNav(active) {
     { href: 'daftar-tamu.html?status=Menunggu%20Verifikasi', label: 'Verifikasi Tamu', icon: '✔', roles: ['admin', 'verifikator'], matchHref: 'daftar-tamu.html' },
     { href: 'laporan.html', label: 'Laporan', icon: '▤', roles: ['admin', 'verifikator'] },
     { href: 'bank-data.html', label: 'Bank Data', icon: '🗂', roles: ['admin', 'verifikator'] },
+    { href: 'ai-chat.html', label: 'AI Chat', icon: '✦', roles: ['admin'] },
     { href: 'users.html', label: 'Manajemen Pengguna', icon: '⚙', roles: ['admin'] },
     { href: 'audit-log.html', label: 'Log Aktivitas', icon: '🕐', roles: ['admin'] },
     { href: 'backup.html', label: 'Backup Database', icon: '💾', roles: ['admin'] },
+    { href: 'ai-config.html', label: 'Konfigurasi AI', icon: '🛠', roles: ['admin'] },
   ];
 
   const nav = document.getElementById('mainNav');

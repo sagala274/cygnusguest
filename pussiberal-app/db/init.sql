@@ -63,6 +63,20 @@ CREATE TABLE IF NOT EXISTS visits (
   FOREIGN KEY (guest_id) REFERENCES guests(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Baris tunggal (id selalu 1) menyimpan konfigurasi provider/model AI Chat.
+CREATE TABLE IF NOT EXISTS ai_settings (
+  id TINYINT PRIMARY KEY DEFAULT 1,
+  provider VARCHAR(50) NOT NULL DEFAULT 'anthropic',
+  model VARCHAR(100) NOT NULL DEFAULT 'claude-opus-5',
+  api_key_encrypted TEXT NULL,
+  system_prompt TEXT NULL,
+  updated_by INT NULL,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT chk_ai_settings_singleton CHECK (id = 1)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO ai_settings (id, provider, model) VALUES (1, 'anthropic', 'claude-opus-5');
+
 CREATE TABLE IF NOT EXISTS audit_logs (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NULL,

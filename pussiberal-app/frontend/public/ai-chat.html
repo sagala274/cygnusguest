@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Chat - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">P</div>
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav"></nav>
+    <div class="logout">
+      <a class="nav-item" href="#" id="logoutBtn"><span class="nav-icon">⎋</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">AI Chat</div>
+      <div class="top-right">
+        <div class="profile">
+          <div class="profile-text">
+            <div class="profile-name" id="profileName"></div>
+            <div class="profile-role" id="profileRole"></div>
+          </div>
+          <div class="avatar"></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content" style="max-width: 900px;">
+      <h1 class="page-title">AI Chat</h1>
+      <p class="page-description">
+        Tanyakan analisa data platform ini kepada AI &mdash; statistik kunjungan, kategori keamanan personel,
+        bank data, dan aktivitas pengguna. Jawaban didasarkan pada ringkasan data terkini di sistem.
+      </p>
+
+      <div id="resultBox" class="result-box" style="display:none;"></div>
+
+      <div class="chat-suggestions" id="chatSuggestions">
+        <button type="button" class="chat-suggestion-btn" data-q="Berapa total tamu terdaftar dan berapa yang sedang berkunjung hari ini?">Ringkasan kunjungan hari ini</button>
+        <button type="button" class="chat-suggestion-btn" data-q="Bagaimana distribusi kategori keamanan personel saat ini? Apakah ada yang perlu penanganan khusus?">Distribusi kategori keamanan</button>
+        <button type="button" class="chat-suggestion-btn" data-q="Apakah ada NIK yang tercatat dengan lebih dari satu nama berbeda? Jelaskan risikonya.">Cek anomali NIK</button>
+        <button type="button" class="chat-suggestion-btn" data-q="Perusahaan mana saja dengan jumlah pendaftaran tamu terbanyak?">Perusahaan teraktif</button>
+      </div>
+
+      <div class="chat-card">
+        <div class="chat-window" id="chatWindow">
+          <div class="chat-empty" id="chatEmpty">Mulai percakapan dengan mengetik pertanyaan di bawah, atau pilih salah satu saran di atas.</div>
+        </div>
+        <form class="chat-input-row" id="chatForm">
+          <textarea id="chatInput" placeholder="Tulis pertanyaan Anda tentang data platform ini..." rows="1"></textarea>
+          <button type="submit" class="btn btn-primary" id="chatSendBtn">Kirim</button>
+        </form>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/ai-chat.js"></script>
+</body>
+</html>
