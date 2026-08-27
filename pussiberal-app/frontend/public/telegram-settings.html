@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifikasi Telegram - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">P</div>
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav"></nav>
+    <div class="logout">
+      <a class="nav-item" href="#" id="logoutBtn"><span class="nav-icon">⎋</span><span>Logout</span></a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">Notifikasi Telegram</div>
+      <div class="top-right">
+        <div class="profile">
+          <div class="profile-text">
+            <div class="profile-name" id="profileName"></div>
+            <div class="profile-role" id="profileRole"></div>
+          </div>
+          <div class="avatar"></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content" style="max-width: 800px;">
+      <h1 class="page-title">Notifikasi Telegram</h1>
+      <p class="page-description">
+        Pantau pendaftaran tamu baru dan aktivitas login ke sistem ini langsung dari Telegram.
+        Khusus dapat diakses oleh Administrator.
+      </p>
+
+      <div id="resultBox" class="result-box" style="display:none;"></div>
+
+      <div class="callout" id="setupGuideCallout">
+        <span class="callout-label">Langkah Setup Bot Telegram</span>
+        <p>1. Buka Telegram, cari <strong>@BotFather</strong>, lalu kirim perintah <code>/newbot</code>.</p>
+        <p>2. Ikuti instruksinya: beri nama bot (bebas) dan username bot (harus diakhiri kata <code>bot</code>, mis. <code>pussiberal_monitor_bot</code>).</p>
+        <p>3. BotFather akan memberikan sebuah <strong>token</strong> (format <code>123456789:ABC-defGhIJKlmnOPQRstuVWXyz</code>). Salin token ini ke field "Bot Token" di bawah, lalu klik Simpan.</p>
+        <p>4. Buka chat dengan bot yang baru dibuat (klik link dari BotFather), lalu kirim perintah <code>/start</code> ke bot tersebut.</p>
+        <p>5. Kembali ke halaman ini dan refresh &mdash; tombol "Gunakan Chat Terdeteksi" akan muncul untuk mengisi Chat ID secara otomatis.</p>
+        <p>6. Klik "Kirim Tes Notifikasi" untuk memastikan semuanya sudah tersambung dengan benar.</p>
+      </div>
+
+      <div class="callout" id="statusCallout">
+        <span class="callout-label" id="statusLabel">Memuat status...</span>
+        <p id="statusText"></p>
+      </div>
+
+      <div class="form-card">
+        <div class="section">
+          <h2 class="section-title">Konfigurasi Bot</h2>
+          <form id="telegramConfigForm" class="grid">
+            <div class="field full">
+              <label for="botToken">BOT TOKEN <span class="label-note">Kosongkan jika tidak ingin mengubah</span></label>
+              <input id="botToken" type="password" placeholder="123456789:ABC-defGhIJKlmnOPQRstuVWXyz">
+            </div>
+
+            <div class="field full">
+              <label for="chatId">CHAT ID <span class="required">*</span></label>
+              <div class="inline-form">
+                <input id="chatId" style="flex:1;" placeholder="Kirim /start ke bot untuk mendapatkan Chat ID">
+                <button type="button" class="btn btn-small" id="useDetectedBtn" style="display:none;">Gunakan Chat Terdeteksi</button>
+              </div>
+            </div>
+
+            <div class="field full">
+              <label class="confirm-checkbox">
+                <input type="checkbox" id="notifyRegistration" checked>
+                <span>Kirim notifikasi saat ada <strong>pendaftaran tamu baru</strong></span>
+              </label>
+            </div>
+            <div class="field full">
+              <label class="confirm-checkbox">
+                <input type="checkbox" id="notifyLogin" checked>
+                <span>Kirim notifikasi saat ada <strong>login / akses ke sistem</strong></span>
+              </label>
+            </div>
+
+            <div class="full" style="display:flex; gap:12px;">
+              <button type="submit" class="btn btn-primary">Simpan Konfigurasi</button>
+              <button type="button" class="btn" id="testBtn">Kirim Tes Notifikasi</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="form-card" style="margin-top:24px;">
+        <div class="section">
+          <h2 class="section-title">Perintah Bot di Telegram</h2>
+          <p class="page-description" style="margin-bottom:0;">
+            Setelah Chat ID terdaftar, kirim perintah berikut ke bot kapan saja untuk menarik data terbaru:
+          </p>
+          <div class="table-wrap" style="margin-top:16px;">
+            <table>
+              <thead><tr><th>Perintah</th><th>Fungsi</th></tr></thead>
+              <tbody>
+                <tr><td><code>/status</code></td><td>Ringkasan jumlah tamu (total, hari ini, sedang berkunjung)</td></tr>
+                <tr><td><code>/tamu</code></td><td>5 pendaftaran tamu terbaru</td></tr>
+                <tr><td><code>/log</code></td><td>5 aktivitas terbaru di sistem</td></tr>
+                <tr><td><code>/help</code></td><td>Daftar perintah yang tersedia</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/telegram-settings.js"></script>
+</body>
+</html>

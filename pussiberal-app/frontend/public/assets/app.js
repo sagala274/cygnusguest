@@ -140,6 +140,7 @@ function actionLabel(action) {
     download_backup: 'Unduh Backup Database',
     ai_chat_query: 'Tanya AI Chat',
     update_ai_settings: 'Ubah Konfigurasi AI',
+    update_telegram_settings: 'Ubah Konfigurasi Telegram',
   };
   return map[action] || action;
 }
@@ -201,6 +202,7 @@ function renderNav(active) {
     { href: 'ai-chat.html', label: 'AI Chat', icon: '✦', roles: ['admin'] },
     { href: 'users.html', label: 'Manajemen Pengguna', icon: '⚙', roles: ['admin'] },
     { href: 'audit-log.html', label: 'Log Aktivitas', icon: '🕐', roles: ['admin'] },
+    { href: 'telegram-settings.html', label: 'Notifikasi Telegram', icon: '📨', roles: ['admin'] },
     { href: 'backup.html', label: 'Backup Database', icon: '💾', roles: ['admin'] },
     { href: 'ai-config.html', label: 'Konfigurasi AI', icon: '🛠', roles: ['admin'] },
   ];

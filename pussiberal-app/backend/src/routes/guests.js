@@ -11,6 +11,7 @@ const {
   VALID_SECURITY_CATEGORIES,
 } = require('../utils/validators');
 const { logAudit } = require('../utils/audit');
+const { notifyNewRegistration } = require('../utils/telegram');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
@@ -239,6 +240,14 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
       company,
       member_count: members.length,
     });
+    notifyNewRegistration({
+      registrationNumber: regNumber,
+      company,
+      purpose,
+      memberCount: members.length,
+      memberNames: members.map((m) => m.full_name),
+      createdByName: req.user.name,
+    }).catch(() => {});
 
     res.status(201).json({ data: { id: guestId, registration_number: regNumber, member_count: members.length } });
   } catch (err) {

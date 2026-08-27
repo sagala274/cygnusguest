@@ -77,6 +77,23 @@ CREATE TABLE IF NOT EXISTS ai_settings (
 
 INSERT IGNORE INTO ai_settings (id, provider, model) VALUES (1, 'openrouter', 'anthropic/claude-opus-5');
 
+-- Baris tunggal (id selalu 1) menyimpan konfigurasi bot Telegram untuk notifikasi.
+CREATE TABLE IF NOT EXISTS telegram_settings (
+  id TINYINT PRIMARY KEY DEFAULT 1,
+  bot_token_encrypted TEXT NULL,
+  chat_id VARCHAR(50) NULL,
+  notify_new_registration TINYINT(1) NOT NULL DEFAULT 1,
+  notify_login TINYINT(1) NOT NULL DEFAULT 1,
+  last_update_id BIGINT NOT NULL DEFAULT 0,
+  detected_chat_id VARCHAR(50) NULL,
+  detected_chat_name VARCHAR(200) NULL,
+  updated_by INT NULL,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT chk_telegram_settings_singleton CHECK (id = 1)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO telegram_settings (id) VALUES (1);
+
 CREATE TABLE IF NOT EXISTS audit_logs (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NULL,

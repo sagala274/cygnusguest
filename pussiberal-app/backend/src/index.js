@@ -13,8 +13,11 @@ const bankDataRoutes = require('./routes/bankData');
 const backupRoutes = require('./routes/backups');
 const aiSettingsRoutes = require('./routes/aiSettings');
 const aiChatRoutes = require('./routes/aiChat');
+const telegramSettingsRoutes = require('./routes/telegramSettings');
 const { startBackupScheduler } = require('./utils/backupScheduler');
 const { ensureAiSettingsTable } = require('./utils/aiSettings');
+const { ensureTelegramSettingsTable } = require('./utils/telegram');
+const { startTelegramPolling } = require('./utils/telegramBot');
 
 const app = express();
 
@@ -43,6 +46,7 @@ app.use('/api/bank-data', bankDataRoutes);
 app.use('/api/backups', backupRoutes);
 app.use('/api/ai-settings', aiSettingsRoutes);
 app.use('/api/ai-chat', aiChatRoutes);
+app.use('/api/telegram-settings', telegramSettingsRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint tidak ditemukan' });
@@ -90,7 +94,9 @@ async function start() {
   await waitForDatabase();
   await ensureAdminSeed();
   await ensureAiSettingsTable();
+  await ensureTelegramSettingsTable();
   startBackupScheduler();
+  startTelegramPolling();
   app.listen(port, () => console.log(`Backend berjalan di port ${port}`));
 }
 
