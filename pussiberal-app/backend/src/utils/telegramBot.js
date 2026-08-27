@@ -7,6 +7,7 @@ const {
   escapeMarkdown,
   escapeMarkdownCode,
 } = require('./telegram');
+const { formatJakartaDateTime } = require('./datetime');
 
 const POLL_TIMEOUT_SECONDS = 25;
 const IDLE_RETRY_MS = 15000;
@@ -56,7 +57,7 @@ async function handleTamu() {
   rows.forEach((r) => {
     lines.push(
       `\\- \`${escapeMarkdownCode(r.registration_number)}\` — ${escapeMarkdown(r.company)} \\(${escapeMarkdown(r.status)}\\)`,
-      `  ${escapeMarkdown(new Date(r.created_at).toLocaleString('id-ID'))}`
+      `  ${escapeMarkdown(formatJakartaDateTime(r.created_at))}`
     );
   });
   return lines.join('\n');
@@ -75,7 +76,7 @@ async function handleLog() {
   rows.forEach((r) => {
     lines.push(
       `\\- ${escapeMarkdown(r.full_name || 'Sistem')}: ${escapeMarkdown(r.action)}`,
-      `  ${escapeMarkdown(new Date(r.timestamp).toLocaleString('id-ID'))}`
+      `  ${escapeMarkdown(formatJakartaDateTime(r.timestamp))}`
     );
   });
   return lines.join('\n');

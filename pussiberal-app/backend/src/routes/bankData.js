@@ -3,6 +3,7 @@ const PDFDocument = require('pdfkit');
 const pool = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { isIndependentCompany } = require('../utils/validators');
+const { formatJakartaDateTime, formatJakartaDate } = require('../utils/datetime');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
@@ -250,7 +251,7 @@ const GROUP_COLUMNS = [
 ];
 
 const VISIT_HISTORY_COLUMNS = [
-  { header: 'Tanggal', width: 65, value: (r) => new Date(r.created_at).toLocaleDateString('id-ID') },
+  { header: 'Tanggal', width: 65, value: (r) => formatJakartaDate(r.created_at) },
   { header: 'Nama', width: 85, value: (r) => r.full_name },
   { header: 'No. Registrasi', width: 90, value: (r) => r.registration_number },
   { header: 'Perusahaan', width: 95, value: (r) => r.company },
@@ -261,7 +262,7 @@ const VISIT_HISTORY_COLUMNS = [
 
 function renderFullBankDataPDF(doc, groups) {
   doc.fontSize(16).font('Helvetica-Bold').text('Rekap Bank Data Personel Tamu - PUSSIBERAL', { align: 'center' });
-  doc.fontSize(9).font('Helvetica').text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, { align: 'center' });
+  doc.fontSize(9).font('Helvetica').text(`Dicetak: ${formatJakartaDateTime(new Date())}`, { align: 'center' });
   doc.moveDown();
 
   groups.forEach((g, idx) => {
@@ -275,7 +276,7 @@ function renderFullBankDataPDF(doc, groups) {
 
 function renderGroupPDF(doc, company, records) {
   doc.fontSize(16).font('Helvetica-Bold').text(`Bank Data Personel - ${company}`, { align: 'center' });
-  doc.fontSize(9).font('Helvetica').text(`Dicetak: ${new Date().toLocaleString('id-ID')} • ${records.length} catatan`, { align: 'center' });
+  doc.fontSize(9).font('Helvetica').text(`Dicetak: ${formatJakartaDateTime(new Date())} • ${records.length} catatan`, { align: 'center' });
   doc.moveDown();
   doc.fontSize(9);
   drawPersonnelTable(doc, records, GROUP_COLUMNS);
@@ -285,7 +286,7 @@ function renderPersonnelPDF(doc, visits, headlineRecord) {
   const latest = headlineRecord || visits[0];
 
   doc.fontSize(16).font('Helvetica-Bold').text('Laporan Personel - Bank Data PUSSIBERAL', { align: 'center' });
-  doc.fontSize(9).font('Helvetica').text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, { align: 'center' });
+  doc.fontSize(9).font('Helvetica').text(`Dicetak: ${formatJakartaDateTime(new Date())}`, { align: 'center' });
   doc.moveDown();
 
   doc.fontSize(10);

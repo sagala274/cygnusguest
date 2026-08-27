@@ -4,6 +4,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const asyncHandler = require('../utils/asyncHandler');
 const { logAudit } = require('../utils/audit');
 const { getAiSettings, getDecryptedApiKey } = require('../utils/aiSettings');
+const { formatJakartaDate } = require('../utils/datetime');
 
 const router = express.Router();
 router.use(authenticate, requireRole('admin'));
@@ -54,7 +55,7 @@ async function buildPlatformContext() {
   lines.push(`Jumlah NIK yang tercatat dengan >1 nama berbeda (potensi anomali identitas): ${nikConflict.conflicting_nik}`);
   lines.push('5 perusahaan dengan pendaftaran terbanyak: ' + (topCompanies.map((r) => `${r.company} (${r.count})`).join(', ') || '-'));
   lines.push('Jumlah pengguna aktif per role: ' + (usersByRole.map((r) => `${r.role}=${r.count}`).join(', ') || '-'));
-  lines.push('Tren pendaftaran 7 hari terakhir: ' + (recentDaily.map((r) => `${new Date(r.day).toLocaleDateString('id-ID')}=${r.count}`).join(', ') || '-'));
+  lines.push('Tren pendaftaran 7 hari terakhir: ' + (recentDaily.map((r) => `${formatJakartaDate(r.day)}=${r.count}`).join(', ') || '-'));
 
   return lines.join('\n');
 }

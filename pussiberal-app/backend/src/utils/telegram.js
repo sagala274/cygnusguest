@@ -1,6 +1,7 @@
 const pool = require('../db');
 const { encrypt, decrypt } = require('./crypto');
 const { TARGET_OFFICIAL_LABELS } = require('./guestFields');
+const { formatJakartaDateTime } = require('./datetime');
 
 async function ensureTelegramSettingsTable() {
   await pool.query(`
@@ -103,7 +104,7 @@ async function notifyNewRegistration({ registrationNumber, company, targetOffici
     `Nama: ${escapeMarkdown(memberNames.join(', '))}`,
     `Detail Keperluan: ${escapeMarkdown(purpose)}`,
     `Didaftarkan oleh: ${escapeMarkdown(createdByName)}`,
-    `Waktu: ${escapeMarkdown(new Date().toLocaleString('id-ID'))}`,
+    `Waktu: ${escapeMarkdown(formatJakartaDateTime(new Date()))}`,
   ];
   await sendTelegramMessage(lines.join('\n'));
 }
@@ -118,7 +119,7 @@ async function notifyLogin({ username, fullName, role, ipAddress }) {
     `Pengguna: ${escapeMarkdown(fullName)} \\(${escapeMarkdown(username)}\\)`,
     `Role: ${escapeMarkdown(role)}`,
     `IP: \`${escapeMarkdownCode(ipAddress || '-')}\``,
-    `Waktu: ${escapeMarkdown(new Date().toLocaleString('id-ID'))}`,
+    `Waktu: ${escapeMarkdown(formatJakartaDateTime(new Date()))}`,
   ];
   await sendTelegramMessage(lines.join('\n'));
 }

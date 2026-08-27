@@ -3,6 +3,7 @@ const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const pool = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { formatJakartaDateTime, formatJakartaDate } = require('../utils/datetime');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
@@ -26,7 +27,7 @@ function buildPeriods(period, count) {
     for (let i = count - 1; i >= 0; i -= 1) {
       const start = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() - i, 1);
       const end = new Date(currentMonthStart.getFullYear(), currentMonthStart.getMonth() - i + 1, 1);
-      const label = start.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
+      const label = formatJakartaDate(start, { month: 'short', year: '2-digit' });
       periods.push({ start, end, label });
     }
     return periods;
@@ -36,7 +37,7 @@ function buildPeriods(period, count) {
     for (let i = count - 1; i >= 0; i -= 1) {
       const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
       const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
-      const label = start.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+      const label = formatJakartaDate(start, { weekday: 'short', day: 'numeric', month: 'short' });
       periods.push({ start, end, label });
     }
     return periods;
@@ -172,8 +173,8 @@ router.get('/visits/export', requireRole('admin', 'verifikator'), asyncHandler(a
       r.member_count,
       r.member_names,
       r.status,
-      r.check_in_at ? new Date(r.check_in_at).toLocaleString('id-ID') : '-',
-      r.check_out_at ? new Date(r.check_out_at).toLocaleString('id-ID') : '-',
+      r.check_in_at ? formatJakartaDateTime(r.check_in_at) : '-',
+      r.check_out_at ? formatJakartaDateTime(r.check_out_at) : '-',
     ]));
 
     doc.end();
