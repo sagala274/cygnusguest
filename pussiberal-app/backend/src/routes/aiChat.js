@@ -143,6 +143,15 @@ router.post('/query', asyncHandler(async (req, res) => {
   const body = await apiResponse.json();
   const reply = (body.choices && body.choices[0] && body.choices[0].message && body.choices[0].message.content || '').trim();
 
+  if (!reply) {
+    // Beberapa model (terutama tier gratis) kadang mengembalikan HTTP 200 tanpa
+    // isi balasan yang valid saat sedang sibuk/tidak stabil -- jangan tampilkan
+    // bubble kosong, beri tahu penggunanya secara eksplisit.
+    return res.status(502).json({
+      error: 'Model AI tidak memberikan balasan (kemungkinan model sedang sibuk/tidak stabil, umum terjadi pada model gratis). Coba lagi, atau ganti model di menu Konfigurasi AI.',
+    });
+  }
+
   await logAudit(req.user.sub, 'ai_chat_query', 'ai_chat', null, { message: message.trim().slice(0, 500), model: settings.model });
 
   res.json({ data: { reply, model: body.model || settings.model } });
