@@ -26,7 +26,7 @@ router.post('/login', loginLimiter, asyncHandler(async (req, res) => {
   }
 
   const [rows] = await pool.execute(
-    'SELECT id, username, password_hash, full_name, role, is_active FROM users WHERE username = :username',
+    'SELECT id, username, password_hash, full_name, role, is_active, avatar_url FROM users WHERE username = :username',
     { username }
   );
 
@@ -51,7 +51,7 @@ router.post('/login', loginLimiter, asyncHandler(async (req, res) => {
 
   res.json({
     token,
-    user: { id: user.id, username: user.username, full_name: user.full_name, role: user.role },
+    user: { id: user.id, username: user.username, full_name: user.full_name, role: user.role, avatar_url: user.avatar_url },
   });
 }));
 

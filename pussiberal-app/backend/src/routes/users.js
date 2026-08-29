@@ -12,7 +12,7 @@ router.use(authenticate, requireRole('admin'));
 
 router.get('/', asyncHandler(async (req, res) => {
   const [rows] = await pool.query(
-    'SELECT id, username, full_name, role, is_active, created_at FROM users ORDER BY created_at DESC'
+    'SELECT id, username, full_name, avatar_url, role, is_active, created_at FROM users ORDER BY created_at DESC'
   );
   res.json({ data: rows });
 }));
@@ -44,11 +44,14 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 router.put('/:id', asyncHandler(async (req, res) => {
-  const { full_name, role, is_active, password } = req.body || {};
+  const { full_name, role, is_active, password, avatar_url } = req.body || {};
   const id = req.params.id;
 
   if (role !== undefined && !VALID_ROLES.includes(role)) {
     return res.status(400).json({ error: 'Role tidak valid' });
+  }
+  if (avatar_url !== undefined && avatar_url !== null && String(avatar_url).length > 255) {
+    return res.status(400).json({ error: 'Avatar URL maksimal 255 karakter' });
   }
   if (password && password.length < 8) {
     return res.status(400).json({ error: 'Password minimal 8 karakter' });
@@ -65,6 +68,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
   if (full_name !== undefined) { fields.push('full_name = :full_name'); params.full_name = full_name; }
   if (role !== undefined) { fields.push('role = :role'); params.role = role; }
   if (is_active !== undefined) { fields.push('is_active = :is_active'); params.is_active = is_active ? 1 : 0; }
+  if (avatar_url !== undefined) { fields.push('avatar_url = :avatar_url'); params.avatar_url = avatar_url || null; }
   if (password) {
     fields.push('password_hash = :password_hash');
     params.password_hash = await bcrypt.hash(password, 10);

@@ -261,6 +261,13 @@ function renderNav(active) {
   if (nameEl) nameEl.textContent = user.full_name;
   if (roleEl) roleEl.textContent = roleLabel(user.role);
 
+  const avatarEl = document.querySelector('.avatar');
+  if (avatarEl && user.avatar_url) {
+    avatarEl.style.backgroundImage = `url('${user.avatar_url}')`;
+    avatarEl.style.backgroundSize = 'cover';
+    avatarEl.style.backgroundPosition = 'center';
+  }
+
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', (e) => {
