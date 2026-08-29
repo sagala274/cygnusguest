@@ -1,6 +1,6 @@
 requireAuth();
 requireRole('admin', 'pos_depan');
-renderNav('pendaftaran.html');
+renderNav('pendaftaran');
 
 const form = document.getElementById('guestForm');
 const cancelBtn = document.getElementById('cancelBtn');
@@ -510,7 +510,7 @@ form.addEventListener('submit', async (e) => {
     const res = await api('/guests', { method: 'POST', body: JSON.stringify(payload) });
     resultBox.style.display = 'block';
     const count = res.data.member_count;
-    resultBox.innerHTML = `Pendaftaran berhasil untuk ${count} tamu. Nomor registrasi: <strong>${escapeHtml(res.data.registration_number)}</strong> — <a class="link" href="detail-tamu.html?id=${res.data.id}">Lihat detail</a>`;
+    resultBox.innerHTML = `Pendaftaran berhasil untuk ${count} tamu. Nomor registrasi: <strong>${escapeHtml(res.data.registration_number)}</strong> — <a class="link" href="detail-tamu?id=${res.data.id}">Lihat detail</a>`;
     resetForm();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (err) {

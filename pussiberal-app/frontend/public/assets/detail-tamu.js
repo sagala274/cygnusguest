@@ -1,5 +1,5 @@
 requireAuth();
-renderNav('daftar-tamu.html');
+renderNav('daftar-tamu');
 
 const params = new URLSearchParams(window.location.search);
 const guestId = params.get('id');
@@ -10,7 +10,7 @@ const canVerify = user && ['admin', 'verifikator'].includes(user.role);
 const isAdmin = user && user.role === 'admin';
 
 if (!guestId) {
-  window.location.href = 'daftar-tamu.html';
+  window.location.href = 'daftar-tamu';
 }
 
 function showMessage(message, isError) {

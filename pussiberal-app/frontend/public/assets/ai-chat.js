@@ -1,6 +1,6 @@
 requireAuth();
 requireRole('admin');
-renderNav('ai-chat.html');
+renderNav('ai-chat');
 
 const resultBox = document.getElementById('resultBox');
 const chatWindow = document.getElementById('chatWindow');

@@ -1,5 +1,5 @@
 requireAuth();
-renderNav('dashboard.html');
+renderNav('dashboard');
 
 const user = getUser();
 const isAdmin = user && user.role === 'admin';

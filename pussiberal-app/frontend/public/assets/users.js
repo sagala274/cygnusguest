@@ -1,6 +1,6 @@
 requireAuth();
 requireRole('admin');
-renderNav('users.html');
+renderNav('users');
 
 const tbody = document.getElementById('userTableBody');
 const resultBox = document.getElementById('resultBox');

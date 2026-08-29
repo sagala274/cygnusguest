@@ -24,14 +24,14 @@ function clearSession() {
 
 function requireAuth() {
   if (!getToken()) {
-    window.location.href = 'login.html';
+    window.location.href = 'login';
   }
 }
 
 function requireRole(...roles) {
   const user = getUser();
   if (!user || !roles.includes(user.role)) {
-    window.location.href = 'dashboard.html';
+    window.location.href = 'dashboard';
   }
 }
 
@@ -44,7 +44,7 @@ async function api(path, options = {}) {
 
   if (res.status === 401) {
     clearSession();
-    window.location.href = 'login.html';
+    window.location.href = 'login';
     throw new Error('Unauthorized');
   }
 
@@ -70,7 +70,7 @@ async function downloadFile(path, filename) {
 
   if (res.status === 401) {
     clearSession();
-    window.location.href = 'login.html';
+    window.location.href = 'login';
     throw new Error('Unauthorized');
   }
 
@@ -226,18 +226,18 @@ function renderNav(active) {
   if (!user) return;
 
   const links = [
-    { href: 'dashboard.html', label: 'Dashboard', icon: '◆', roles: ['admin', 'pos_depan', 'verifikator'] },
-    { href: 'pendaftaran.html', label: 'Pendaftaran Tamu', icon: '✎', roles: ['admin', 'pos_depan'] },
-    { href: 'daftar-tamu.html', label: 'Daftar Tamu', icon: '☰', roles: ['admin', 'pos_depan', 'verifikator'] },
-    { href: 'daftar-tamu.html?status=Menunggu%20Verifikasi', label: 'Verifikasi Tamu', icon: '✔', roles: ['admin', 'verifikator'], matchHref: 'daftar-tamu.html' },
-    { href: 'laporan.html', label: 'Laporan', icon: '▤', roles: ['admin', 'verifikator'] },
-    { href: 'bank-data.html', label: 'Bank Data', icon: '🗂', roles: ['admin', 'verifikator'] },
-    { href: 'ai-chat.html', label: 'AI Chat', icon: '✦', roles: ['admin'] },
-    { href: 'users.html', label: 'Manajemen Pengguna', icon: '⚙', roles: ['admin'] },
-    { href: 'audit-log.html', label: 'Log Aktivitas', icon: '🕐', roles: ['admin'] },
-    { href: 'telegram-settings.html', label: 'Notifikasi Telegram', icon: '📨', roles: ['admin'] },
-    { href: 'backup.html', label: 'Backup Database', icon: '💾', roles: ['admin'] },
-    { href: 'ai-config.html', label: 'Konfigurasi AI', icon: '🛠', roles: ['admin'] },
+    { href: 'dashboard', label: 'Dashboard', icon: '◆', roles: ['admin', 'pos_depan', 'verifikator'] },
+    { href: 'pendaftaran', label: 'Pendaftaran Tamu', icon: '✎', roles: ['admin', 'pos_depan'] },
+    { href: 'daftar-tamu', label: 'Daftar Tamu', icon: '☰', roles: ['admin', 'pos_depan', 'verifikator'] },
+    { href: 'daftar-tamu?status=Menunggu%20Verifikasi', label: 'Verifikasi Tamu', icon: '✔', roles: ['admin', 'verifikator'], matchHref: 'daftar-tamu' },
+    { href: 'laporan', label: 'Laporan', icon: '▤', roles: ['admin', 'verifikator'] },
+    { href: 'bank-data', label: 'Bank Data', icon: '🗂', roles: ['admin', 'verifikator'] },
+    { href: 'ai-chat', label: 'AI Chat', icon: '✦', roles: ['admin'] },
+    { href: 'users', label: 'Manajemen Pengguna', icon: '⚙', roles: ['admin'] },
+    { href: 'audit-log', label: 'Log Aktivitas', icon: '🕐', roles: ['admin'] },
+    { href: 'telegram-settings', label: 'Notifikasi Telegram', icon: '📨', roles: ['admin'] },
+    { href: 'backup', label: 'Backup Database', icon: '💾', roles: ['admin'] },
+    { href: 'ai-config', label: 'Konfigurasi AI', icon: '🛠', roles: ['admin'] },
   ];
 
   const nav = document.getElementById('mainNav');
@@ -273,7 +273,7 @@ function renderNav(active) {
     logoutBtn.addEventListener('click', (e) => {
       e.preventDefault();
       clearSession();
-      window.location.href = 'login.html';
+      window.location.href = 'login';
     });
   }
 

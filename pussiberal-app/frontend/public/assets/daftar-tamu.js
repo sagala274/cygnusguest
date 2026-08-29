@@ -1,5 +1,5 @@
 requireAuth();
-renderNav('daftar-tamu.html');
+renderNav('daftar-tamu');
 
 const searchInput = document.getElementById('searchInput');
 const statusFilter = document.getElementById('statusFilter');
@@ -36,7 +36,7 @@ async function load() {
           <td>${g.member_count}</td>
           <td><span class="badge ${statusBadgeClass(g.status)}">${escapeHtml(g.status)}</span></td>
           <td>${formatDateTime(g.created_at)}</td>
-          <td><a class="link" href="detail-tamu.html?id=${g.id}">Detail</a></td>
+          <td><a class="link" href="detail-tamu?id=${g.id}">Detail</a></td>
         </tr>
       `
         )

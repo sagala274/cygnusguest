@@ -1,6 +1,6 @@
 requireAuth();
 requireRole('admin');
-renderNav('telegram-settings.html');
+renderNav('telegram-settings');
 
 const resultBox = document.getElementById('resultBox');
 const form = document.getElementById('telegramConfigForm');

@@ -1,4 +1,4 @@
-if (getToken()) window.location.href = 'dashboard.html';
+if (getToken()) window.location.href = 'dashboard';
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -13,7 +13,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       body: JSON.stringify({ username, password }),
     });
     setSession(res.token, res.user);
-    window.location.href = 'dashboard.html';
+    window.location.href = 'dashboard';
   } catch (err) {
     errorBox.textContent = err.message;
     errorBox.style.display = 'block';

@@ -1,6 +1,6 @@
 requireAuth();
 requireRole('admin', 'verifikator');
-renderNav('laporan.html');
+renderNav('laporan');
 
 const tbody = document.getElementById('reportTableBody');
 const resultBox = document.getElementById('resultBox');

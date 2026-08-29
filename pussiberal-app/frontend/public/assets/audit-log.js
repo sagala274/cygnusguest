@@ -1,6 +1,6 @@
 requireAuth();
 requireRole('admin');
-renderNav('audit-log.html');
+renderNav('audit-log');
 
 const searchInput = document.getElementById('searchInput');
 const actionFilter = document.getElementById('actionFilter');

@@ -1,6 +1,6 @@
 requireAuth();
 requireRole('admin', 'verifikator');
-renderNav('bank-data.html');
+renderNav('bank-data');
 
 const params = new URLSearchParams(window.location.search);
 const nik = params.get('nik');
@@ -8,7 +8,7 @@ const memberId = params.get('member_id');
 const resultBox = document.getElementById('resultBox');
 
 if (!nik) {
-  window.location.href = 'bank-data.html';
+  window.location.href = 'bank-data';
 }
 
 function showMessage(message, isError) {
@@ -31,7 +31,7 @@ async function load() {
       const others = (p.other_names_same_nik || []).map(escapeHtml).join(', ');
       document.getElementById('nikWarningScope').innerHTML =
         `Laporan ini hanya mencakup kunjungan atas nama "${escapeHtml(p.full_name)}". NIK yang sama juga tercatat atas nama: <strong>${others}</strong> — ` +
-        `<a class="link" href="bank-data.html?q=${encodeURIComponent(p.nik)}">cari NIK ini di Bank Data</a> untuk menelusuri seluruh riwayatnya.`;
+        `<a class="link" href="bank-data?q=${encodeURIComponent(p.nik)}">cari NIK ini di Bank Data</a> untuk menelusuri seluruh riwayatnya.`;
     } else {
       document.getElementById('nikWarningScope').textContent = '';
     }
@@ -66,7 +66,7 @@ async function load() {
         <td>${escapeHtml(v.position)}</td>
         <td><span class="badge ${securityCategoryBadgeClass(v.security_category)}">${escapeHtml(securityCategoryLabel(v.security_category))}</span></td>
         <td><span class="badge ${statusBadgeClass(v.registration_status)}">${escapeHtml(v.registration_status)}</span></td>
-        <td><a class="link" href="detail-tamu.html?id=${v.guest_id}">Lihat Pendaftaran</a></td>
+        <td><a class="link" href="detail-tamu?id=${v.guest_id}">Lihat Pendaftaran</a></td>
       </tr>
     `
       )

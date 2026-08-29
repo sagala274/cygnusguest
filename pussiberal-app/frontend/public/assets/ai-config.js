@@ -1,6 +1,6 @@
 requireAuth();
 requireRole('admin');
-renderNav('ai-config.html');
+renderNav('ai-config');
 
 const resultBox = document.getElementById('resultBox');
 const form = document.getElementById('aiConfigForm');

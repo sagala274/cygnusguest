@@ -1,6 +1,6 @@
 requireAuth();
 requireRole('admin');
-renderNav('backup.html');
+renderNav('backup');
 
 const resultBox = document.getElementById('resultBox');
 

@@ -1,1 +1,1 @@
-window.location.href = getToken() ? 'dashboard.html' : 'login.html';
+window.location.href = getToken() ? 'dashboard' : 'login';
