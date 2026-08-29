@@ -55,7 +55,7 @@ function memberBlockHTML(seq) {
 
       <div class="member-photos">
         <div class="photo-widget" data-kind="photo">
-          <label class="photo-widget-label">Foto Tamu <span class="optional-badge">Opsional</span></label>
+          <label class="photo-widget-label">Foto Tamu <span class="required">*</span></label>
           <div class="photo-frame">
             <div class="photo-frame-empty">Kamera belum aktif.<br>Tekan "Aktifkan Kamera" atau unggah foto.</div>
             <video autoplay playsinline muted style="display:none;"></video>
@@ -73,7 +73,7 @@ function memberBlockHTML(seq) {
         </div>
 
         <div class="photo-widget" data-kind="ktp_photo">
-          <label class="photo-widget-label">Foto KTP <span class="optional-badge">Opsional</span></label>
+          <label class="photo-widget-label">Foto KTP <span class="required">*</span></label>
           <div class="photo-frame">
             <div class="photo-frame-empty">Kamera belum aktif.<br>Tekan "Aktifkan Kamera" atau unggah foto KTP.</div>
             <video autoplay playsinline muted style="display:none;"></video>
@@ -428,6 +428,24 @@ function validateAllDevicePolicies() {
   return valid;
 }
 
+function validateAllPhotos() {
+  let valid = true;
+
+  Array.from(membersContainer.children).forEach((block, idx) => {
+    const widgets = memberWidgets.get(block);
+    if (!widgets.photo.getValue()) {
+      showFieldError(`members[${idx}].photo`, 'Foto tamu wajib diisi');
+      valid = false;
+    }
+    if (!widgets.ktp_photo.getValue()) {
+      showFieldError(`members[${idx}].ktp_photo`, 'Foto KTP wajib diisi');
+      valid = false;
+    }
+  });
+
+  return valid;
+}
+
 function collectMembers() {
   return Array.from(membersContainer.children).map((block) => {
     const widgets = memberWidgets.get(block);
@@ -466,8 +484,9 @@ form.addEventListener('submit', async (e) => {
   const targetOfficialsOk = validateTargetOfficials();
   const purposeCategoryOk = validatePurposeCategory();
   const devicePoliciesOk = validateAllDevicePolicies();
+  const photosOk = validateAllPhotos();
 
-  if (!targetOfficialsOk || !purposeCategoryOk || !devicePoliciesOk) {
+  if (!targetOfficialsOk || !purposeCategoryOk || !devicePoliciesOk || !photosOk) {
     resultBox.style.display = 'block';
     resultBox.classList.add('error-box');
     resultBox.textContent = 'Lengkapi seluruh field yang wajib diisi sebelum menyimpan.';
