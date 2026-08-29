@@ -38,10 +38,10 @@ button, input, select, textarea { font: inherit; }
   flex-shrink: 0;
 }
 
-.brand { display: flex; align-items: center; gap: 10px; margin: 0 0 34px; padding-left: 2px; }
+.brand { display: flex; align-items: center; gap: 14px; margin: 0 0 34px; padding-left: 2px; }
 
 .brand-mark {
-  width: 42px; height: 42px;
+  width: 72px; height: 72px;
   object-fit: contain;
   flex-shrink: 0;
   display: block;
@@ -465,5 +465,5 @@ a.link:hover { text-decoration: underline; }
   .detail-row { flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 0; }
   .detail-value { text-align: left; }
   thead th, tbody td { padding: 10px 12px; }
-  .brand-mark { width: 32px; height: 32px; }
+  .brand-mark { width: 44px; height: 44px; }
 }
