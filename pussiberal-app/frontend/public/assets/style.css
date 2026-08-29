@@ -41,10 +41,10 @@ button, input, select, textarea { font: inherit; }
 .brand { display: flex; align-items: center; gap: 10px; margin: 0 0 34px; padding-left: 2px; }
 
 .brand-mark {
-  width: 36px; height: 36px; border-radius: 3px;
-  background: #f7f8fb; color: var(--navy);
-  display: grid; place-items: center;
-  font-weight: 900; font-size: 18px;
+  width: 42px; height: 42px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
 }
 
 .brand-name { color: #fff; font-weight: 800; font-size: 19px; letter-spacing: .2px; }
@@ -465,5 +465,5 @@ a.link:hover { text-decoration: underline; }
   .detail-row { flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 0; }
   .detail-value { text-align: left; }
   thead th, tbody td { padding: 10px 12px; }
-  .brand-mark { width: 30px; height: 30px; font-size: 15px; }
+  .brand-mark { width: 32px; height: 32px; }
 }
