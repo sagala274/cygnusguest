@@ -276,4 +276,32 @@ function renderNav(active) {
       window.location.href = 'login.html';
     });
   }
+
+  const profileTrigger = document.getElementById('profileTrigger');
+  const profileDropdown = document.getElementById('profileDropdown');
+  if (profileTrigger && profileDropdown) {
+    profileTrigger.setAttribute('aria-haspopup', 'true');
+    profileTrigger.setAttribute('aria-expanded', 'false');
+
+    const closeDropdown = () => {
+      profileDropdown.classList.remove('open');
+      profileTrigger.setAttribute('aria-expanded', 'false');
+    };
+
+    profileTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = profileDropdown.classList.toggle('open');
+      profileTrigger.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!profileDropdown.classList.contains('open')) return;
+      if (profileTrigger.contains(e.target) || profileDropdown.contains(e.target)) return;
+      closeDropdown();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDropdown();
+    });
+  }
 }

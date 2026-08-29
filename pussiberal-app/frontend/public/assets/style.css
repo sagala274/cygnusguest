@@ -63,8 +63,6 @@ button, input, select, textarea { font: inherit; }
 .nav-icon { width: 18px; text-align: center; font-size: 16px; }
 .nav-dot { width: 7px; height: 7px; border-radius: 50%; background: #8c5bea; margin-left: auto; }
 
-.logout { margin-top: auto; border-top: 1px solid rgba(255,255,255,.08); padding-top: 20px; }
-
 /* Main */
 .main { flex: 1; min-width: 0; }
 
@@ -76,7 +74,14 @@ button, input, select, textarea { font: inherit; }
 
 .top-title { font-weight: 800; font-size: 16px; }
 .top-right { display: flex; align-items: center; gap: 22px; }
-.profile { display: flex; align-items: center; gap: 10px; }
+
+.profile-menu { position: relative; }
+.profile {
+  display: flex; align-items: center; gap: 10px;
+  background: none; border: none; padding: 4px; margin: -4px; border-radius: 8px;
+  cursor: pointer; font: inherit; color: inherit;
+}
+.profile:hover, .profile[aria-expanded="true"] { background: #f5f6f9; }
 .profile-text { text-align: right; line-height: 1.2; }
 .profile-name { font-weight: 800; font-size: 12px; }
 .profile-role { font-size: 10px; color: #667085; margin-top: 4px; }
@@ -84,7 +89,25 @@ button, input, select, textarea { font: inherit; }
 .avatar {
   width: 34px; height: 34px; border-radius: 50%;
   background: #ddd; border: 1px solid #bfc4cc;
+  flex-shrink: 0;
 }
+
+.profile-dropdown {
+  display: none;
+  position: absolute; top: calc(100% + 10px); right: 0;
+  background: #fff; border: 1px solid var(--line); border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(16,24,40,.14);
+  min-width: 170px; padding: 6px; z-index: 60;
+}
+.profile-dropdown.open { display: block; }
+.profile-dropdown-item {
+  display: flex; align-items: center; gap: 10px;
+  height: 40px; padding: 0 12px; border-radius: 4px;
+  color: var(--danger); text-decoration: none;
+  font-size: 12.5px; font-weight: 700;
+}
+.profile-dropdown-item:hover { background: #fef3f2; }
+.profile-dropdown-item .nav-icon { width: 18px; text-align: center; font-size: 15px; }
 
 .content { max-width: 960px; margin: 38px auto 28px; padding: 0 22px; }
 
@@ -435,7 +458,6 @@ a.link:hover { text-decoration: underline; }
   .brand-name, .brand-subtitle, .nav-item span:not(.nav-icon), .nav-dot { display: none; }
   .brand { justify-content: center; }
   .nav-item { justify-content: center; padding: 0; }
-  .logout .nav-item { justify-content: center; }
   .topbar { padding: 0 16px; }
   .top-title { font-size: 14px; }
   .profile-text { display: none; }
