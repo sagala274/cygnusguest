@@ -34,7 +34,7 @@
 /* Brand book Naval-CSIRT: Admiral Blue, Pure White, Obsidian Black, Chalk White */
 :root {
   --navy: #002878;
-  --navy-2: #0a3f9e;
+  --navy-2: #16294f;
   --text: #222222;
   --muted: #5b6472;
   --line: #dde1e8;
@@ -46,6 +46,10 @@
   --danger: #c62828;
   --success: #1b7a43;
   --amber: #92580a;
+  /* Sidebar dibuat lebih gelap dari Admiral Blue (--navy) supaya kontras
+     dengan pil menu aktif (--accent-hover) tetap terjaga; --navy tetap dipakai
+     apa adanya di tempat lain (login, tooltip chart, bubble chat). */
+  --sidebar-bg: #0b1830;
 }
 
 body {
@@ -63,7 +67,7 @@ button, input, select, textarea { font: inherit; }
 .sidebar {
   width: 250px;
   min-height: 100vh;
-  background: var(--navy);
+  background: var(--sidebar-bg);
   color: #aeb6cf;
   display: flex;
   flex-direction: column;
