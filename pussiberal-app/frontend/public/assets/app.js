@@ -30,6 +30,13 @@ const ICONS = {
   checkCircle: '<circle cx="12" cy="12" r="8.5"/><polyline points="8,12.5 11,15.5 16,9.5"/>',
   sort: '<polyline points="8,9 12,5 16,9"/><polyline points="8,15 12,19 16,15"/>',
   logout: '<path d="M9,4 H5 a1,1 0 0 0 -1,1 V19 a1,1 0 0 0 1,1 H9"/><polyline points="14,8 18,12 14,16"/><line x1="18" y1="12" x2="9" y2="12"/>',
+  login: '<path d="M15,4 H19 a1,1 0 0 1 1,1 V19 a1,1 0 0 1 -1,1 H15"/><polyline points="10,8 14,12 10,16"/><line x1="14" y1="12" x2="3" y2="12"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/>',
+  trendUp: '<polyline points="3,17 10,10 14,14 21,6"/><polyline points="15,6 21,6 21,12"/>',
+  trendDown: '<polyline points="3,7 10,14 14,10 21,18"/><polyline points="15,18 21,18 21,12"/>',
+  people: '<circle cx="8.5" cy="8" r="3"/><path d="M2.5,20 a6,5.6 0 0 1 12,0"/><circle cx="16.5" cy="9" r="2.3"/><path d="M14.8,13 a4.6,4 0 0 1 6.7,4.2"/>',
+  clipboard: '<rect x="5" y="5" width="14" height="16" rx="2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="16" y2="15"/>',
+  activity: '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8.5" stroke-dasharray="2 3"/>',
 };
 
 function icon(name, extraClass) {
@@ -256,6 +263,21 @@ function formatDateTime(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '-';
   return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function timeAgo(value) {
+  if (!value) return '-';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '-';
+  const diffSec = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+  if (diffSec < 60) return 'Baru saja';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} menit yang lalu`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} jam yang lalu`;
+  const diffDay = Math.floor(diffHour / 24);
+  if (diffDay < 7) return `${diffDay} hari yang lalu`;
+  return formatDateTime(value);
 }
 
 function renderNav(active) {

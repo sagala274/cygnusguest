@@ -4,34 +4,224 @@ renderNav('dashboard');
 const user = getUser();
 const isAdmin = user && user.role === 'admin';
 
+const STATUS_COLOR = {
+  Draft: '#98a2b3',
+  Terdaftar: '#175cd3',
+  'Menunggu Verifikasi': 'var(--amber)',
+  Disetujui: 'var(--success)',
+  Ditolak: 'var(--danger)',
+  'Sedang Berkunjung': 'var(--accent)',
+  Selesai: '#98a2b3',
+};
+
+const DEVICE_COLOR = {
+  dititipkan: 'var(--success)',
+  dibawa_alasan_khusus: 'var(--amber)',
+  tidak_membawa: '#175cd3',
+};
+
+const SECURITY_COLOR = {
+  aman: 'var(--success)',
+  perlu_perhatian: 'var(--amber)',
+  perlu_penanganan: 'var(--danger)',
+  belum_dianalisa: '#98a2b3',
+};
+
+const ACTION_ICON = {
+  login: 'login', create_guest: 'pendaftaran', update_guest: 'pencil', verify_guest: 'checkCircle',
+  check_in: 'login', check_out: 'logout', delete_guest: 'trash', create_user: 'people',
+  update_user: 'pencil', delete_user: 'trash', create_backup: 'backup', download_backup: 'backup',
+  ai_chat_query: 'ai-chat', update_ai_settings: 'ai-config', update_telegram_settings: 'telegram',
+};
+
+const ACTION_COLOR = {
+  login: 'icon-bubble-blue', create_guest: 'icon-bubble-accent', update_guest: 'icon-bubble-blue',
+  verify_guest: 'icon-bubble-success', check_in: 'icon-bubble-blue', check_out: 'icon-bubble-amber',
+  delete_guest: 'icon-bubble-danger', create_user: 'icon-bubble-teal', update_user: 'icon-bubble-blue',
+  delete_user: 'icon-bubble-danger', create_backup: 'icon-bubble-teal', download_backup: 'icon-bubble-teal',
+  ai_chat_query: 'icon-bubble-accent', update_ai_settings: 'icon-bubble-accent', update_telegram_settings: 'icon-bubble-blue',
+};
+
+function statCardHtml({ bubbleClass, iconName, label, value, caption, trendIcon, trendClass }) {
+  return `
+    <div class="stat-card">
+      <div class="stat-card-head">
+        <div class="icon-bubble ${bubbleClass}">${icon(iconName)}</div>
+        <div class="stat-card-text">
+          <div class="stat-value">${value}</div>
+          <div class="stat-label">${label}</div>
+        </div>
+      </div>
+      <div class="stat-caption${trendClass ? ' ' + trendClass : ''}">${trendIcon ? icon(trendIcon) : ''}<span>${caption}</span></div>
+    </div>
+  `;
+}
+
+function registrationTrendCard(today, yesterday) {
+  let caption;
+  let trendIcon;
+  let trendClass;
+  if (yesterday > 0) {
+    const diffPct = Math.round(((today - yesterday) / yesterday) * 100);
+    trendIcon = diffPct >= 0 ? 'trendUp' : 'trendDown';
+    trendClass = diffPct >= 0 ? 'is-trend-up' : 'is-trend-down';
+    caption = `${diffPct >= 0 ? '+' : ''}${diffPct}% dibanding kemarin`;
+  } else if (today > 0) {
+    caption = 'Tidak ada pendaftaran kemarin';
+  } else {
+    caption = 'Belum ada pendaftaran hari ini';
+  }
+  return { bubbleClass: 'icon-bubble-blue', iconName: 'clipboard', label: 'Pendaftaran Hari Ini', value: today, caption, trendIcon, trendClass };
+}
+
+function renderDonut(segments, centerValue, centerLabel) {
+  const total = segments.reduce((sum, s) => sum + s.count, 0);
+  const r = 52;
+  const cx = 64;
+  const cy = 64;
+  const strokeWidth = 16;
+  const circumference = 2 * Math.PI * r;
+  let cumulative = 0;
+
+  const arcs = segments
+    .map((s) => {
+      const pct = total > 0 ? s.count / total : 0;
+      const dash = pct * circumference;
+      const offset = -cumulative * circumference;
+      cumulative += pct;
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${strokeWidth}" stroke-dasharray="${dash.toFixed(1)} ${(circumference - dash).toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" />`;
+    })
+    .join('');
+
+  const legend = segments
+    .map((s) => {
+      const pct = total > 0 ? (s.count / total) * 100 : 0;
+      return `
+        <div class="donut-legend-row">
+          <span class="donut-legend-dot" style="background:${s.color}"></span>
+          <span class="donut-legend-label">${escapeHtml(s.label)}</span>
+          <span class="donut-legend-count">${s.count}</span>
+          <span class="donut-legend-pct">${pct.toFixed(1)}%</span>
+        </div>
+      `;
+    })
+    .join('');
+
+  return `
+    <div class="donut-wrap">
+      <svg class="donut-svg" width="128" height="128" viewBox="0 0 128 128">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#eef0f4" stroke-width="${strokeWidth}" />
+        ${arcs}
+        <text x="${cx}" y="${cy - 3}" text-anchor="middle" class="donut-center-value">${centerValue}</text>
+        <text x="${cx}" y="${cy + 13}" text-anchor="middle" class="donut-center-label">${escapeHtml(centerLabel)}</text>
+      </svg>
+      <div class="donut-legend">${legend || '<p style="color:var(--muted);font-size:12.5px;">Belum ada data.</p>'}</div>
+    </div>
+  `;
+}
+
+async function loadActivity() {
+  const activityCard = document.getElementById('activityCard');
+  activityCard.style.display = 'block';
+  try {
+    const res = await api('/audit-logs?pageSize=5&page=1');
+    const rows = res.data;
+    document.getElementById('activityList').innerHTML = rows.length
+      ? rows
+          .map(
+            (r) => `
+        <div class="activity-row">
+          <div class="icon-bubble icon-bubble-sm ${ACTION_COLOR[r.action] || 'icon-bubble-blue'}">${icon(ACTION_ICON[r.action] || 'activity')}</div>
+          <div class="activity-text">${escapeHtml(actionLabel(r.action))} oleh ${escapeHtml(r.full_name || r.username || 'Sistem')}</div>
+          <div class="activity-time">${timeAgo(r.timestamp)}</div>
+        </div>
+      `
+          )
+          .join('')
+      : '<p style="color:var(--muted);font-size:12.5px;">Belum ada aktivitas.</p>';
+  } catch (err) {
+    document.getElementById('activityList').innerHTML = `<p style="color:var(--danger);font-size:12.5px;">${escapeHtml(err.message)}</p>`;
+  }
+}
+
 async function load() {
+  document.getElementById('welcomeTitle').textContent = `Selamat datang, ${user.full_name}!`;
+  document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  document.getElementById('calendarIconSlot').innerHTML = icon('calendar');
+  document.getElementById('dateChevronSlot').innerHTML = icon('chevronDown');
+
   try {
     const res = await api('/reports/dashboard');
-    const { total, today, active, byStatus } = res.data;
+    const { total, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats } = res.data;
 
-    document.getElementById('statGrid').innerHTML = `
-      <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Total Tamu</div></div>
-      <div class="stat-card"><div class="stat-value">${today}</div><div class="stat-label">Pendaftaran Hari Ini</div></div>
-      <div class="stat-card"><div class="stat-value">${active}</div><div class="stat-label">Sedang Berkunjung</div></div>
-    `;
+    document.getElementById('statGrid').innerHTML = [
+      statCardHtml({ bubbleClass: 'icon-bubble-accent', iconName: 'people', label: 'Total Tamu', value: total, caption: 'Total pendaftaran tercatat' }),
+      statCardHtml(registrationTrendCard(today, yesterday)),
+      statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Tamu Aktif (Saat Ini)', value: active, caption: 'Sedang berada di area' }),
+      statCardHtml({ bubbleClass: 'icon-bubble-amber', iconName: 'audit-log', label: 'Belum Check-out', value: pendingCheckout, caption: 'Perlu perhatian petugas' }),
+    ].join('');
 
-    document.getElementById('statusList').innerHTML =
-      byStatus
+    const midCards = [];
+    midCards.push(`
+      <div class="form-card">
+        <div class="section">
+          <h2 class="section-title">Status Pendaftaran</h2>
+          ${renderDonut(
+            byStatus.map((s) => ({ label: s.status, count: s.count, color: STATUS_COLOR[s.status] || '#98a2b3' })),
+            total,
+            'Total'
+          )}
+          <a class="link dashboard-card-link" href="daftar-tamu">Lihat semua pendaftaran &rarr;</a>
+        </div>
+      </div>
+    `);
+    const canSeeBankData = ['admin', 'verifikator'].includes(user.role);
+    midCards.push(`
+      <div class="form-card">
+        <div class="section">
+          <h2 class="section-title">Statistik Perangkat Elektronik</h2>
+          ${renderDonut(
+            deviceStats.map((s) => ({ label: deviceStatusLabel(s.device_status), count: s.count, color: DEVICE_COLOR[s.device_status] || '#98a2b3' })),
+            deviceStats.reduce((sum, s) => sum + s.count, 0),
+            'Tamu'
+          )}
+          ${canSeeBankData ? '<a class="link dashboard-card-link" href="bank-data">Lihat detail &rarr;</a>' : ''}
+        </div>
+      </div>
+    `);
+    if (securityStats) {
+      const rows = securityStats
         .map(
           (s) => `
-        <div class="status-row">
-          <span class="badge ${statusBadgeClass(s.status)}">${escapeHtml(s.status)}</span>
-          <span>${s.count}</span>
+        <div class="stat-list-row">
+          <span class="donut-legend-dot" style="background:${SECURITY_COLOR[s.security_category] || '#98a2b3'}"></span>
+          <span class="stat-list-label">${escapeHtml(securityCategoryLabel(s.security_category))}</span>
+          <span class="stat-list-count">${s.count}</span>
         </div>
       `
         )
-        .join('') || '<p>Belum ada data.</p>';
+        .join('');
+      midCards.push(`
+        <div class="form-card">
+          <div class="section">
+            <h2 class="section-title">Kategori Keamanan Personel</h2>
+            <div>${rows || '<p style="color:var(--muted);font-size:12.5px;">Belum ada data.</p>'}</div>
+            <a class="link dashboard-card-link" href="bank-data">Lihat Bank Data &rarr;</a>
+          </div>
+        </div>
+      `);
+    }
+    const midRow = document.getElementById('dashboardMidRow');
+    midRow.innerHTML = midCards.join('');
+    midRow.classList.toggle('dashboard-row-2col', midCards.length === 2);
   } catch (err) {
     document.querySelector('.content').insertAdjacentHTML(
       'beforeend',
       `<div class="result-box error-box">${escapeHtml(err.message)}</div>`
     );
   }
+
+  if (isAdmin) loadActivity();
 }
 
 load();
@@ -40,7 +230,11 @@ load();
 
 if (isAdmin) {
   document.getElementById('visitChartCard').style.display = 'block';
+} else {
+  document.getElementById('dashboardBottomRow').style.display = 'none';
+}
 
+if (isAdmin) {
   let currentPeriod = 'week';
   let showingTable = false;
   let lastData = [];
@@ -60,7 +254,7 @@ if (isAdmin) {
     return niceResidual * magnitude;
   }
 
-  function renderBarChart(data) {
+  function renderAreaChart(data) {
     const container = document.getElementById('visitChart');
     const width = 720;
     const height = 260;
@@ -74,8 +268,8 @@ if (isAdmin) {
 
     const maxValue = niceMax(Math.max(...data.map((d) => d.count), 1));
     const gridSteps = 4;
-    const slotWidth = plotWidth / data.length;
-    const barWidth = Math.min(24, slotWidth - 8);
+    const stepX = data.length > 1 ? plotWidth / (data.length - 1) : 0;
+    const bandWidth = data.length > 1 ? stepX : plotWidth;
 
     let gridlines = '';
     let yLabels = '';
@@ -86,28 +280,35 @@ if (isAdmin) {
       yLabels += `<text x="${marginLeft - 8}" y="${y + 3}" class="chart-axis-label" text-anchor="end">${value}</text>`;
     }
 
-    let bars = '';
-    let xLabels = '';
-    data.forEach((d, i) => {
-      const slotX = marginLeft + i * slotWidth;
-      const barX = slotX + (slotWidth - barWidth) / 2;
-      const barHeight = maxValue > 0 ? (d.count / maxValue) * plotHeight : 0;
-      const barY = marginTop + plotHeight - barHeight;
+    const points = data.map((d, i) => {
+      const x = marginLeft + (data.length > 1 ? i * stepX : plotWidth / 2);
+      const y = marginTop + plotHeight - (maxValue > 0 ? (d.count / maxValue) * plotHeight : 0);
+      return { x, y, count: d.count, label: d.label };
+    });
 
-      bars += `
+    const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const areaPath = `${linePath} L${points[points.length - 1].x.toFixed(1)},${(marginTop + plotHeight).toFixed(1)} L${points[0].x.toFixed(1)},${(marginTop + plotHeight).toFixed(1)} Z`;
+
+    let xLabels = '';
+    let markers = '';
+    points.forEach((p, i) => {
+      xLabels += `<text x="${p.x}" y="${height - marginBottom + 18}" class="chart-axis-label" text-anchor="middle">${escapeHtml(p.label)}</text>`;
+      const isLast = i === points.length - 1;
+      markers += `
         <g class="chart-bar-group" tabindex="0" data-index="${i}">
-          <rect x="${barX}" y="${barY}" width="${barWidth}" height="${Math.max(barHeight, 1)}" rx="4" ry="4" class="chart-bar" />
-          <rect x="${barX}" y="${marginTop}" width="${barWidth}" height="${plotHeight}" class="chart-bar-hit" fill="transparent" />
+          <rect x="${(p.x - bandWidth / 2).toFixed(1)}" y="${marginTop}" width="${bandWidth.toFixed(1)}" height="${plotHeight}" class="chart-bar-hit" fill="transparent" />
+          <circle cx="${p.x}" cy="${p.y}" r="${isLast ? 5 : 4}" class="chart-point${isLast ? ' chart-point-last' : ''}" />
         </g>
       `;
-      xLabels += `<text x="${slotX + slotWidth / 2}" y="${height - marginBottom + 18}" class="chart-axis-label" text-anchor="middle">${escapeHtml(d.label)}</text>`;
     });
 
     container.innerHTML = `
       <svg viewBox="0 0 ${width} ${height}" class="bar-chart-svg" role="img" aria-label="Grafik jumlah tamu ${PERIOD_LABEL[currentPeriod]}">
         ${gridlines}
         ${yLabels}
-        ${bars}
+        <path d="${areaPath}" class="chart-area-fill" />
+        <path d="${linePath}" class="chart-area-line" />
+        ${markers}
         ${xLabels}
       </svg>
       <div class="chart-tooltip" id="chartTooltip" style="display:none;"></div>
@@ -184,7 +385,7 @@ if (isAdmin) {
     try {
       const res = await api(`/reports/visit-stats?period=${period}&count=${PERIOD_COUNT[period]}`);
       lastData = res.data;
-      renderBarChart(lastData);
+      renderAreaChart(lastData);
       renderChartTable(lastData);
     } catch (err) {
       chartEl.innerHTML = `<p class="page-description" style="margin:0; color: var(--danger);">${escapeHtml(err.message)}</p>`;

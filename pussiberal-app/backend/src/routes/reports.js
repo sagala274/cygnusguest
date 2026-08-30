@@ -12,10 +12,24 @@ router.use(authenticate);
 router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator'), asyncHandler(async (req, res) => {
   const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM guests');
   const [[{ today }]] = await pool.query('SELECT COUNT(*) AS today FROM guests WHERE DATE(created_at) = CURDATE()');
+  const [[{ yesterday }]] = await pool.query(
+    "SELECT COUNT(*) AS yesterday FROM guests WHERE DATE(created_at) = CURDATE() - INTERVAL 1 DAY"
+  );
   const [[{ active }]] = await pool.query("SELECT COUNT(*) AS active FROM guests WHERE status = 'Sedang Berkunjung'");
+  const [[{ pendingCheckout }]] = await pool.query(
+    'SELECT COUNT(*) AS pendingCheckout FROM visits WHERE check_in_at IS NOT NULL AND check_out_at IS NULL'
+  );
   const [byStatus] = await pool.query('SELECT status, COUNT(*) AS count FROM guests GROUP BY status');
+  const [deviceStats] = await pool.query('SELECT device_status, COUNT(*) AS count FROM guest_members GROUP BY device_status');
 
-  res.json({ data: { total, today, active, byStatus } });
+  let securityStats = null;
+  if (['admin', 'verifikator'].includes(req.user.role)) {
+    [securityStats] = await pool.query(
+      "SELECT COALESCE(security_category, 'belum_dianalisa') AS security_category, COUNT(*) AS count FROM guest_members GROUP BY security_category"
+    );
+  }
+
+  res.json({ data: { total, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats } });
 }));
 
 function buildPeriods(period, count) {

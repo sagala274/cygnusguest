@@ -257,13 +257,67 @@ input:focus, select:focus, textarea:focus {
 .login-card .field label { color: #172033; }
 
 /* Stat cards */
-.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.stat-card { background: #fff; border: 1px solid #dce1e8; border-radius: 6px; padding: 22px; }
-.stat-value { font-size: 30px; font-weight: 800; color: var(--navy); }
-.stat-label { margin-top: 6px; font-size: 12px; color: var(--muted); font-weight: 700; letter-spacing: .3px; }
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.stat-card { background: #fff; border: 1px solid #dce1e8; border-radius: 6px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+.stat-card-head { display: flex; align-items: flex-start; gap: 14px; }
+.stat-card-text { flex: 1; min-width: 0; }
+.stat-value { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1.2; }
+.stat-label { margin-top: 4px; font-size: 12px; color: var(--muted); font-weight: 700; letter-spacing: .3px; }
+.stat-caption { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+.stat-caption.is-trend-up { color: var(--success); font-weight: 800; }
+.stat-caption.is-trend-down { color: var(--muted); font-weight: 800; }
+.stat-caption .icon { width: 12px; height: 12px; }
 
-.status-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eef0f4; font-size: 13px; font-weight: 700; }
-.status-row:last-child { border-bottom: 0; }
+/* Bubble ikon berwarna (stat card, activity feed) */
+.icon-bubble { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.icon-bubble .icon { width: 22px; height: 22px; }
+.icon-bubble-accent { background: var(--accent-soft); color: var(--accent); }
+.icon-bubble-blue { background: #eff4ff; color: #175cd3; }
+.icon-bubble-success { background: #e3f5ea; color: var(--success); }
+.icon-bubble-amber { background: #fbf1e2; color: var(--amber); }
+.icon-bubble-teal { background: #e2f2f1; color: #0e6b6b; }
+.icon-bubble-danger { background: #fde8e6; color: var(--danger); }
+.icon-bubble-sm { width: 34px; height: 34px; border-radius: 9px; }
+.icon-bubble-sm .icon { width: 16px; height: 16px; }
+
+/* Badge tanggal di header dashboard */
+.date-badge-btn {
+  display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px;
+  border: 1px solid #d0d5dd; background: #fff; border-radius: 6px; color: var(--text);
+  font-size: 13px; font-weight: 700; cursor: pointer; min-width: 0; white-space: nowrap;
+}
+.date-badge-btn .icon { width: 16px; height: 16px; color: #667085; }
+
+/* Grid kartu ringkasan dashboard */
+.dashboard-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 24px; align-items: stretch; }
+.dashboard-row .form-card { margin: 0; }
+.dashboard-row-bottom { grid-template-columns: 2fr 1fr; }
+.dashboard-row-2col { grid-template-columns: repeat(2, 1fr); }
+.dashboard-card-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; font-size: 12.5px; }
+
+/* Donut chart */
+.donut-wrap { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.donut-svg { flex-shrink: 0; }
+.donut-center-value { font-size: 20px; font-weight: 800; fill: var(--text); }
+.donut-center-label { font-size: 9.5px; font-weight: 700; fill: var(--muted); }
+.donut-legend { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 12px; }
+.donut-legend-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+.donut-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.donut-legend-label { flex: 1; font-weight: 600; color: #344054; }
+.donut-legend-count { font-weight: 800; }
+.donut-legend-pct { color: var(--muted); font-size: 11px; width: 42px; text-align: right; flex-shrink: 0; }
+
+/* Kartu daftar ringkas (Kategori Keamanan Personel) */
+.stat-list-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #eef0f4; font-size: 13px; }
+.stat-list-row:last-child { border-bottom: 0; }
+.stat-list-label { flex: 1; font-weight: 700; }
+.stat-list-count { font-weight: 800; font-size: 14px; }
+
+/* Aktivitas Terbaru */
+.activity-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eef0f4; }
+.activity-row:last-child { border-bottom: 0; }
+.activity-text { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; }
+.activity-time { font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
 
 /* Badge */
 .badge { display: inline-block; padding: 5px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: .3px; }
@@ -322,11 +376,14 @@ input:focus, select:focus, textarea:focus {
 .bar-chart-svg { width: 100%; height: auto; display: block; }
 .chart-gridline { stroke: #e4e7ec; stroke-width: 1; }
 .chart-axis-label { font-size: 10px; fill: #98a2b3; font-family: Arial, Helvetica, sans-serif; }
-.chart-bar { fill: var(--accent); transition: fill .15s; }
+.chart-area-fill { fill: var(--accent); fill-opacity: .1; }
+.chart-area-line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.chart-point { fill: #fff; stroke: var(--accent); stroke-width: 2.5; transition: r .1s; }
+.chart-point-last { fill: var(--accent); }
 .chart-bar-group { cursor: pointer; }
-.chart-bar-group:hover .chart-bar,
-.chart-bar-group.is-hovered .chart-bar,
-.chart-bar-group:focus .chart-bar { fill: var(--accent-hover); }
+.chart-bar-group:hover .chart-point,
+.chart-bar-group.is-hovered .chart-point,
+.chart-bar-group:focus .chart-point { r: 6; fill: var(--accent); }
 
 .chart-tooltip {
   position: absolute;
@@ -626,7 +683,8 @@ a.link:hover { text-decoration: underline; }
 @media (max-width: 850px) {
   .sidebar { width: 210px; }
   .content { margin-top: 28px; }
-  .stat-grid { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .dashboard-row, .dashboard-row-bottom, .dashboard-row-2col { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 700px) {
@@ -646,7 +704,9 @@ a.link:hover { text-decoration: underline; }
   .toolbar input, .toolbar select { min-width: 0; width: 100%; }
   .pagination { flex-wrap: wrap; justify-content: center; padding: 14px; }
   .page-header-row { flex-direction: column; }
-  .page-header-row .btn-accent { width: 100%; }
+  .page-header-row .btn-accent, .page-header-row .date-badge-btn { width: 100%; justify-content: center; }
+  .stat-grid { grid-template-columns: 1fr; }
+  .donut-wrap { flex-direction: column; align-items: stretch; }
   .table-toolbar { flex-direction: column; align-items: stretch; }
   .search-input-wrap, .select-filter-wrap { min-width: 0; width: 100%; }
   .action-btn-group { flex-wrap: wrap; }

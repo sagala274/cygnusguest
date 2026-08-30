@@ -38,36 +38,50 @@
       </div>
     </header>
 
-    <section class="content" style="max-width: 1120px;">
-      <h1 class="page-title">Ringkasan</h1>
-      <p class="page-description">Statistik pendaftaran dan kunjungan tamu PUSSIBERAL.</p>
+    <section class="content" style="max-width: 1180px;">
+      <div class="page-header-row">
+        <div class="page-header-text">
+          <h1 class="page-title"><span id="welcomeTitle">Selamat datang!</span></h1>
+          <p class="page-description" id="welcomeDesc">Berikut ringkasan aktivitas pendaftaran dan kunjungan tamu PUSSIBERAL.</p>
+        </div>
+        <button type="button" class="btn date-badge-btn" id="dateBadgeBtn" title="Filter tanggal (segera hadir)">
+          <span class="icon-slot" id="calendarIconSlot"></span>
+          <span id="todayLabel"></span>
+          <span class="icon-slot" id="dateChevronSlot"></span>
+        </button>
+      </div>
 
       <div class="stat-grid" id="statGrid"></div>
 
-      <div class="form-card" style="margin-top:24px;">
-        <div class="section">
-          <h2 class="section-title">Status Pendaftaran</h2>
-          <div id="statusList"></div>
-        </div>
-      </div>
+      <div class="dashboard-row" id="dashboardMidRow"></div>
 
-      <div class="form-card" style="margin-top:24px; display:none;" id="visitChartCard">
-        <div class="section">
-          <div class="section-header-row">
-            <h2 class="section-title">Grafik Kunjungan Tamu ke Mabesal</h2>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <div class="chart-period-toggle">
-                <button type="button" class="btn btn-small chart-period-btn" data-period="day">Per Hari</button>
-                <button type="button" class="btn btn-small chart-period-btn is-active" data-period="week">Per Minggu</button>
-                <button type="button" class="btn btn-small chart-period-btn" data-period="month">Per Bulan</button>
+      <div class="dashboard-row dashboard-row-bottom" id="dashboardBottomRow">
+        <div class="form-card" style="display:none;" id="visitChartCard">
+          <div class="section">
+            <div class="section-header-row">
+              <h2 class="section-title">Grafik Kunjungan Tamu ke Mabesal</h2>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <div class="chart-period-toggle">
+                  <button type="button" class="btn btn-small chart-period-btn" data-period="day">Per Hari</button>
+                  <button type="button" class="btn btn-small chart-period-btn is-active" data-period="week">Per Minggu</button>
+                  <button type="button" class="btn btn-small chart-period-btn" data-period="month">Per Bulan</button>
+                </div>
+                <button type="button" class="btn btn-small" id="toggleChartView">Lihat sebagai Tabel</button>
               </div>
-              <button type="button" class="btn btn-small" id="toggleChartView">Lihat sebagai Tabel</button>
             </div>
-          </div>
-          <p class="page-description" style="margin-bottom:16px;">Jumlah tamu yang terdaftar per periode. Khusus terlihat oleh Administrator.</p>
+            <p class="page-description" style="margin-bottom:16px;">Jumlah tamu yang terdaftar per periode. Khusus terlihat oleh Administrator.</p>
 
-          <div class="bar-chart-wrap" id="visitChart"></div>
-          <div id="visitChartTable" style="display:none;"></div>
+            <div class="bar-chart-wrap" id="visitChart"></div>
+            <div id="visitChartTable" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="form-card" style="display:none;" id="activityCard">
+          <div class="section">
+            <h2 class="section-title">Aktivitas Terbaru</h2>
+            <div id="activityList"></div>
+            <a class="link dashboard-card-link" href="audit-log">Lihat semua aktivitas &rarr;</a>
+          </div>
         </div>
       </div>
     </section>
