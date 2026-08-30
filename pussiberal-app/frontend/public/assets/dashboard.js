@@ -121,6 +121,30 @@ function renderDonut(segments, centerValue, centerLabel) {
   `;
 }
 
+function renderBarList(segments, totalValue, totalLabel) {
+  const maxCount = Math.max(...segments.map((s) => s.count), 1);
+
+  const rows = segments
+    .map((s) => {
+      const pct = maxCount > 0 ? (s.count / maxCount) * 100 : 0;
+      return `
+        <div class="bar-list-row">
+          <div class="bar-list-track"><div class="bar-list-fill" style="width:${pct}%; background:${s.color}"></div></div>
+          <div class="bar-list-meta">
+            <span class="bar-list-label">${escapeHtml(s.label)}</span>
+            <span class="bar-list-count">${s.count}</span>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  return `
+    <div class="bar-list-total">${totalValue}<span class="bar-list-total-label">${escapeHtml(totalLabel)}</span></div>
+    <div class="bar-list">${rows || '<p style="color:var(--muted);font-size:12.5px;">Belum ada data.</p>'}</div>
+  `;
+}
+
 async function loadActivity() {
   const activityCard = document.getElementById('activityCard');
   activityCard.style.display = 'block';
@@ -181,7 +205,7 @@ async function load() {
       <div class="form-card">
         <div class="section">
           <h2 class="section-title">Statistik Perangkat Elektronik</h2>
-          ${renderDonut(
+          ${renderBarList(
             deviceStats.map((s) => ({ label: deviceStatusLabel(s.device_status), count: s.count, color: DEVICE_COLOR[s.device_status] || '#98a2b3' })),
             deviceStats.reduce((sum, s) => sum + s.count, 0),
             'Tamu'
