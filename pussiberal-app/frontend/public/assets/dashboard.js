@@ -177,10 +177,10 @@ async function load() {
 
   try {
     const res = await api('/reports/dashboard');
-    const { total, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats } = res.data;
+    const { total, totalGuests, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats } = res.data;
 
     document.getElementById('statGrid').innerHTML = [
-      statCardHtml({ bubbleClass: 'icon-bubble-accent', iconName: 'people', label: 'Total Tamu', value: total, caption: 'Total pendaftaran tercatat' }),
+      statCardHtml({ bubbleClass: 'icon-bubble-accent', iconName: 'people', label: 'Total Tamu', value: totalGuests, caption: 'Total individu tamu tercatat' }),
       statCardHtml(registrationTrendCard(today, yesterday)),
       statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Tamu Aktif (Saat Ini)', value: active, caption: 'Sedang berada di area' }),
       statCardHtml({ bubbleClass: 'icon-bubble-amber', iconName: 'audit-log', label: 'Belum Check-out', value: pendingCheckout, caption: 'Perlu perhatian petugas' }),

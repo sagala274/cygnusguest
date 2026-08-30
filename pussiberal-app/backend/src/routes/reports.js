@@ -11,6 +11,13 @@ router.use(authenticate);
 
 router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator'), asyncHandler(async (req, res) => {
   const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM guests');
+  // "total" di atas menghitung PENDAFTARAN (satu pendaftaran bisa berisi lebih
+  // dari satu orang), dipakai untuk donut Status Pendaftaran agar konsisten
+  // dengan breakdown byStatus. "totalGuests" menghitung INDIVIDU tamu --
+  // dipakai kartu "Total Tamu" supaya angkanya selalu >= jumlah pada
+  // Statistik Perangkat Elektronik (yang juga menghitung per individu),
+  // bukan malah lebih kecil dan terlihat seperti salah hitung.
+  const [[{ totalGuests }]] = await pool.query('SELECT COUNT(*) AS totalGuests FROM guest_members');
   const [[{ today }]] = await pool.query('SELECT COUNT(*) AS today FROM guests WHERE DATE(created_at) = CURDATE()');
   const [[{ yesterday }]] = await pool.query(
     "SELECT COUNT(*) AS yesterday FROM guests WHERE DATE(created_at) = CURDATE() - INTERVAL 1 DAY"
@@ -29,7 +36,7 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator'), async
     );
   }
 
-  res.json({ data: { total, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats } });
+  res.json({ data: { total, totalGuests, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats } });
 }));
 
 function buildPeriods(period, count) {
