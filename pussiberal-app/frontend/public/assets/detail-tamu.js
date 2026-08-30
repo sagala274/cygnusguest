@@ -25,7 +25,7 @@ function memberCardHTML(m) {
       <label class="photo-widget-label">${label}</label>
       ${
         value
-          ? `<div class="photo-frame" style="max-width:220px;"><img src="${value}" alt="${label}"></div>
+          ? `<div class="photo-frame" style="max-width:220px;"><img src="${escapeHtml(value)}" alt="${escapeHtml(label)}"></div>
              ${isAdmin ? `<div class="photo-actions"><button type="button" class="btn btn-danger btn-small delete-photo-btn" data-member-id="${m.id}" data-kind="${kind}">Hapus ${label}</button></div>` : ''}`
           : `<div class="photo-frame" style="max-width:220px;"><div class="photo-frame-empty">Tidak ada foto</div></div>`
       }

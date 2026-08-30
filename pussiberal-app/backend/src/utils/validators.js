@@ -12,13 +12,49 @@ function maskNik(nik) {
 }
 
 const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
+const MIN_PHOTO_BYTES = 12; // cukup untuk memuat magic bytes terpanjang (WebP: 12 byte)
+
+// Memverifikasi byte awal file sesuai format yang diklaim di prefix data URL --
+// mencegah file non-gambar (mis. skrip yang disamarkan) lolos hanya karena
+// menempelkan prefix "data:image/...;base64," di depannya.
+function hasValidImageMagicBytes(buffer, subtype) {
+  if (subtype === 'png') {
+    return (
+      buffer.length >= 8 &&
+      buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47 &&
+      buffer[4] === 0x0d && buffer[5] === 0x0a && buffer[6] === 0x1a && buffer[7] === 0x0a
+    );
+  }
+  if (subtype === 'jpg' || subtype === 'jpeg') {
+    return buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  }
+  if (subtype === 'webp') {
+    return (
+      buffer.length >= 12 &&
+      buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 && // "RIFF"
+      buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50 // "WEBP"
+    );
+  }
+  return false;
+}
 
 function isValidPhotoDataUrl(value) {
   if (value === undefined || value === null || value === '') return true;
   if (typeof value !== 'string') return false;
-  if (!/^data:image\/(png|jpe?g|webp);base64,/.test(value)) return false;
-  const approxBytes = (value.length * 3) / 4;
-  return approxBytes <= MAX_PHOTO_BYTES;
+
+  // Prefix diperiksa dan payload base64 diwajibkan hanya berisi karakter
+  // base64 valid sampai akhir string -- tidak boleh ada data tambahan
+  // setelahnya (celah yang bisa dipakai untuk menyisipkan payload lain).
+  const match = /^data:image\/(png|jpe?g|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
+  if (!match) return false;
+
+  const subtype = match[1].toLowerCase();
+  const base64Payload = match[2];
+  const approxBytes = (base64Payload.length * 3) / 4;
+  if (approxBytes > MAX_PHOTO_BYTES || approxBytes < MIN_PHOTO_BYTES) return false;
+
+  const buffer = Buffer.from(base64Payload, 'base64');
+  return hasValidImageMagicBytes(buffer, subtype);
 }
 
 const VALID_DEVICE_STATUSES = ['tidak_membawa', 'dititipkan', 'dibawa_alasan_khusus'];
