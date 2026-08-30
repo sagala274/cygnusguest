@@ -58,18 +58,16 @@
       <div class="dashboard-row dashboard-row-bottom" id="dashboardBottomRow">
         <div class="form-card" style="display:none;" id="visitChartCard">
           <div class="section">
-            <div class="section-header-row">
-              <h2 class="section-title">Grafik Kunjungan Tamu ke Mabesal</h2>
-              <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                <div class="chart-period-toggle">
-                  <button type="button" class="btn btn-small chart-period-btn" data-period="day">Per Hari</button>
-                  <button type="button" class="btn btn-small chart-period-btn is-active" data-period="week">Per Minggu</button>
-                  <button type="button" class="btn btn-small chart-period-btn" data-period="month">Per Bulan</button>
-                </div>
-                <button type="button" class="btn btn-small" id="toggleChartView">Lihat sebagai Tabel</button>
+            <h2 class="section-title">Grafik Kunjungan Tamu ke Pussiberal</h2>
+            <div class="chart-controls-row">
+              <div class="chart-period-toggle">
+                <button type="button" class="btn btn-small chart-period-btn" data-period="day">Per Hari</button>
+                <button type="button" class="btn btn-small chart-period-btn is-active" data-period="week">Per Minggu</button>
+                <button type="button" class="btn btn-small chart-period-btn" data-period="month">Per Bulan</button>
               </div>
+              <button type="button" class="btn btn-small" id="toggleChartView">Lihat sebagai Tabel</button>
             </div>
-            <p class="page-description" style="margin-bottom:16px;">Jumlah tamu yang terdaftar per periode. Khusus terlihat oleh Administrator.</p>
+            <p class="page-description" id="visitChartDesc" style="margin-bottom:16px;">Jumlah tamu yang terdaftar per periode.</p>
 
             <div class="bar-chart-wrap" id="visitChart"></div>
             <div id="visitChartTable" style="display:none;"></div>

@@ -3,6 +3,7 @@ renderNav('dashboard');
 
 const user = getUser();
 const isAdmin = user && user.role === 'admin';
+const canSeeVisitChart = user && ['admin', 'verifikator'].includes(user.role);
 
 const STATUS_COLOR = {
   Draft: '#98a2b3',
@@ -226,15 +227,17 @@ async function load() {
 
 load();
 
-// ---- Grafik Kunjungan Tamu (khusus Administrator) ----
+// ---- Grafik Kunjungan Tamu (Administrator & Verifikator) ----
 
-if (isAdmin) {
+const dashboardBottomRow = document.getElementById('dashboardBottomRow');
+if (canSeeVisitChart) {
   document.getElementById('visitChartCard').style.display = 'block';
+  if (!isAdmin) dashboardBottomRow.classList.add('dashboard-row-single');
 } else {
-  document.getElementById('dashboardBottomRow').style.display = 'none';
+  dashboardBottomRow.style.display = 'none';
 }
 
-if (isAdmin) {
+if (canSeeVisitChart) {
   let currentPeriod = 'week';
   let showingTable = false;
   let lastData = [];

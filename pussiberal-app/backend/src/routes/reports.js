@@ -71,7 +71,7 @@ function buildPeriods(period, count) {
   return periods;
 }
 
-router.get('/visit-stats', requireRole('admin'), asyncHandler(async (req, res) => {
+router.get('/visit-stats', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
   const period = ['day', 'month'].includes(req.query.period) ? req.query.period : 'week';
   const count = Math.min(Math.max(parseInt(req.query.count, 10) || 12, 2), 31);
 
