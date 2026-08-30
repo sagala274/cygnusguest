@@ -1,5 +1,42 @@
 const API_BASE = '/api';
 
+/* Ikon garis (gaya Feather/Lucide) di-inline sebagai SVG, bukan icon font/CDN,
+   supaya tidak perlu melonggarkan CSP (script-src/font-src 'self'). */
+const ICONS = {
+  dashboard: '<polyline points="3,10 12,3 21,10"/><path d="M5,10 V20 H19 V10"/>',
+  pendaftaran: '<circle cx="9" cy="7" r="3.2"/><path d="M3.5,20 a5.5,5.2 0 0 1 11,0"/><line x1="18" y1="8" x2="18" y2="14"/><line x1="15" y1="11" x2="21" y2="11"/>',
+  'daftar-tamu': '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
+  verifikasi: '<path d="M12,3 L20,6 V11 C20,16 16.5,19.5 12,21 C7.5,19.5 4,16 4,11 V6 Z"/><polyline points="8.5,12 11,14.5 15.5,9.5"/>',
+  laporan: '<line x1="3" y1="20" x2="21" y2="20"/><line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="18" y1="20" x2="18" y2="15"/>',
+  'bank-data': '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4,6 V18 C4,19.7 7.6,21 12,21 C16.4,21 20,19.7 20,18 V6"/><path d="M4,12 C4,13.7 7.6,15 12,15 C16.4,15 20,13.7 20,12"/>',
+  'ai-chat': '<path d="M21,11.5 C21,16.2 16.97,20 12,20 C10.5,20 9.1,19.65 7.86,19.03 L3,20 L4.3,15.9 C3.48,14.6 3,13.1 3,11.5 C3,6.8 7.03,3 12,3 C16.97,3 21,6.8 21,11.5 Z"/>',
+  users: '<circle cx="12" cy="12" r="3.2"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="17" y1="17" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="17" y1="7" x2="19.1" y2="4.9"/>',
+  'audit-log': '<circle cx="12" cy="12" r="8.5"/><polyline points="12,7 12,12 16,14.5"/>',
+  telegram: '<path d="M3,11 L21,4 L14,20 L11,13 L3,11 Z"/><line x1="11" y1="13" x2="21" y2="4"/>',
+  backup: '<rect x="4" y="4" width="16" height="4" rx="1"/><rect x="5" y="8" width="14" height="12" rx="1"/><line x1="10" y1="13" x2="14" y2="13"/>',
+  'ai-config': '<line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2"/>',
+  bell: '<path d="M6,17 V11 C6,7.5 8.5,5 12,5 C15.5,5 18,7.5 18,11 V17 L20,19 H4 L6,17 Z"/><path d="M10,21 a2,2 0 0 0 4,0"/>',
+  sun: '<circle cx="12" cy="12" r="4.2"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="17" y1="17" x2="18.8" y2="18.8"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="7" y1="17" x2="5.2" y2="18.8"/><line x1="5" y1="12" x2="2.5" y2="12"/><line x1="7" y1="7" x2="5.2" y2="5.2"/><line x1="12" y1="5" x2="12" y2="2.5"/><line x1="17" y1="7" x2="18.8" y2="5.2"/>',
+  chevronDown: '<polyline points="6,9 12,15 18,9"/>',
+  chevronRight: '<polyline points="9,6 15,12 9,18"/>',
+  search: '<circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/>',
+  filter: '<path d="M3,4 H21 L14,12.5 V19 L10,21 V12.5 Z"/>',
+  pencil: '<path d="M4,20 L4.7,16.5 L15.5,5.7 a1.8,1.8 0 0 1 2.5,0 L19.3,7 a1.8,1.8 0 0 1 0,2.5 L8.5,19.3 Z"/><line x1="14" y1="7.2" x2="17.5" y2="10.7"/>',
+  power: '<line x1="12" y1="3" x2="12" y2="11"/><path d="M7,6 a8,8 0 1 0 10,0"/>',
+  trash: '<line x1="4" y1="7" x2="20" y2="7"/><path d="M6,7 L7,20 a1,1 0 0 0 1,1 H16 a1,1 0 0 0 1,-1 L18,7"/><line x1="9" y1="11" x2="9" y2="16"/><line x1="15" y1="11" x2="15" y2="16"/><path d="M9,7 V4 a1,1 0 0 1 1,-1 H14 a1,1 0 0 1 1,1 V7"/>',
+  close: '<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
+  crown: '<path d="M4,17 L2,7 L8,11 L12,4 L16,11 L22,7 L20,17 Z"/><line x1="4" y1="20" x2="20" y2="20"/>',
+  shield: '<path d="M12,3 L19,6 V11 C19,15.5 16,19 12,21 C8,19 5,15.5 5,11 V6 Z"/>',
+  checkCircle: '<circle cx="12" cy="12" r="8.5"/><polyline points="8,12.5 11,15.5 16,9.5"/>',
+  sort: '<polyline points="8,9 12,5 16,9"/><polyline points="8,15 12,19 16,15"/>',
+  logout: '<path d="M9,4 H5 a1,1 0 0 0 -1,1 V19 a1,1 0 0 0 1,1 H9"/><polyline points="14,8 18,12 14,16"/><line x1="18" y1="12" x2="9" y2="12"/>',
+};
+
+function icon(name, extraClass) {
+  const body = ICONS[name] || '';
+  return `<svg class="icon${extraClass ? ' ' + extraClass : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+}
+
 function getToken() {
   return localStorage.getItem('token');
 }
@@ -226,18 +263,18 @@ function renderNav(active) {
   if (!user) return;
 
   const links = [
-    { href: 'dashboard', label: 'Dashboard', icon: '◆', roles: ['admin', 'pos_depan', 'verifikator'] },
-    { href: 'pendaftaran', label: 'Pendaftaran Tamu', icon: '✎', roles: ['admin', 'pos_depan'] },
-    { href: 'daftar-tamu', label: 'Daftar Tamu', icon: '☰', roles: ['admin', 'pos_depan', 'verifikator'] },
-    { href: 'daftar-tamu?status=Menunggu%20Verifikasi', label: 'Verifikasi Tamu', icon: '✔', roles: ['admin', 'verifikator'], matchHref: 'daftar-tamu' },
-    { href: 'laporan', label: 'Laporan', icon: '▤', roles: ['admin', 'verifikator'] },
-    { href: 'bank-data', label: 'Bank Data', icon: '🗂', roles: ['admin', 'verifikator'] },
-    { href: 'ai-chat', label: 'AI Chat', icon: '✦', roles: ['admin'] },
-    { href: 'users', label: 'Manajemen Pengguna', icon: '⚙', roles: ['admin'] },
-    { href: 'audit-log', label: 'Log Aktivitas', icon: '🕐', roles: ['admin'] },
-    { href: 'telegram-settings', label: 'Notifikasi Telegram', icon: '📨', roles: ['admin'] },
-    { href: 'backup', label: 'Backup Database', icon: '💾', roles: ['admin'] },
-    { href: 'ai-config', label: 'Konfigurasi AI', icon: '🛠', roles: ['admin'] },
+    { href: 'dashboard', label: 'Dashboard', icon: 'dashboard', roles: ['admin', 'pos_depan', 'verifikator'] },
+    { href: 'pendaftaran', label: 'Pendaftaran Tamu', icon: 'pendaftaran', roles: ['admin', 'pos_depan'] },
+    { href: 'daftar-tamu', label: 'Daftar Tamu', icon: 'daftar-tamu', roles: ['admin', 'pos_depan', 'verifikator'] },
+    { href: 'daftar-tamu?status=Menunggu%20Verifikasi', label: 'Verifikasi Tamu', icon: 'verifikasi', roles: ['admin', 'verifikator'], matchHref: 'daftar-tamu' },
+    { href: 'laporan', label: 'Laporan', icon: 'laporan', roles: ['admin', 'verifikator'] },
+    { href: 'bank-data', label: 'Bank Data', icon: 'bank-data', roles: ['admin', 'verifikator'] },
+    { href: 'ai-chat', label: 'AI Chat', icon: 'ai-chat', roles: ['admin'] },
+    { href: 'users', label: 'Manajemen Pengguna', icon: 'users', roles: ['admin'] },
+    { href: 'audit-log', label: 'Log Aktivitas', icon: 'audit-log', roles: ['admin'] },
+    { href: 'telegram-settings', label: 'Notifikasi Telegram', icon: 'telegram', roles: ['admin'] },
+    { href: 'backup', label: 'Backup Database', icon: 'backup', roles: ['admin'] },
+    { href: 'ai-config', label: 'Konfigurasi AI', icon: 'ai-config', roles: ['admin'] },
   ];
 
   const nav = document.getElementById('mainNav');
@@ -248,12 +285,35 @@ function renderNav(active) {
         const isActive = (l.matchHref || l.href) === active;
         return `
         <a class="nav-item ${isActive ? 'active' : ''}" href="${l.href}">
-          <span class="nav-icon">${l.icon}</span><span>${l.label}</span>
-          ${isActive ? '<span class="nav-dot"></span>' : ''}
+          <span class="nav-icon">${icon(l.icon)}</span><span>${l.label}</span>
+          ${isActive ? `<span class="nav-chevron">${icon('chevronRight')}</span>` : ''}
         </a>
       `;
       })
       .join('');
+  }
+
+  /* Tombol notifikasi & mode tampilan di topbar -- disuntik lewat JS (bukan
+     ditulis ulang di tiap file HTML) supaya semua halaman otomatis konsisten.
+     Keduanya baru elemen visual (belum ada sistem notifikasi/dark mode nyata). */
+  const topRight = document.querySelector('.top-right');
+  const profileMenuEl = document.getElementById('profileMenu');
+  if (topRight && profileMenuEl && !document.getElementById('topbarIcons')) {
+    const wrap = document.createElement('div');
+    wrap.id = 'topbarIcons';
+    wrap.className = 'topbar-icons';
+    wrap.innerHTML = `
+      <button type="button" class="topbar-icon-btn" title="Notifikasi (segera hadir)">${icon('bell')}</button>
+      <button type="button" class="topbar-icon-btn" title="Mode tampilan (segera hadir)">${icon('sun')}</button>
+    `;
+    topRight.insertBefore(wrap, profileMenuEl);
+  }
+
+  /* Ikon bubble di sebelah judul halaman, mengikuti ikon menu aktifnya. */
+  const activeLink = links.find((l) => (l.matchHref || l.href) === active);
+  const titleEl = document.querySelector('.page-title');
+  if (titleEl && activeLink && !titleEl.querySelector('.page-title-icon')) {
+    titleEl.insertAdjacentHTML('afterbegin', `<span class="page-title-icon">${icon(activeLink.icon)}</span>`);
   }
 
   const nameEl = document.getElementById('profileName');
@@ -262,14 +322,25 @@ function renderNav(active) {
   if (roleEl) roleEl.textContent = roleLabel(user.role);
 
   const avatarEl = document.querySelector('.avatar');
-  if (avatarEl && user.avatar_url) {
-    avatarEl.style.backgroundImage = `url('${user.avatar_url}')`;
-    avatarEl.style.backgroundSize = 'cover';
-    avatarEl.style.backgroundPosition = 'center';
+  if (avatarEl) {
+    if (user.avatar_url) {
+      avatarEl.style.backgroundImage = `url('${user.avatar_url}')`;
+      avatarEl.style.backgroundSize = 'cover';
+      avatarEl.style.backgroundPosition = 'center';
+    } else {
+      avatarEl.textContent = (user.full_name || user.username || '?').trim().charAt(0).toUpperCase();
+    }
+  }
+
+  const profileTriggerEl = document.getElementById('profileTrigger');
+  if (profileTriggerEl && !profileTriggerEl.querySelector('.profile-chevron')) {
+    profileTriggerEl.insertAdjacentHTML('beforeend', `<span class="profile-chevron">${icon('chevronDown')}</span>`);
   }
 
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
+    const logoutIcon = logoutBtn.querySelector('.nav-icon');
+    if (logoutIcon) logoutIcon.innerHTML = icon('logout');
     logoutBtn.addEventListener('click', (e) => {
       e.preventDefault();
       clearSession();

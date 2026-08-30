@@ -39,88 +39,96 @@
     </header>
 
     <section class="content" style="max-width: 1120px;">
-      <h1 class="page-title">Manajemen Pengguna</h1>
-      <p class="page-description">Kelola akun Administrator, Verifikator, dan Petugas Pos Depan.</p>
+      <div class="page-header-row">
+        <div class="page-header-text">
+          <h1 class="page-title">Manajemen Pengguna</h1>
+          <p class="page-description">Kelola akun Administrator, Verifikator, dan Petugas Pos Depan.</p>
+        </div>
+        <button type="button" class="btn btn-accent" id="addUserBtn">+ Tambah Pengguna</button>
+      </div>
 
       <div id="resultBox" class="result-box" style="display:none;"></div>
+
+      <div class="table-toolbar">
+        <div class="search-input-wrap">
+          <span class="icon-slot" id="searchIconSlot"></span>
+          <input type="text" id="searchInput" placeholder="Cari username, nama, atau role...">
+        </div>
+        <div class="select-filter-wrap">
+          <span class="icon-slot" id="roleIconSlot"></span>
+          <select id="roleFilter">
+            <option value="">Semua Role</option>
+            <option value="admin">Administrator</option>
+            <option value="verifikator">Verifikator</option>
+            <option value="pos_depan">Petugas Pos Depan</option>
+          </select>
+        </div>
+        <div class="select-filter-wrap">
+          <span class="icon-slot" id="statusIconSlot"></span>
+          <select id="statusFilter">
+            <option value="">Semua Status</option>
+            <option value="1">Aktif</option>
+            <option value="0">Nonaktif</option>
+          </select>
+        </div>
+      </div>
 
       <div class="form-card">
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Username</th>
-                <th>Nama Lengkap</th>
-                <th>Role</th>
-                <th>Status</th>
+                <th><button type="button" class="th-sort-btn" data-sort="username">Username <span class="sort-icon-slot"></span></button></th>
+                <th><button type="button" class="th-sort-btn" data-sort="full_name">Nama Lengkap <span class="sort-icon-slot"></span></button></th>
+                <th><button type="button" class="th-sort-btn" data-sort="role">Role <span class="sort-icon-slot"></span></button></th>
+                <th><button type="button" class="th-sort-btn" data-sort="is_active">Status <span class="sort-icon-slot"></span></button></th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="userTableBody"></tbody>
           </table>
         </div>
-      </div>
-
-      <div class="form-card" id="editUserCard" style="margin-top:24px; display:none;">
-        <div class="section">
-          <h2 class="section-title">Edit Pengguna: <span id="editUsername"></span></h2>
-          <form id="editUserForm" class="grid">
-            <div class="field">
-              <label for="editFullName">NAMA LENGKAP <span class="required">*</span></label>
-              <input id="editFullName" required>
-            </div>
-            <div class="field">
-              <label for="editRole">ROLE <span class="required">*</span></label>
-              <select id="editRole" required>
-                <option value="pos_depan">Petugas Pos Depan</option>
-                <option value="verifikator">Verifikator</option>
-                <option value="admin">Administrator</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="editPassword">PASSWORD BARU <span class="label-note">Kosongkan jika tidak diubah</span></label>
-              <input id="editPassword" type="password" minlength="8">
-            </div>
-            <div class="full" style="display:flex; gap:12px;">
-              <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
-              <button type="button" class="btn" id="cancelEditBtn">Batal</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <div class="form-card" style="margin-top:24px;">
-        <div class="section">
-          <h2 class="section-title">Tambah Pengguna Baru</h2>
-          <form id="createUserForm" class="grid">
-            <div class="field">
-              <label for="newUsername">USERNAME <span class="required">*</span></label>
-              <input id="newUsername" required>
-            </div>
-            <div class="field">
-              <label for="newFullName">NAMA LENGKAP <span class="required">*</span></label>
-              <input id="newFullName" required>
-            </div>
-            <div class="field">
-              <label for="newPassword">PASSWORD <span class="required">*</span></label>
-              <input id="newPassword" type="password" minlength="8" required>
-            </div>
-            <div class="field">
-              <label for="newRole">ROLE <span class="required">*</span></label>
-              <select id="newRole" required>
-                <option value="pos_depan">Petugas Pos Depan</option>
-                <option value="verifikator">Verifikator</option>
-                <option value="admin">Administrator</option>
-              </select>
-            </div>
-            <div class="full">
-              <button type="submit" class="btn btn-primary">Tambah Pengguna</button>
-            </div>
-          </form>
-        </div>
+        <div class="pagination-bar" id="paginationBar"></div>
       </div>
     </section>
   </main>
+</div>
+
+<div class="modal-overlay" id="userModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="modalTitle">Tambah Pengguna Baru</h2>
+      <button type="button" class="modal-close" id="modalCloseBtn"><span class="icon-slot" id="closeIconSlot"></span></button>
+    </div>
+    <div class="modal-body">
+      <form id="userForm" class="grid">
+        <div class="field full" id="usernameField">
+          <label for="formUsername">USERNAME <span class="required">*</span></label>
+          <input id="formUsername" required>
+        </div>
+        <div class="field full">
+          <label for="formFullName">NAMA LENGKAP <span class="required">*</span></label>
+          <input id="formFullName" required>
+        </div>
+        <div class="field full">
+          <label for="formPassword" id="passwordLabel">PASSWORD <span class="required">*</span></label>
+          <input id="formPassword" type="password" minlength="8">
+        </div>
+        <div class="field full">
+          <label for="formRole">ROLE <span class="required">*</span></label>
+          <select id="formRole" required>
+            <option value="pos_depan">Petugas Pos Depan</option>
+            <option value="verifikator">Verifikator</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+        <div class="full modal-actions">
+          <button type="button" class="btn" id="modalCancelBtn">Batal</button>
+          <button type="submit" class="btn btn-accent" id="modalSubmitBtn">Tambah Pengguna</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script src="assets/app.js"></script>
