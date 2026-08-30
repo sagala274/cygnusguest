@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS telegram_settings (
   chat_id VARCHAR(50) NULL,
   notify_new_registration TINYINT(1) NOT NULL DEFAULT 1,
   notify_login TINYINT(1) NOT NULL DEFAULT 1,
+  notify_logout TINYINT(1) NOT NULL DEFAULT 1,
   last_update_id BIGINT NOT NULL DEFAULT 0,
   detected_chat_id VARCHAR(50) NULL,
   detected_chat_name VARCHAR(200) NULL,

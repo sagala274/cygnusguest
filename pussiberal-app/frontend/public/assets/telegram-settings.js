@@ -55,6 +55,7 @@ async function load() {
     chatIdInput.value = res.data.chat_id || '';
     document.getElementById('notifyRegistration').checked = res.data.notify_new_registration;
     document.getElementById('notifyLogin').checked = res.data.notify_login;
+    document.getElementById('notifyLogout').checked = res.data.notify_logout;
     renderStatus(res.data);
   } catch (err) {
     showMessage(err.message, true);
@@ -75,6 +76,7 @@ form.addEventListener('submit', async (e) => {
     chat_id: chatIdInput.value.trim(),
     notify_new_registration: document.getElementById('notifyRegistration').checked,
     notify_login: document.getElementById('notifyLogin').checked,
+    notify_logout: document.getElementById('notifyLogout').checked,
   };
   const botToken = document.getElementById('botToken').value.trim();
   if (botToken) payload.bot_token = botToken;

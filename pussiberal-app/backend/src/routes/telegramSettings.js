@@ -34,6 +34,7 @@ router.get('/', asyncHandler(async (req, res) => {
       chat_id: settings.chat_id,
       notify_new_registration: !!settings.notify_new_registration,
       notify_login: !!settings.notify_login,
+      notify_logout: !!settings.notify_logout,
       has_bot_token: !!settings.bot_token_encrypted,
       bot_username: bot ? bot.username : null,
       bot_connection_ok: !!bot,
@@ -45,7 +46,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 router.put('/', asyncHandler(async (req, res) => {
-  const { bot_token, chat_id, notify_new_registration, notify_login } = req.body || {};
+  const { bot_token, chat_id, notify_new_registration, notify_login, notify_logout } = req.body || {};
 
   const fields = [];
   const params = {};
@@ -66,6 +67,10 @@ router.put('/', asyncHandler(async (req, res) => {
     fields.push('notify_login = :notify_login');
     params.notify_login = notify_login ? 1 : 0;
   }
+  if (notify_logout !== undefined) {
+    fields.push('notify_logout = :notify_logout');
+    params.notify_logout = notify_logout ? 1 : 0;
+  }
   fields.push('updated_by = :updated_by');
   params.updated_by = req.user.sub;
 
@@ -75,6 +80,7 @@ router.put('/', asyncHandler(async (req, res) => {
     bot_token_changed: typeof bot_token === 'string' && !!bot_token.trim(),
     notify_new_registration,
     notify_login,
+    notify_logout,
   });
 
   const settings = await getTelegramSettings();
@@ -86,6 +92,7 @@ router.put('/', asyncHandler(async (req, res) => {
       chat_id: settings.chat_id,
       notify_new_registration: !!settings.notify_new_registration,
       notify_login: !!settings.notify_login,
+      notify_logout: !!settings.notify_logout,
       has_bot_token: !!settings.bot_token_encrypted,
       bot_username: bot ? bot.username : null,
       bot_connection_ok: !!bot,

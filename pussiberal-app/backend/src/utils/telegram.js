@@ -3,6 +3,15 @@ const { encrypt, decrypt } = require('./crypto');
 const { TARGET_OFFICIAL_LABELS } = require('./guestFields');
 const { formatJakartaDateTime } = require('./datetime');
 
+async function columnExists(table, column) {
+  const [rows] = await pool.query(
+    `SELECT 1 FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column`,
+    { table, column }
+  );
+  return rows.length > 0;
+}
+
 async function ensureTelegramSettingsTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS telegram_settings (
@@ -11,6 +20,7 @@ async function ensureTelegramSettingsTable() {
       chat_id VARCHAR(50) NULL,
       notify_new_registration TINYINT(1) NOT NULL DEFAULT 1,
       notify_login TINYINT(1) NOT NULL DEFAULT 1,
+      notify_logout TINYINT(1) NOT NULL DEFAULT 1,
       last_update_id BIGINT NOT NULL DEFAULT 0,
       detected_chat_id VARCHAR(50) NULL,
       detected_chat_name VARCHAR(200) NULL,
@@ -19,6 +29,11 @@ async function ensureTelegramSettingsTable() {
       CONSTRAINT chk_telegram_settings_singleton CHECK (id = 1)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  // MySQL tidak mendukung "ADD COLUMN IF NOT EXISTS" -- dicek manual supaya
+  // idempoten untuk instalasi lama yang tabelnya sudah ada tanpa kolom ini.
+  if (!(await columnExists('telegram_settings', 'notify_logout'))) {
+    await pool.query('ALTER TABLE telegram_settings ADD COLUMN notify_logout TINYINT(1) NOT NULL DEFAULT 1 AFTER notify_login');
+  }
   await pool.query(
     `INSERT INTO telegram_settings (id) VALUES (1) ON DUPLICATE KEY UPDATE id = id`
   );
@@ -124,6 +139,20 @@ async function notifyLogin({ username, fullName, role, ipAddress }) {
   await sendTelegramMessage(lines.join('\n'));
 }
 
+async function notifyLogout({ username, fullName, role }) {
+  const settings = await getTelegramSettings();
+  if (!settings || !settings.notify_logout) return;
+
+  const lines = [
+    '🚪 *Akses Sistem \\(Logout\\)*',
+    '',
+    `Pengguna: ${escapeMarkdown(fullName)} \\(${escapeMarkdown(username)}\\)`,
+    `Role: ${escapeMarkdown(role)}`,
+    `Waktu: ${escapeMarkdown(formatJakartaDateTime(new Date()))}`,
+  ];
+  await sendTelegramMessage(lines.join('\n'));
+}
+
 module.exports = {
   ensureTelegramSettingsTable,
   getTelegramSettings,
@@ -133,6 +162,7 @@ module.exports = {
   sendTelegramMessage,
   notifyNewRegistration,
   notifyLogin,
+  notifyLogout,
   escapeMarkdown,
   escapeMarkdownCode,
   encrypt,

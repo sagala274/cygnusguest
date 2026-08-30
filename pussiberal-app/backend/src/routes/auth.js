@@ -5,7 +5,7 @@ const rateLimit = require('express-rate-limit');
 const pool = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { logAudit } = require('../utils/audit');
-const { notifyLogin } = require('../utils/telegram');
+const { notifyLogin, notifyLogout } = require('../utils/telegram');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
@@ -58,5 +58,11 @@ router.post('/login', loginLimiter, asyncHandler(async (req, res) => {
 router.get('/me', authenticate, (req, res) => {
   res.json({ user: req.user });
 });
+
+router.post('/logout', authenticate, asyncHandler(async (req, res) => {
+  await logAudit(req.user.sub, 'logout', 'user', req.user.sub, { username: req.user.username });
+  notifyLogout({ username: req.user.username, fullName: req.user.name, role: req.user.role }).catch(() => {});
+  res.json({ data: { ok: true } });
+}));
 
 module.exports = router;

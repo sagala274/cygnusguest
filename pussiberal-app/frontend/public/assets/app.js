@@ -212,6 +212,7 @@ function purposeCategoryLabel(category) {
 function actionLabel(action) {
   const map = {
     login: 'Login',
+    logout: 'Logout',
     create_guest: 'Daftarkan Tamu',
     update_guest: 'Ubah Data Tamu',
     verify_guest: 'Verifikasi Tamu',
@@ -371,8 +372,14 @@ function renderNav(active) {
   if (logoutBtn) {
     const logoutIcon = logoutBtn.querySelector('.nav-icon');
     if (logoutIcon) logoutIcon.innerHTML = icon('logout');
-    logoutBtn.addEventListener('click', (e) => {
+    logoutBtn.addEventListener('click', async (e) => {
       e.preventDefault();
+      try {
+        await api('/auth/logout', { method: 'POST' });
+      } catch (err) {
+        // Tetap lanjutkan logout di sisi klien walau pencatatan di server
+        // gagal (mis. token sudah kedaluwarsa atau jaringan bermasalah).
+      }
       clearSession();
       window.location.href = 'login';
     });

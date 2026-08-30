@@ -29,14 +29,14 @@ const SECURITY_COLOR = {
 };
 
 const ACTION_ICON = {
-  login: 'login', create_guest: 'pendaftaran', update_guest: 'pencil', verify_guest: 'checkCircle',
+  login: 'login', logout: 'logout', create_guest: 'pendaftaran', update_guest: 'pencil', verify_guest: 'checkCircle',
   check_in: 'login', check_out: 'logout', delete_guest: 'trash', create_user: 'people',
   update_user: 'pencil', delete_user: 'trash', create_backup: 'backup', download_backup: 'backup',
   ai_chat_query: 'ai-chat', update_ai_settings: 'ai-config', update_telegram_settings: 'telegram',
 };
 
 const ACTION_COLOR = {
-  login: 'icon-bubble-blue', create_guest: 'icon-bubble-accent', update_guest: 'icon-bubble-blue',
+  login: 'icon-bubble-blue', logout: 'icon-bubble-amber', create_guest: 'icon-bubble-accent', update_guest: 'icon-bubble-blue',
   verify_guest: 'icon-bubble-success', check_in: 'icon-bubble-blue', check_out: 'icon-bubble-amber',
   delete_guest: 'icon-bubble-danger', create_user: 'icon-bubble-teal', update_user: 'icon-bubble-blue',
   delete_user: 'icon-bubble-danger', create_backup: 'icon-bubble-teal', download_backup: 'icon-bubble-teal',
