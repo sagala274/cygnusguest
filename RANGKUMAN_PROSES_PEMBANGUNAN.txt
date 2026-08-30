@@ -3,6 +3,7 @@ RANGKUMAN PROSES PEMBANGUNAN
 PUSSIBERAL GUEST MANAGEMENT SYSTEM
 ====================================================================
 Disusun: 28 Agustus 2026
+Diperbarui: 30 Agustus 2026 (menambahkan Bagian Ketiga, Fase 17-23)
 Tujuan dokumen: rangkuman naratif kronologis, ditulis supaya proses
 pembangunan aplikasi ini bisa dipelajari ulang -- apa yang dibangun,
 kenapa dibangun seperti itu, bug apa yang muncul, dan bagaimana
@@ -11,9 +12,11 @@ cara berpikir menyelesaikannya. Setiap fase menyertakan PROMPT ASLI
 percakapan -- bukan dari ingatan) supaya mudah menghubungkan kembali
 satu kalimat instruksi dengan hasil pekerjaannya. Prompt yang
 dipotong otomatis oleh sistem (karena terlalu panjang) ditandai
-"..." di akhir. Untuk dokumentasi teknis yang lebih detail dan
-formal, lihat berkas 01 sampai 06 (*.md) di folder yang sama dengan
-berkas ini.
+"..." di akhir; fase yang transkrip aslinya sudah di luar jangkauan
+saat rangkuman/pembaruan ini ditulis ditandai eksplisit sebagai
+catatan, bukan dikarang ulang dari ingatan (lihat Fase 2 dan Fase
+17). Untuk dokumentasi teknis yang lebih detail dan formal, lihat
+berkas 01 sampai 10 (*.md) di folder yang sama dengan berkas ini.
 
 Catatan keamanan: satu prompt di riwayat percakapan berisi token
 GitHub asli (personal access token). Token itu SENGAJA TIDAK dikutip
@@ -698,6 +701,282 @@ perlu bolak-balik antara narasi dan lampiran.
 
 
 ====================================================================
+BAGIAN KETIGA: REDESAIN TAMPILAN, KEAMANAN SESI, DAN PENYEMPURNAAN
+(Sesi kerja 29-30 Agustus 2026)
+====================================================================
+
+--------------------------------------------------------------------
+FASE 17 -- CATATAN: BERKAS 07 DAN 08
+--------------------------------------------------------------------
+
+Di antara Fase 16 dan Fase 18, ada dua sesi kerja lain yang hasilnya
+sudah didokumentasikan formal di `07_formulir_lanjutan_dan_perbaikan_
+data.md` dan `08_branding_avatar_dan_url_bersih.md` (logo/branding,
+foto tamu & KTP wajib diisi, avatar per-akun, dropdown logout di
+avatar topbar, URL bersih tanpa `.html`). Transkrip percakapan asli
+kedua sesi itu TIDAK tersedia lagi untuk ditulis ulang di sini
+sebagai PROMPT ASLI verbatim (di luar jangkauan riwayat yang bisa
+diakses saat rangkuman ini disusun) -- sesuai aturan dokumen ini
+sendiri (kutipan langsung, bukan dari ingatan/rekonstruksi), fase ini
+sengaja HANYA berupa catatan penunjuk, bukan narasi lengkap. Lihat
+kedua berkas .md tersebut untuk detail teknisnya.
+
+
+--------------------------------------------------------------------
+FASE 18 -- REDESAIN TOTAL: TEMA WARNA, SIDEBAR/TOPBAR, MANAJEMEN
+PENGGUNA
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  (Penyelarasan warna & tipografi dengan brand book Naval-CSIRT sudah
+  berjalan sejak sebelum titik ini pada sesi yang sama -- prompt
+  pemicu awalnya tidak tersedia sebagai kutipan verbatim di titik
+  rangkuman ini ditulis, sama seperti catatan di Fase 2.)
+  "tolong ubah tanda bintang merah, dipepetkan pada judul tiap kolom
+   pada proses pendaftaran tamu saat ingin mengisi, NIK, Nama
+   lengkap dll"
+  "tanda bintang merah masih berantakan, semua disamakan. tanda
+   wajib diisi (*) semua menempel pada judul"          [+ tangkapan layar]
+  "bisa nggak kamu buat tampilannya seperti ini?"       [+ tangkapan layar
+                                                            mockup dashboard]
+  "oke lanjut setup docker"
+
+Rangkaian pekerjaan besar pertama di sesi ini:
+
+  1. Palet warna diselaraskan dengan brand book resmi Naval-CSIRT
+     (Admiral Blue, Obsidian Black, Chalk White, Pure White), font
+     Open Sans di-*hosting* sendiri (bukan lewat Google Fonts CDN)
+     supaya tidak perlu melonggarkan Content-Security-Policy yang
+     sudah diperketat sejak Fase 5.
+  2. Perbaikan kecil: tanda bintang wajib (*) yang tadinya terdorong
+     jauh ke kanan kolom (akibat `justify-content: space-between`)
+     dirapatkan ke judul kolom.
+  3. Berdasarkan gambar mockup yang diberikan pengguna, sidebar dan
+     topbar dirombak total DI SELURUH APLIKASI (bukan satu halaman)
+     -- ikon SVG custom (registry ~28 ikon gaya garis, di-*inline*
+     langsung karena CSP tidak mengizinkan icon font dari CDN),
+     disuntikkan lewat JavaScript (`renderNav()`) supaya konsisten di
+     14 halaman tanpa mengedit satu-satu. Sebelum mengerjakan,
+     cakupan diklarifikasi dulu ke pengguna: elemen di mockup yang
+     belum ada fiturnya sama sekali (lonceng notifikasi, toggle mode
+     gelap/terang) sengaja dibuat visual saja (bertanda "segera
+     hadir"), TIDAK dibuat seolah berfungsi padahal kosong.
+  4. Halaman Manajemen Pengguna dirombak: toolbar cari & filter,
+     kolom tabel bisa disortir, avatar per baris, badge role/status
+     berwarna, paginasi, dan form tambah/edit digabung jadi satu
+     modal pop-up.
+
+Insiden besar di tengah proses ini: mencoba menguji perubahan lewat
+Docker Compose di KOMPUTER LOKAL (bukan server), yang ternyata gagal
+total karena WSL belum terpasang. Setelah `wsl --install` dan restart
+komputer (izin eksplisit diminta dulu ke pengguna sebelum restart
+dieksekusi, karena aksi itu mengganggu pekerjaan lain yang mungkin
+terbuka), container frontend lokal tetap gagal jalan -- kali ini
+karena sertifikat TLS tidak ada di komputer ini. Investigasi lebih
+dalam mengungkap akar masalah sesungguhnya: KOMPUTER INI BUKAN
+SERVER PRODUKSI. Server sungguhan ada di alamat terpisah
+(187.52.126.252), dan alur deploy yang benar (sudah terdokumentasi
+sejak Fase 8/9 dulu) adalah commit + push ke GitHub, lalu SSH ke
+server untuk `git pull` + rebuild di sana -- bukan Docker lokal.
+Sejak titik ini, SELURUH deploy di sesi ini memakai alur SSH ke
+server tersebut.
+
+Pelajaran penting: sebelum mengasumsikan "jalankan saja Docker Compose
+lokal" sebagai cara menguji perubahan, cek dulu apakah proyek sudah
+punya alur deploy terdokumentasi -- di proyek ini jawabannya sudah
+tertulis jelas sejak beberapa fase sebelumnya, tapi sempat terlewat
+sebelum mencoba jalur yang salah lebih dulu dan membuang waktu untuk
+memperbaiki lingkungan lokal yang sebenarnya tidak relevan.
+
+
+--------------------------------------------------------------------
+FASE 19 -- REDESAIN DASHBOARD
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "buat tampilan dashboard seperti ini, untuk warna menjadi biru
+   navy"                                       [+ tangkapan layar mockup]
+  "tolong ubah tema warna pada side menu menjadi biru gelap"
+  "tambahkan pada dashboard akun Danpussiberal, tampilkan juga
+   grafik kunjungannya
+   - edit pada grafik kunjungan, ubah judulnya \"Grafik Kunjungan
+     Tamu ke Pussiberal\"
+   - lalu posisikan pilihan filter per hari/minggu/bulan di
+     posisikan dibawahnya judul grafik sehingga terlihat lebih rapi."
+
+Dashboard dirombak mengikuti mockup kedua yang diberikan, dengan satu
+prinsip ketat: TIDAK ADA angka rekaan. Setiap elemen mockup dicek
+dulu terhadap skema database yang sebenarnya sebelum dibangun --
+kartu "Total Tamu" misalnya sengaja TIDAK diberi tren persentase
+seperti di mockup, karena total-kumulatif-vs-kemarin bukan metrik
+yang bermakna (selalu naik).
+
+Hasil akhir: 4 kartu statistik (satu di antaranya punya tren riil,
+dihitung dari perbandingan pendaftaran hari ini vs kemarin), 2 donut
+chart (Status Pendaftaran, Statistik Perangkat Elektronik) dibangun
+sendiri pakai SVG (`stroke-dasharray`, tanpa library chart), kartu
+Kategori Keamanan Personel (khusus Admin/Verifikator, selaras dengan
+akses fitur Bank Data), grafik kunjungan diubah dari bar chart jadi
+area chart, dan kartu Aktivitas Terbaru dari data `audit_logs` yang
+sudah ada.
+
+Tiga permintaan susulan setelah pengguna melihat hasilnya:
+  - Sidebar dibuat lebih gelap lagi -- ditambahkan variabel warna
+    TERPISAH khusus sidebar (`--sidebar-bg`), supaya elemen lain
+    yang juga memakai warna navy brand book (halaman login, tooltip
+    grafik, bubble chat) tidak ikut berubah karena tidak diminta.
+  - Grafik Kunjungan yang tadinya khusus Administrator, dibuka juga
+    untuk role Verifikator -- akun "Danpussiberal" yang dimaksud
+    dicek langsung ke database, ternyata rolenya memang Verifikator.
+  - Judul grafik diganti, dan filter periode dipindah ke baris
+    tersendiri di bawah judul (sebelumnya sejajar di kanan judul).
+
+
+--------------------------------------------------------------------
+FASE 20 -- HARDENING KEAMANAN: UPLOAD FOTO & SESI LOGIN
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "laksanakan sanitasi terhadap file upload terutama pada bagian
+   foto. Jangan sampai bisa membaca file .php.jpg sehingga
+   kemungkinan bisa diupload malware"
+  "ini ada vulnerability akses, yaitu ketika saya close tab pada
+   browser atau close browser. Saya langsung mendapatkan akses masuk
+   ke akun tanpa perlu log in.
+
+   laksanakan perbaikan, agar setiap close tab/ close browser tidak
+   langsung dapat akses masuk ke akun yg dimasuki sebelumnya"
+
+Dua permintaan keamanan terpisah, ditangani dengan pendekatan yang
+sama: AUDIT dulu secara menyeluruh sebelum memperbaiki apa pun.
+
+Untuk permintaan pertama, audit read-only (lewat subagent riset
+terpisah supaya cakupannya tuntas) atas seluruh jalur yang
+bersinggungan dengan file/gambar menyimpulkan: aplikasi ini TIDAK
+PERNAH menyimpan foto sebagai file di server -- semua foto (tamu,
+KTP) disimpan sebagai data URL base64 langsung di database. Skema
+serangan "upload file .php.jpg lalu server menjalankannya" TIDAK
+BERLAKU secara arsitektur di aplikasi ini. Meski begitu, dua celah
+nyata tetap diperbaiki sebagai defense-in-depth: validator foto
+diperkeras (regex diikat penuh + verifikasi *magic bytes* asli
+PNG/JPEG/WebP, bukan cuma percaya prefix teks), dan satu titik render
+`<img src>` yang tidak di-*escape* (celah berbentuk stored-XSS,
+sebelumnya diredam CSP ketat tapi tetap diperbaiki). Perbaikan
+diuji langsung dengan payload PHP yang disamarkan sebagai PNG,
+prefix rusak, dan sisipan `<script>` setelah data gambar valid --
+semuanya berhasil ditolak, gambar asli tetap diterima.
+
+Untuk permintaan kedua: akar masalahnya token JWT disimpan di
+`localStorage` (bertahan permanen sampai dihapus manual), bukan
+`sessionStorage` (otomatis kosong saat tab/browser ditutup).
+Diperbaiki dengan memindahkan seluruh fungsi sesi ke `sessionStorage`
+-- efeknya, siapa pun yang sedang login di mana pun otomatis diminta
+login ulang begitu perbaikan ini di-deploy.
+
+Pelajaran penting: laporan "kerentanan" dari pengguna (upload
+malware) tidak selalu berarti kerentanan itu benar-benar ada di
+arsitektur yang dipakai -- yang penting adalah MEMBUKTIKANNYA lewat
+audit nyata (bukan asumsi ke arah mana pun), lalu tetap memperkuat
+lapisan pertahanan yang genuinely lemah begitu ditemukan, walau
+bukan jalur serangan yang awalnya dikhawatirkan.
+
+
+--------------------------------------------------------------------
+FASE 21 -- MONITORING LOGOUT & FITUR PENDAMPING TAMU
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "oke pada aktivitas log, monitoring juga kapan log outnya dan
+   kirimkan notifikasi log outnya ke telegram khusus Kaurpam"
+  "tambahkan pada menu pendaftaran tamu:
+   - Kolom keterangan tamu didampingi oleh .. yang diisi oleh Jaga
+     Cygnus jika tidak ada Kaurpam atau Baurpam sedang ditempat.
+   - pada verifikasi tamu juga ditambahkan kolom untuk mengisi tamu
+     didampingi oleh siapa."
+
+Dua fitur baru yang tidak saling terkait, dikerjakan berurutan:
+
+  1. Logout sebelumnya murni aksi di sisi browser (hapus token,
+     redirect) -- tidak tercatat di Log Aktivitas maupun terkirim ke
+     Telegram, beda dengan login. Sebelum membangun, cakupan
+     notifikasi diklarifikasi dulu ke pengguna ("khusus Kaurpam"
+     ternyata dimaksudkan sebagai: dikirim ke chat Telegram yang
+     sudah ada, yang memang dipantau Kaurpam -- bukan hanya untuk
+     logout akun Kaurpam secara spesifik). Endpoint baru
+     `POST /api/auth/logout` dibuat, simetris dengan alur login:
+     mencatat audit log + kirim notifikasi Telegram (dengan toggle
+     terpisah, bisa dimatikan independen).
+  2. Kolom baru `accompanied_by` di tabel `guests` (opsional) untuk
+     mencatat petugas yang mendampingi tamu. Diminta muncul di DUA
+     tempat: formulir Pendaftaran Tamu (diisi Pos Depan) DAN halaman
+     Verifikasi Tamu (bisa diisi/diubah lagi oleh Verifikator, dengan
+     nilai yang sudah ada otomatis terisi lebih dulu supaya tidak
+     tertimpa kosong kalau tidak disentuh).
+
+
+--------------------------------------------------------------------
+FASE 22 -- PENYEMPURNAAN DASHBOARD LANJUTAN
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "oke pada dashboard warna pie chart :
+   - perlu perhatian (menjadi warna kuning/orange)
+   - Perlu penanganan (menjadi warna merah)"
+  "pada dashboard tatistik perangkat elektronik buat grafik yang
+   menyamping seperti ini"                     [+ tangkapan layar referensi]
+  "ini ada keselahan jumlah pada jumlah hp, tamu seluruhnya 9, ini
+   kok bawa hp 10?"                             [+ tangkapan layar]
+
+Tiga perbaikan kecil berturut-turut setelah pengguna memakai
+Dashboard hasil Fase 19 secara langsung:
+
+  1. Warna kartu Kategori Keamanan Personel dipertegas (kuning/oranye
+     dan merah yang lebih vivid, menggantikan token institusional
+     yang cenderung coklat tua).
+  2. Kartu Statistik Perangkat Elektronik diubah dari donut chart
+     jadi daftar bar horizontal (panjang bar proporsional terhadap
+     kategori terbesar), sesuai referensi visual yang diberikan.
+  3. Laporan "salah hitung" (Total Tamu = 9, tapi total perangkat
+     elektronik = 10) ternyata BUKAN bug data -- dua kartu itu
+     menghitung hal berbeda: "Total Tamu" menghitung jumlah
+     PENDAFTARAN, sementara statistik perangkat menghitung jumlah
+     INDIVIDU (satu pendaftaran bisa berisi lebih dari satu orang).
+     Dibuktikan dulu lewat query langsung ke database sebelum
+     disimpulkan, baru diperbaiki: kartu "Total Tamu" diganti
+     menghitung individu juga, supaya kedua angka selalu konsisten.
+
+Pelajaran penting (mengulang pola dari Fase 4 dan Bagian Kedua):
+sebelum memperbaiki sesuatu yang "terlihat salah", buktikan dulu
+lewat data nyata apakah itu benar-benar bug atau cuma dua metrik
+berbeda yang labelnya membingungkan. Perbaikan yang tepat kadang
+bukan mengubah angkanya, tapi mengubah APA yang diukur supaya
+konsisten dengan ekspektasi label-nya.
+
+
+--------------------------------------------------------------------
+FASE 23 -- DOKUMENTASI KEEMPAT & KELIMA (BERKAS 09-10)
+--------------------------------------------------------------------
+
+PROMPT ASLI:
+  "dokumentasikan apa yang sudah dikerjakan sampai tahap ini"
+                                          [-> sempat diinterupsi pengguna
+                                              sebelum selesai, sebelum
+                                              lanjut ke Fase 21-22]
+  "oke, dokumentasikan semua yang sudah dikerjakan dalam bentuk .md,
+   lalu update juga pada rangkuman proses pembangunan.txt"
+                                          [-> lahirnya berkas 09 dan 10,
+                                              serta bagian ini]
+
+Dokumentasi kali ini dipecah jadi DUA berkas .md (bukan satu),
+mengikuti pola pemisahan yang sudah ada di seluruh dokumen proyek
+ini (satu berkas per rentang pekerjaan yang koheren): `09_redesain_
+tema_dan_sanitasi_upload.md` untuk Fase 18-20, dan `10_pendamping_
+tamu_notifikasi_logout_dan_penyempurnaan_dashboard.md` untuk Fase
+21-22. Rangkuman kronologis ini (berkas yang sedang Anda baca)
+diperbarui bersamaan, menambahkan Bagian Ketiga secara utuh.
+
+
+====================================================================
 RINGKASAN POLA & PELAJARAN LINTAS-FASE
 ====================================================================
 
@@ -743,9 +1022,26 @@ Beberapa pola yang berulang dan layak diingat baik-baik:
    prompt pertama jarang terjadi -- yang penting desainnya cukup
    fleksibel untuk menampung revisi tanpa bongkar total.
 
+7. KOMPUTER PENGEMBANGAN LOKAL BELUM TENTU SERVER PRODUKSI --
+   VERIFIKASI TOPOLOGI DEPLOY SEBELUM MENGASUMSIKANNYA. Insiden di
+   Fase 18 (Docker lokal gagal jalan, sempat memasang WSL dan
+   me-restart komputer sebelum sadar server sungguhan ada di tempat
+   lain) menunjukkan pentingnya mengecek dokumentasi deploy yang
+   sudah ada lebih dulu, sebelum mencoba menjalankan sesuatu secara
+   lokal dan menganggap itu jalan pintas yang lebih cepat.
+
+8. SEBELUM MEMPERBAIKI SESUATU YANG "TERLIHAT SALAH", BUKTIKAN DULU
+   DENGAN DATA NYATA. Laporan "Total Tamu = 9 tapi statistik
+   perangkat = 10" di Fase 22 ternyata bukan bug -- dua angka itu
+   memang mengukur hal berbeda (pendaftaran vs individu). Query
+   langsung ke database membuktikan itu SEBELUM menyimpulkan atau
+   mengubah kode apa pun -- pola yang sama dengan Pelajaran #2, tapi
+   khusus untuk kasus "angka yang terlihat tidak sinkron" yang mudah
+   disalahsangka sebagai kesalahan hitung.
+
 
 ====================================================================
-STATUS SISTEM SAAT INI (28 Agustus 2026)
+STATUS SISTEM SAAT INI (30 Agustus 2026)
 ====================================================================
 
 Menu yang tersedia di aplikasi:
@@ -755,7 +1051,17 @@ Menu yang tersedia di aplikasi:
   - Manajemen Pengguna, Log Aktivitas, Notifikasi Telegram,
     Backup Database             (khusus Administrator)
 
-Alur deploy saat ini:
+Sejak Bagian Ketiga (Fase 17-23), tampilan sidebar/topbar, Dashboard,
+dan halaman Manajemen Pengguna sudah dirombak total mengikuti brand
+book Naval-CSIRT; menu yang tersedia sendiri tidak bertambah, tapi
+beberapa sudah lebih ketat aksesnya (Grafik Kunjungan kini juga
+terlihat oleh Verifikator, tidak lagi khusus Administrator) dan lebih
+lengkap datanya (logout kini tercatat & dinotifikasi Telegram sama
+seperti login; pendaftaran & verifikasi tamu punya kolom "didampingi
+oleh").
+
+Alur deploy saat ini (tidak berubah dari fase-fase sebelumnya, TIDAK
+lewat Docker Compose di komputer lokal -- lihat Fase 18):
     git add -A && git commit -m "..." && git push origin main
     ssh ke server -> cd /opt/cygnusguest && git pull
                    -> cd pussiberal-app
@@ -763,8 +1069,6 @@ Alur deploy saat ini:
                    -> docker compose up -d
 
 Yang masih perlu tindak lanjut dari pengguna:
-  - Selesaikan setup bot Telegram (buat bot lewat @BotFather, kirim
-    /start, sambungkan Chat ID lewat menu Notifikasi Telegram).
   - Pantau reliabilitas model AI gratis (minimax/minimax-m3:free)
     dari waktu ke waktu -- kalau mulai sering gagal, ganti model di
     menu Konfigurasi AI.
@@ -772,5 +1076,11 @@ Yang masih perlu tindak lanjut dari pengguna:
     ini punya domain terdaftar -- saat ini masih pakai self-signed.
   - Revoke token GitHub lama yang sempat tertulis polos di chat
     (lihat catatan keamanan di awal dokumen ini), kalau belum.
+  - Lonceng notifikasi & toggle mode gelap/terang di topbar (hasil
+    Fase 18) masih murni visual -- belum ada sistem notifikasi
+    maupun dark mode nyata di baliknya.
+  - Bot Telegram sudah tersambung (token & Chat ID sudah tersimpan di
+    server, terverifikasi saat Fase 21) -- item tindak lanjut lama
+    soal "selesaikan setup bot" sudah tuntas.
 
 ====================================================================
