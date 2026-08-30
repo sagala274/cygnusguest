@@ -23,8 +23,8 @@ const DEVICE_COLOR = {
 
 const SECURITY_COLOR = {
   aman: 'var(--success)',
-  perlu_perhatian: 'var(--amber)',
-  perlu_penanganan: 'var(--danger)',
+  perlu_perhatian: '#f59e0b',
+  perlu_penanganan: '#dc2626',
   belum_dianalisa: '#98a2b3',
 };
 
