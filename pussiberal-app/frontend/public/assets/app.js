@@ -44,26 +44,34 @@ function icon(name, extraClass) {
   return `<svg class="icon${extraClass ? ' ' + extraClass : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 }
 
+/* Sesi login sengaja disimpan di sessionStorage (bukan localStorage) supaya
+   otomatis hilang saat tab/browser ditutup -- menutup celah "tutup browser
+   lalu buka lagi masih tetap login" tanpa perlu memasukkan ulang kredensial.
+   Baris di bawah membersihkan token lama yang mungkin masih tersisa di
+   localStorage dari versi aplikasi sebelum perbaikan ini. */
+localStorage.removeItem('token');
+localStorage.removeItem('user');
+
 function getToken() {
-  return localStorage.getItem('token');
+  return sessionStorage.getItem('token');
 }
 
 function getUser() {
   try {
-    return JSON.parse(localStorage.getItem('user') || 'null');
+    return JSON.parse(sessionStorage.getItem('user') || 'null');
   } catch (err) {
     return null;
   }
 }
 
 function setSession(token, user) {
-  localStorage.setItem('token', token);
-  localStorage.setItem('user', JSON.stringify(user));
+  sessionStorage.setItem('token', token);
+  sessionStorage.setItem('user', JSON.stringify(user));
 }
 
 function clearSession() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('user');
 }
 
 function requireAuth() {
