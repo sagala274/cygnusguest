@@ -501,6 +501,7 @@ form.addEventListener('submit', async (e) => {
     target_official_other: targetOfficialOtherCheckbox.checked ? targetOfficialOtherInput.value.trim() : undefined,
     purpose_category: selectedPurposeCategory ? selectedPurposeCategory.value : undefined,
     purpose: document.getElementById('purpose').value.trim(),
+    accompanied_by: document.getElementById('accompanied_by').value.trim() || undefined,
     vehicle_type: document.getElementById('vehicle').value || undefined,
     plate_number: document.getElementById('plate').value.trim() || undefined,
     members: collectMembers(),

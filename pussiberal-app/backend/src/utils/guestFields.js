@@ -57,6 +57,13 @@ async function ensureGuestExtraColumns() {
         VARCHAR(200) NULL AFTER target_officials
     `);
   }
+
+  if (!(await columnExists('guests', 'accompanied_by'))) {
+    await pool.query(`
+      ALTER TABLE guests ADD COLUMN accompanied_by
+        VARCHAR(150) NULL AFTER purpose_category
+    `);
+  }
 }
 
 function isValidTargetOfficials(value) {

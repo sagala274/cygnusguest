@@ -151,6 +151,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
       target_official_other: g.target_official_other,
       purpose: g.purpose,
       purpose_category: g.purpose_category,
+      accompanied_by: g.accompanied_by,
       device_status: g.device_status,
       device_reason: g.device_reason,
       status: g.status,
@@ -167,7 +168,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
 // POST /api/guests  (Pos Depan mendaftarkan 1+ tamu dari perusahaan yang sama -> masuk antrian verifikasi)
 router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
-  const { company, target_officials, target_official_other, purpose, purpose_category, vehicle_type, plate_number, members } = req.body || {};
+  const { company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, vehicle_type, plate_number, members } = req.body || {};
 
   const errors = {};
   if (!company || !String(company).trim()) errors.company = 'Perusahaan/instansi wajib diisi';
@@ -177,6 +178,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
   }
   if (!purpose_category || !PURPOSE_CATEGORIES.includes(purpose_category)) errors.purpose_category = 'Pilih kategori keperluan';
   if (!purpose || !String(purpose).trim()) errors.purpose = 'Detail tujuan menghadap wajib diisi';
+  if (accompanied_by && String(accompanied_by).length > 150) errors.accompanied_by = 'Keterangan pendamping maksimal 150 karakter';
 
   if (!Array.isArray(members) || members.length === 0) {
     errors.members = 'Minimal satu tamu harus diisi';
@@ -206,14 +208,15 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
     await conn.beginTransaction();
 
     const [result] = await conn.execute(
-      `INSERT INTO guests (registration_number, company, target_officials, target_official_other, purpose, purpose_category, status, created_by)
-       VALUES ('', :company, :target_officials, :target_official_other, :purpose, :purpose_category, 'Menunggu Verifikasi', :created_by)`,
+      `INSERT INTO guests (registration_number, company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, status, created_by)
+       VALUES ('', :company, :target_officials, :target_official_other, :purpose, :purpose_category, :accompanied_by, 'Menunggu Verifikasi', :created_by)`,
       {
         company,
         target_officials: target_officials.join(','),
         target_official_other: target_officials.includes('lainnya') ? target_official_other.trim() : null,
         purpose,
         purpose_category,
+        accompanied_by: accompanied_by && String(accompanied_by).trim() ? String(accompanied_by).trim() : null,
         created_by: req.user.sub,
       }
     );
@@ -280,7 +283,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
 
 // PUT /api/guests/:id  (edit data pendaftaran -- bukan status verifikasi)
 router.put('/:id', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
-  const { company, target_officials, target_official_other, purpose, purpose_category, vehicle_type, plate_number } = req.body || {};
+  const { company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, vehicle_type, plate_number } = req.body || {};
   const id = req.params.id;
 
   const fields = [];
@@ -306,6 +309,13 @@ router.put('/:id', requireRole('admin', 'pos_depan'), asyncHandler(async (req, r
   if (purpose !== undefined) {
     if (!String(purpose).trim()) return res.status(400).json({ error: 'Detail tujuan menghadap wajib diisi' });
     fields.push('purpose = :purpose'); params.purpose = purpose;
+  }
+  if (accompanied_by !== undefined) {
+    if (accompanied_by && String(accompanied_by).length > 150) {
+      return res.status(400).json({ error: 'Keterangan pendamping maksimal 150 karakter' });
+    }
+    fields.push('accompanied_by = :accompanied_by');
+    params.accompanied_by = accompanied_by && String(accompanied_by).trim() ? String(accompanied_by).trim() : null;
   }
 
   if (fields.length) {
@@ -418,11 +428,14 @@ router.put('/:id/members/:memberId', requireRole('admin', 'pos_depan', 'verifika
 
 // POST /api/guests/:id/verify  (Verifikator menyetujui/menolak seluruh pendaftaran)
 router.post('/:id/verify', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
-  const { status, note } = req.body || {};
+  const { status, note, accompanied_by } = req.body || {};
   const id = req.params.id;
 
   if (!['Disetujui', 'Ditolak'].includes(status)) {
     return res.status(400).json({ error: 'Status verifikasi harus "Disetujui" atau "Ditolak"' });
+  }
+  if (accompanied_by && String(accompanied_by).length > 150) {
+    return res.status(400).json({ error: 'Keterangan pendamping maksimal 150 karakter' });
   }
 
   const [rows] = await pool.execute('SELECT status FROM guests WHERE id = :id', { id });
@@ -431,8 +444,16 @@ router.post('/:id/verify', requireRole('admin', 'verifikator'), asyncHandler(asy
     return res.status(409).json({ error: 'Pendaftaran ini tidak sedang menunggu verifikasi' });
   }
 
-  await pool.execute('UPDATE guests SET status = :status WHERE id = :id', { status, id });
-  await logAudit(req.user.sub, 'verify_guest', 'guest', id, { status, note: note || null });
+  if (accompanied_by !== undefined) {
+    await pool.execute('UPDATE guests SET status = :status, accompanied_by = :accompanied_by WHERE id = :id', {
+      status,
+      id,
+      accompanied_by: String(accompanied_by).trim() ? String(accompanied_by).trim() : null,
+    });
+  } else {
+    await pool.execute('UPDATE guests SET status = :status WHERE id = :id', { status, id });
+  }
+  await logAudit(req.user.sub, 'verify_guest', 'guest', id, { status, note: note || null, accompanied_by: accompanied_by || null });
 
   res.json({ data: { id: Number(id), status } });
 }));

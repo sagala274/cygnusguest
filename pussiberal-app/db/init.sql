@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS guests (
   target_official_other VARCHAR(200) NULL,
   purpose TEXT NOT NULL,
   purpose_category ENUM('audiensi','rapat_koordinasi','diskusi_teknis','maintenance','pengiriman','lainnya') NULL,
+  accompanied_by VARCHAR(150) NULL,
   status ENUM('Draft','Terdaftar','Menunggu Verifikasi','Disetujui','Ditolak','Sedang Berkunjung','Selesai') NOT NULL DEFAULT 'Terdaftar',
   created_by INT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
