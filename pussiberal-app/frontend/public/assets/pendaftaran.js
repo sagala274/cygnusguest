@@ -48,6 +48,31 @@ function updateMemberScheduledBadges() {
 }
 scheduledToggle.addEventListener('change', updateMemberScheduledBadges);
 
+// Untuk tamu terjadwal, Perusahaan/Tujuan Menghadap/Kategori Keperluan/Detail
+// Tujuan juga boleh dikosongkan dulu (dilengkapi belakangan lewat Detail Tamu)
+// -- lepas atribut `required` bawaan browser dan ganti tanda (*) jadi label
+// "boleh menyusul" supaya jelas terlihat opsional saat toggle aktif.
+const companyInputRequired = document.getElementById('company');
+const purposeInputRequired = document.getElementById('purpose');
+const REQUIRED_MARK_IDS = ['companyRequiredMark', 'targetOfficialsRequiredMark', 'purposeCategoryRequiredMark', 'purposeRequiredMark'];
+
+function updateCompanyPurposeRequirement() {
+  const isScheduled = scheduledToggle.checked;
+  if (isScheduled) {
+    companyInputRequired.removeAttribute('required');
+    purposeInputRequired.removeAttribute('required');
+  } else {
+    companyInputRequired.setAttribute('required', '');
+    purposeInputRequired.setAttribute('required', '');
+  }
+  const badgeHtml = isScheduled ? '<span class="optional-badge">Boleh menyusul</span>' : '<span class="required">*</span>';
+  REQUIRED_MARK_IDS.forEach((id) => {
+    const wrapper = document.getElementById(id);
+    if (wrapper) wrapper.innerHTML = badgeHtml;
+  });
+}
+scheduledToggle.addEventListener('change', updateCompanyPurposeRequirement);
+
 // Saran nama perusahaan (autocomplete) + auto-lengkapi data tamu yang sudah
 // pernah terdaftar dari perusahaan yang sama.
 const companyInput = document.getElementById('company');
@@ -372,6 +397,9 @@ function showFieldError(field, message) {
 function validateTargetOfficials() {
   const checked = document.querySelectorAll('.m-target-official:checked');
   if (checked.length === 0) {
+    // Tamu terjadwal: boleh belum ditentukan sekarang, dilengkapi belakangan
+    // lewat halaman Detail Tamu sebelum diajukan verifikasi.
+    if (scheduledToggle.checked) return true;
     showFieldError('target_officials', 'Pilih minimal satu tujuan menghadap kepada');
     return false;
   }
@@ -385,6 +413,7 @@ function validateTargetOfficials() {
 function validatePurposeCategory() {
   const selected = document.querySelector('.m-purpose-category:checked');
   if (!selected) {
+    if (scheduledToggle.checked) return true;
     showFieldError('purpose_category', 'Pilih kategori keperluan');
     return false;
   }
@@ -470,6 +499,7 @@ function resetForm() {
   memberWidgets.clear();
   memberSeq = 0;
   updateTargetOfficialOtherVisibility();
+  updateCompanyPurposeRequirement();
   addMember();
 }
 
@@ -511,7 +541,7 @@ form.addEventListener('submit', async (e) => {
     resultBox.style.display = 'block';
     const count = res.data.member_count;
     resultBox.innerHTML = res.data.status === 'Draft'
-      ? `Tamu terjadwal berhasil disimpan untuk ${count} tamu. Nomor registrasi: <strong>${escapeHtml(res.data.registration_number)}</strong> — lengkapi Foto Tamu &amp; deklarasi Perangkat Elektronik saat tamu tiba di <a class="link" href="detail-tamu?id=${res.data.id}">halaman Detail Tamu</a>.`
+      ? `Tamu terjadwal berhasil disimpan sebagai draft untuk ${count} tamu. Nomor registrasi: <strong>${escapeHtml(res.data.registration_number)}</strong> — lengkapi data yang masih kosong (Perusahaan/Keperluan, Foto Tamu, deklarasi Perangkat Elektronik) kapan saja sebelum tamu tiba di <a class="link" href="detail-tamu?id=${res.data.id}">halaman Detail Tamu</a>.`
       : `Pendaftaran berhasil untuk ${count} tamu. Nomor registrasi: <strong>${escapeHtml(res.data.registration_number)}</strong> — <a class="link" href="detail-tamu?id=${res.data.id}">Lihat detail</a>`;
     resetForm();
     window.scrollTo({ top: 0, behavior: 'smooth' });

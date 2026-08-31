@@ -24,6 +24,117 @@ function showMessage(message, isError) {
 // nilainya bisa diambil lagi saat "Selesaikan & Ajukan Verifikasi" ditekan.
 const completionWidgets = new Map();
 
+// Kolom Perusahaan/Tujuan Menghadap/Keperluan yang boleh ditunda saat
+// pendaftaran tamu terjadwal (lihat pendaftaran.js) -- dilengkapi belakangan
+// di sini lewat PUT /guests/:id, terpisah dari "Selesaikan & Ajukan
+// Verifikasi" supaya bisa disimpan sebagian tanpa harus langsung lengkap.
+const TARGET_OFFICIAL_OPTIONS = [
+  ['danpussiberal', 'Danpussiberal'],
+  ['wadan_pussiberal', 'Wadan Pussiberal'],
+  ['dirbinminlogpers', 'Dirbinminlogpers'],
+  ['dirbinkamsiber', 'Dirbinkamsiber'],
+  ['dansatdak', 'Dansatdak'],
+  ['dansatinasi', 'Dansatinasi'],
+  ['dansathan', 'Dansathan'],
+  ['lainnya', 'Lainnya'],
+];
+const PURPOSE_CATEGORY_OPTIONS = [
+  ['audiensi', 'Audiensi'],
+  ['rapat_koordinasi', 'Rapat/Koordinasi'],
+  ['diskusi_teknis', 'Diskusi Teknis'],
+  ['maintenance', 'Maintenance'],
+  ['pengiriman', 'Pengiriman'],
+  ['lainnya', 'Lainnya'],
+];
+
+function scheduleCompanyFieldsHTML(g) {
+  const currentOfficials = g.target_officials || [];
+  const showOther = currentOfficials.includes('lainnya');
+  return `
+    <div class="grid">
+      <div class="field">
+        <label for="scCompany">PERUSAHAAN / INSTANSI ASAL</label>
+        <input id="scCompany" type="text" placeholder="Nama instansi" value="${escapeHtml(g.company || '')}">
+      </div>
+    </div>
+    <div class="field full" style="margin-top:21px;">
+      <label>TUJUAN MENGHADAP KEPADA <span class="label-note">Boleh pilih lebih dari satu</span></label>
+      <div class="device-options" id="scTargetOfficials">
+        ${TARGET_OFFICIAL_OPTIONS.map(([value, label]) => `
+          <label class="device-option"><input type="checkbox" class="sc-target-official" value="${value}" ${currentOfficials.includes(value) ? 'checked' : ''}><span>${label}</span></label>
+        `).join('')}
+      </div>
+    </div>
+    <div class="field full" id="scTargetOfficialOtherField" style="margin-top:18px; ${showOther ? '' : 'display:none;'}">
+      <label for="scTargetOfficialOther">SEBUTKAN TUJUAN MENGHADAP LAINNYA</label>
+      <input id="scTargetOfficialOther" type="text" placeholder="Tulis nama/jabatan pihak yang dituju" value="${escapeHtml(g.target_official_other || '')}">
+    </div>
+    <div class="field full" style="margin-top:21px;">
+      <label>KATEGORI KEPERLUAN</label>
+      <div class="device-options" id="scPurposeCategory">
+        ${PURPOSE_CATEGORY_OPTIONS.map(([value, label]) => `
+          <label class="device-option"><input type="radio" name="scPurposeCategory" class="sc-purpose-category" value="${value}" ${g.purpose_category === value ? 'checked' : ''}><span>${label}</span></label>
+        `).join('')}
+      </div>
+    </div>
+    <div class="field full" style="margin-top:21px;">
+      <label for="scPurpose">DETAIL TUJUAN MENGHADAP</label>
+      <textarea id="scPurpose" placeholder="Jelaskan lebih detail keperluan kunjungan...">${escapeHtml(g.purpose || '')}</textarea>
+    </div>
+  `;
+}
+
+function wireScheduleCompanyFields() {
+  const otherCheckbox = document.querySelector('.sc-target-official[value="lainnya"]');
+  const otherField = document.getElementById('scTargetOfficialOtherField');
+  if (!otherCheckbox || !otherField) return;
+  otherCheckbox.addEventListener('change', () => {
+    otherField.style.display = otherCheckbox.checked ? 'block' : 'none';
+    if (!otherCheckbox.checked) document.getElementById('scTargetOfficialOther').value = '';
+  });
+}
+
+async function saveScheduleCompany() {
+  const btn = document.getElementById('saveScheduleCompanyBtn');
+  btn.disabled = true;
+  try {
+    const payload = {};
+
+    const company = document.getElementById('scCompany').value.trim();
+    if (company) payload.company = company;
+
+    const officials = Array.from(document.querySelectorAll('.sc-target-official:checked')).map((el) => el.value);
+    if (officials.length) {
+      payload.target_officials = officials;
+      if (officials.includes('lainnya')) {
+        payload.target_official_other = document.getElementById('scTargetOfficialOther').value.trim();
+      }
+    }
+
+    const purposeCategory = document.querySelector('.sc-purpose-category:checked');
+    if (purposeCategory) payload.purpose_category = purposeCategory.value;
+
+    const purpose = document.getElementById('scPurpose').value.trim();
+    if (purpose) payload.purpose = purpose;
+
+    if (!Object.keys(payload).length) {
+      showMessage('Tidak ada perubahan untuk disimpan.', true);
+      return;
+    }
+
+    await api(`/guests/${guestId}`, { method: 'PUT', body: JSON.stringify(payload) });
+    showMessage('Perusahaan & keperluan berhasil disimpan.', false);
+    load();
+  } catch (err) {
+    showMessage(err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+const saveScheduleCompanyBtn = document.getElementById('saveScheduleCompanyBtn');
+if (saveScheduleCompanyBtn) saveScheduleCompanyBtn.addEventListener('click', saveScheduleCompany);
+
 function memberCardHTML(m, isDraftGuest) {
   const needsPhotoUpload = isDraftGuest && canManage && !m.photo;
   const needsDeviceDeclaration = isDraftGuest && canManage && !m.device_status;
@@ -132,14 +243,14 @@ async function load() {
     const res = await api(`/guests/${guestId}`);
     const g = res.data;
 
-    document.getElementById('guestName').textContent = g.company;
+    document.getElementById('guestName').textContent = g.company || '(Perusahaan belum diisi)';
     document.getElementById('regNumber').textContent = `No. Registrasi: ${g.registration_number} — ${g.members.length} tamu`;
 
     document.getElementById('detailRows').innerHTML = `
-      <div class="detail-row"><span class="detail-label">Perusahaan / Instansi</span><span class="detail-value">${escapeHtml(g.company)}</span></div>
+      <div class="detail-row"><span class="detail-label">Perusahaan / Instansi</span><span class="detail-value">${escapeHtml(g.company || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Tujuan Menghadap Kepada</span><span class="detail-value">${escapeHtml(targetOfficialsLabel(g.target_officials, g.target_official_other))}</span></div>
       <div class="detail-row"><span class="detail-label">Kategori Keperluan</span><span class="detail-value">${escapeHtml(purposeCategoryLabel(g.purpose_category))}</span></div>
-      <div class="detail-row"><span class="detail-label">Detail Tujuan Menghadap</span><span class="detail-value">${escapeHtml(g.purpose)}</span></div>
+      <div class="detail-row"><span class="detail-label">Detail Tujuan Menghadap</span><span class="detail-value">${escapeHtml(g.purpose || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Tamu Didampingi Oleh</span><span class="detail-value">${escapeHtml(g.accompanied_by || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Kendaraan</span><span class="detail-value">${escapeHtml(g.vehicle_type || '-')} ${g.plate_number ? '&middot; ' + escapeHtml(g.plate_number) : ''}</span></div>
       <div class="detail-row"><span class="detail-label">Status Pendaftaran</span><span class="detail-value"><span class="badge ${statusBadgeClass(g.status)}">${escapeHtml(guestStatusLabel(g.status))}</span></span></div>
@@ -173,6 +284,13 @@ async function load() {
     const showCompletion = isDraftGuest && canManage;
     scheduledInfoCallout.style.display = showCompletion ? 'block' : 'none';
     completeScheduleActions.style.display = showCompletion ? 'flex' : 'none';
+
+    const scheduleCompanySection = document.getElementById('scheduleCompanySection');
+    scheduleCompanySection.style.display = showCompletion ? 'block' : 'none';
+    if (showCompletion) {
+      document.getElementById('scheduleCompanyFields').innerHTML = scheduleCompanyFieldsHTML(g);
+      wireScheduleCompanyFields();
+    }
 
     // Verifikasi (verifikator/admin): hanya tampil saat status masih menunggu verifikasi
     const verifySection = document.getElementById('verifySection');

@@ -217,13 +217,28 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
   const isScheduled = !!is_scheduled;
 
   const errors = {};
-  if (!company || !String(company).trim()) errors.company = 'Perusahaan/instansi wajib diisi';
-  if (!isValidTargetOfficials(target_officials)) errors.target_officials = 'Pilih minimal satu tujuan menghadap kepada';
-  else if (target_officials.includes('lainnya') && (!target_official_other || !String(target_official_other).trim())) {
-    errors.target_official_other = 'Sebutkan tujuan menghadap yang tidak ada dalam pilihan';
+  const hasTargetOfficials = Array.isArray(target_officials) && target_officials.length > 0;
+
+  if (!isScheduled) {
+    if (!company || !String(company).trim()) errors.company = 'Perusahaan/instansi wajib diisi';
+    if (!hasTargetOfficials) errors.target_officials = 'Pilih minimal satu tujuan menghadap kepada';
+    if (!purpose_category || !PURPOSE_CATEGORIES.includes(purpose_category)) errors.purpose_category = 'Pilih kategori keperluan';
+    if (!purpose || !String(purpose).trim()) errors.purpose = 'Detail tujuan menghadap wajib diisi';
+  } else {
+    // Tamu terjadwal: Perusahaan/Tujuan Menghadap/Kategori Keperluan/Detail
+    // Tujuan boleh dikosongkan dulu dan dilengkapi belakangan dari halaman
+    // Detail Tamu (lihat PUT /:id) -- supaya Pos Depan tidak perlu menahan
+    // formulir ini terbuka sampai semua informasi lengkap. Kalau memang
+    // sudah diisi sekarang, tetap divalidasi formatnya seperti biasa.
+    if (company && !String(company).trim()) errors.company = 'Perusahaan/instansi tidak valid';
+    if (purpose_category && !PURPOSE_CATEGORIES.includes(purpose_category)) errors.purpose_category = 'Kategori keperluan tidak valid';
   }
-  if (!purpose_category || !PURPOSE_CATEGORIES.includes(purpose_category)) errors.purpose_category = 'Pilih kategori keperluan';
-  if (!purpose || !String(purpose).trim()) errors.purpose = 'Detail tujuan menghadap wajib diisi';
+  if (hasTargetOfficials) {
+    if (!isValidTargetOfficials(target_officials)) errors.target_officials = 'Pilihan tujuan menghadap kepada tidak valid';
+    else if (target_officials.includes('lainnya') && (!target_official_other || !String(target_official_other).trim())) {
+      errors.target_official_other = 'Sebutkan tujuan menghadap yang tidak ada dalam pilihan';
+    }
+  }
   if (accompanied_by && String(accompanied_by).length > 150) errors.accompanied_by = 'Keterangan pendamping maksimal 150 karakter';
 
   if (!Array.isArray(members) || members.length === 0) {
@@ -257,11 +272,11 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
       `INSERT INTO guests (registration_number, company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, status, created_by)
        VALUES ('', :company, :target_officials, :target_official_other, :purpose, :purpose_category, :accompanied_by, :status, :created_by)`,
       {
-        company,
-        target_officials: target_officials.join(','),
-        target_official_other: target_officials.includes('lainnya') ? target_official_other.trim() : null,
-        purpose,
-        purpose_category,
+        company: company || '',
+        target_officials: hasTargetOfficials ? target_officials.join(',') : '',
+        target_official_other: hasTargetOfficials && target_officials.includes('lainnya') ? target_official_other.trim() : null,
+        purpose: purpose || '',
+        purpose_category: purpose_category || null,
         accompanied_by: accompanied_by && String(accompanied_by).trim() ? String(accompanied_by).trim() : null,
         status: isScheduled ? 'Draft' : 'Menunggu Verifikasi',
         created_by: req.user.sub,
@@ -514,7 +529,8 @@ router.post('/:id/complete', requireRole('admin', 'pos_depan'), asyncHandler(asy
   const id = req.params.id;
 
   const [guestRows] = await pool.execute(
-    `SELECT g.status, g.company, g.registration_number, g.target_officials, g.target_official_other, g.purpose, g.created_by,
+    `SELECT g.status, g.company, g.registration_number, g.target_officials, g.target_official_other,
+            g.purpose, g.purpose_category, g.created_by,
             u.full_name AS created_by_name
      FROM guests g LEFT JOIN users u ON u.id = g.created_by
      WHERE g.id = :id`,
@@ -532,6 +548,22 @@ router.post('/:id/complete', requireRole('admin', 'pos_depan'), asyncHandler(asy
   );
 
   const errors = {};
+
+  // Perusahaan/Tujuan Menghadap/Kategori Keperluan/Detail Tujuan boleh
+  // ditunda saat pendaftaran awal (lihat POST /) tapi wajib lengkap sebelum
+  // bisa diajukan ke antrian verifikasi -- dilengkapi lewat PUT /:id.
+  if (!guest.company || !guest.company.trim()) errors.company = 'Perusahaan/instansi wajib diisi';
+  const officials = guest.target_officials ? guest.target_officials.split(',').filter(Boolean) : [];
+  if (!officials.length) {
+    errors.target_officials = 'Pilih minimal satu tujuan menghadap kepada';
+  } else if (officials.includes('lainnya') && (!guest.target_official_other || !guest.target_official_other.trim())) {
+    errors.target_official_other = 'Sebutkan tujuan menghadap yang tidak ada dalam pilihan';
+  }
+  if (!guest.purpose_category || !PURPOSE_CATEGORIES.includes(guest.purpose_category)) {
+    errors.purpose_category = 'Pilih kategori keperluan';
+  }
+  if (!guest.purpose || !guest.purpose.trim()) errors.purpose = 'Detail tujuan menghadap wajib diisi';
+
   members.forEach((m, i) => {
     if (!m.photo) errors[`members[${i}].photo`] = `Foto tamu "${m.full_name}" wajib diisi`;
     if (!VALID_DEVICE_STATUSES.includes(m.device_status)) {

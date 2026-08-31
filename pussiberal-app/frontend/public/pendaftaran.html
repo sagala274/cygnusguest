@@ -54,10 +54,10 @@
         <section class="section">
           <div class="callout">
             <span class="callout-label">Tamu Terjadwal</span>
-            <p>Untuk kunjungan yang sudah dijadwalkan tapi tamunya belum tiba, centang opsi ini -- NIK, Nama, Jabatan, dan Nomor HP tetap diisi sekarang, tapi Foto Tamu dan deklarasi Perangkat Elektronik boleh dilengkapi nanti saat tamu benar-benar tiba (lewat halaman Detail Tamu).</p>
+            <p>Untuk kunjungan yang sudah dijadwalkan tapi tamunya belum tiba, centang opsi ini -- NIK, Nama, Jabatan, dan Nomor HP tetap diisi sekarang, sementara Perusahaan/Tujuan Menghadap/Keperluan, Foto Tamu, dan deklarasi Perangkat Elektronik boleh dilengkapi belakangan (kapan saja sebelum tamu tiba) lewat halaman Detail Tamu -- jadi formulir ini bisa disimpan dulu sebagai draft tanpa harus langsung lengkap.</p>
             <label class="confirm-checkbox" style="margin-top:12px;">
               <input type="checkbox" id="scheduledToggle">
-              <span>Ini pendaftaran tamu terjadwal -- data foto &amp; perangkat elektronik belum lengkap</span>
+              <span>Ini pendaftaran tamu terjadwal -- boleh disimpan sebagai draft dulu, dilengkapi belakangan</span>
             </label>
           </div>
         </section>
@@ -70,14 +70,14 @@
 
           <div class="grid">
             <div class="field">
-              <label for="company">PERUSAHAAN / INSTANSI ASAL <span class="required">*</span></label>
+              <label for="company">PERUSAHAAN / INSTANSI ASAL <span id="companyRequiredMark"><span class="required">*</span></span></label>
               <input id="company" name="company" type="text" placeholder="Nama instansi" list="companySuggestions" autocomplete="off" required>
               <datalist id="companySuggestions"></datalist>
             </div>
           </div>
 
           <div class="field full" style="margin-top:21px;">
-            <label>TUJUAN MENGHADAP KEPADA <span class="required">*</span><span class="label-note">Boleh pilih lebih dari satu</span></label>
+            <label>TUJUAN MENGHADAP KEPADA <span id="targetOfficialsRequiredMark"><span class="required">*</span></span><span class="label-note">Boleh pilih lebih dari satu</span></label>
             <div class="device-options" id="target_officials">
               <label class="device-option"><input type="checkbox" class="m-target-official" value="danpussiberal"><span>Danpussiberal</span></label>
               <label class="device-option"><input type="checkbox" class="m-target-official" value="wadan_pussiberal"><span>Wadan Pussiberal</span></label>
@@ -96,7 +96,7 @@
           </div>
 
           <div class="field full" style="margin-top:21px;">
-            <label>KATEGORI KEPERLUAN <span class="required">*</span></label>
+            <label>KATEGORI KEPERLUAN <span id="purposeCategoryRequiredMark"><span class="required">*</span></span></label>
             <div class="device-options" id="purpose_category">
               <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="audiensi"><span>Audiensi</span></label>
               <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="rapat_koordinasi"><span>Rapat/Koordinasi</span></label>
@@ -108,7 +108,7 @@
           </div>
 
           <div class="field full" style="margin-top:21px;">
-            <label for="purpose">DETAIL TUJUAN MENGHADAP <span class="required">*</span></label>
+            <label for="purpose">DETAIL TUJUAN MENGHADAP <span id="purposeRequiredMark"><span class="required">*</span></span></label>
             <textarea id="purpose" name="purpose" placeholder="Jelaskan lebih detail keperluan kunjungan. Untuk kategori &quot;Lainnya&quot;, sebutkan kegiatannya secara spesifik..." required></textarea>
           </div>
 
