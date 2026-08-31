@@ -117,12 +117,48 @@ button, input, select, textarea { font: inherit; }
 
 .topbar-icons { display: flex; align-items: center; gap: 6px; }
 .topbar-icon-btn {
+  position: relative;
   width: 38px; height: 38px; border-radius: 50%; border: none; background: none;
   color: #667085; display: flex; align-items: center; justify-content: center;
   cursor: pointer;
 }
 .topbar-icon-btn:hover { background: #f5f6f9; color: var(--navy); }
 .topbar-icon-btn .icon { width: 19px; height: 19px; }
+
+/* Notifikasi (lonceng topbar) */
+.notif-menu { position: relative; }
+.notif-badge {
+  position: absolute; top: 3px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 8px; background: var(--danger); color: #fff; font-size: 9.5px; font-weight: 800;
+  align-items: center; justify-content: center; line-height: 1; border: 2px solid #fff;
+}
+.notif-dropdown {
+  display: none;
+  position: absolute; top: calc(100% + 10px); right: 0;
+  background: #fff; border: 1px solid var(--line); border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(16,24,40,.14);
+  width: 340px; max-width: calc(100vw - 32px); max-height: 420px; overflow-y: auto; z-index: 70;
+}
+.notif-dropdown.open { display: block; }
+.notif-dropdown-head {
+  position: sticky; top: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--line); background: #fff;
+  font-size: 12.5px; font-weight: 800;
+}
+.notif-dropdown-head #notifMarkAllBtn { color: var(--accent); font-weight: 700; padding: 0; }
+.notif-list { padding: 6px; }
+.notif-item {
+  display: flex; gap: 10px; padding: 10px; border-radius: 4px; text-decoration: none; color: inherit;
+  cursor: pointer;
+}
+.notif-item:hover { background: #f5f6f9; }
+.notif-item.is-unread { background: var(--accent-soft); }
+.notif-item-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 6px; }
+.notif-item-body { flex: 1; min-width: 0; }
+.notif-item-message { display: block; font-size: 12.5px; font-weight: 600; line-height: 1.5; color: var(--text); }
+.notif-item-time { display: block; font-size: 10.5px; color: var(--muted); margin-top: 4px; }
+.notif-empty { padding: 30px 16px; text-align: center; color: var(--muted); font-size: 12.5px; }
 
 .profile-menu { position: relative; }
 .profile {

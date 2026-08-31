@@ -14,12 +14,14 @@ const backupRoutes = require('./routes/backups');
 const aiSettingsRoutes = require('./routes/aiSettings');
 const aiChatRoutes = require('./routes/aiChat');
 const telegramSettingsRoutes = require('./routes/telegramSettings');
+const notificationRoutes = require('./routes/notifications');
 const { startBackupScheduler } = require('./utils/backupScheduler');
 const { ensureAiSettingsTable } = require('./utils/aiSettings');
 const { ensureTelegramSettingsTable } = require('./utils/telegram');
 const { startTelegramPolling } = require('./utils/telegramBot');
 const { ensureGuestExtraColumns, ensureGuestMemberExtraColumns } = require('./utils/guestFields');
 const { ensureUserAvatarColumn } = require('./utils/userAvatar');
+const { ensureNotificationsTable } = require('./utils/notifications');
 
 const app = express();
 
@@ -49,6 +51,7 @@ app.use('/api/backups', backupRoutes);
 app.use('/api/ai-settings', aiSettingsRoutes);
 app.use('/api/ai-chat', aiChatRoutes);
 app.use('/api/telegram-settings', telegramSettingsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint tidak ditemukan' });
@@ -100,6 +103,7 @@ async function start() {
   await ensureGuestExtraColumns();
   await ensureGuestMemberExtraColumns();
   await ensureUserAvatarColumn();
+  await ensureNotificationsTable();
   startBackupScheduler();
   startTelegramPolling();
   app.listen(port, () => console.log(`Backend berjalan di port ${port}`));

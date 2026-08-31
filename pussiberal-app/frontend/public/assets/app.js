@@ -410,6 +410,85 @@ function timeAgo(value) {
   return formatDateTime(value);
 }
 
+function initNotifications() {
+  const bellBtn = document.getElementById('notifBellBtn');
+  const dropdown = document.getElementById('notifDropdown');
+  const markAllBtn = document.getElementById('notifMarkAllBtn');
+  if (!bellBtn || !dropdown) return;
+
+  function closeDropdown() { dropdown.classList.remove('open'); }
+
+  bellBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = dropdown.classList.toggle('open');
+    if (isOpen) loadNotifications();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!dropdown.classList.contains('open')) return;
+    if (bellBtn.contains(e.target) || dropdown.contains(e.target)) return;
+    closeDropdown();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDropdown();
+  });
+
+  markAllBtn.addEventListener('click', async () => {
+    try {
+      await api('/notifications/read-all', { method: 'POST' });
+      loadNotifications();
+    } catch (err) {
+      // Kalau gagal, badge akan menyesuaikan lagi di polling berikutnya.
+    }
+  });
+
+  loadNotifications();
+  setInterval(loadNotifications, 45000);
+}
+
+async function loadNotifications() {
+  const badge = document.getElementById('notifBadge');
+  const list = document.getElementById('notifList');
+  if (!badge || !list) return;
+
+  try {
+    const res = await api('/notifications');
+    const items = res.data;
+
+    if (res.unread_count > 0) {
+      badge.textContent = res.unread_count > 9 ? '9+' : String(res.unread_count);
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+
+    list.innerHTML = items.length
+      ? items
+          .map(
+            (n) => `
+        <a class="notif-item ${n.is_read ? '' : 'is-unread'}" href="${n.guest_id ? `detail-tamu?id=${n.guest_id}` : '#'}" data-id="${n.id}">
+          <span class="notif-item-dot" ${n.is_read ? 'style="visibility:hidden;"' : ''}></span>
+          <span class="notif-item-body">
+            <span class="notif-item-message">${escapeHtml(n.message)}</span>
+            <span class="notif-item-time">${timeAgo(n.created_at)}</span>
+          </span>
+        </a>
+      `
+          )
+          .join('')
+      : '<p class="notif-empty">Belum ada notifikasi.</p>';
+
+    list.querySelectorAll('.notif-item').forEach((el) => {
+      el.addEventListener('click', () => {
+        api(`/notifications/${el.dataset.id}/read`, { method: 'POST' }).catch(() => {});
+      });
+    });
+  } catch (err) {
+    list.innerHTML = '<p class="notif-empty">Gagal memuat notifikasi.</p>';
+  }
+}
+
 function renderNav(active) {
   const user = getUser();
   if (!user) return;
@@ -445,9 +524,10 @@ function renderNav(active) {
       .join('');
   }
 
-  /* Tombol notifikasi & mode tampilan di topbar -- disuntik lewat JS (bukan
-     ditulis ulang di tiap file HTML) supaya semua halaman otomatis konsisten.
-     Keduanya baru elemen visual (belum ada sistem notifikasi/dark mode nyata). */
+  /* Lonceng notifikasi & tombol mode tampilan di topbar -- disuntik lewat JS
+     (bukan ditulis ulang di tiap file HTML) supaya semua halaman otomatis
+     konsisten. Lonceng sudah fungsional nyata (initNotifications()); toggle
+     mode tampilan masih murni visual (belum ada sistem dark mode). */
   const topRight = document.querySelector('.top-right');
   const profileMenuEl = document.getElementById('profileMenu');
   if (topRight && profileMenuEl && !document.getElementById('topbarIcons')) {
@@ -455,10 +535,23 @@ function renderNav(active) {
     wrap.id = 'topbarIcons';
     wrap.className = 'topbar-icons';
     wrap.innerHTML = `
-      <button type="button" class="topbar-icon-btn" title="Notifikasi (segera hadir)">${icon('bell')}</button>
+      <div class="notif-menu" id="notifMenu">
+        <button type="button" class="topbar-icon-btn" id="notifBellBtn" title="Notifikasi">
+          ${icon('bell')}
+          <span class="notif-badge" id="notifBadge" style="display:none;"></span>
+        </button>
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-dropdown-head">
+            <span>Notifikasi</span>
+            <button type="button" class="link" id="notifMarkAllBtn" style="font-size:11px; background:none; border:none; cursor:pointer;">Tandai semua dibaca</button>
+          </div>
+          <div class="notif-list" id="notifList"><p class="notif-empty">Memuat...</p></div>
+        </div>
+      </div>
       <button type="button" class="topbar-icon-btn" title="Mode tampilan (segera hadir)">${icon('sun')}</button>
     `;
     topRight.insertBefore(wrap, profileMenuEl);
+    initNotifications();
   }
 
   /* Ikon bubble di sebelah judul halaman, mengikuti ikon menu aktifnya. */

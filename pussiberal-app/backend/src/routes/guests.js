@@ -12,6 +12,7 @@ const {
 } = require('../utils/validators');
 const { logAudit } = require('../utils/audit');
 const { notifyNewRegistration } = require('../utils/telegram');
+const { notifyVerifiers, notifyGuestCreator } = require('../utils/notifications');
 const { PURPOSE_CATEGORIES, isValidTargetOfficials } = require('../utils/guestFields');
 const asyncHandler = require('../utils/asyncHandler');
 
@@ -309,6 +310,10 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
       memberNames: members.map((m) => m.full_name),
       createdByName: req.user.name,
     }).catch(() => {});
+    notifyVerifiers({
+      guestId,
+      message: `Pendaftaran baru dari ${company} (${regNumber}) menunggu verifikasi Anda.`,
+    });
 
     res.status(201).json({ data: { id: guestId, registration_number: regNumber, member_count: members.length } });
   } catch (err) {
@@ -488,7 +493,7 @@ router.post('/:id/verify', requireRole('admin', 'verifikator'), asyncHandler(asy
     return res.status(400).json({ error: 'Keterangan pendamping maksimal 150 karakter' });
   }
 
-  const [rows] = await pool.execute('SELECT status FROM guests WHERE id = :id', { id });
+  const [rows] = await pool.execute('SELECT status, company, registration_number, created_by FROM guests WHERE id = :id', { id });
   if (!rows[0]) return res.status(404).json({ error: 'Pendaftaran tidak ditemukan' });
   if (rows[0].status !== 'Menunggu Verifikasi') {
     return res.status(409).json({ error: 'Pendaftaran ini tidak sedang menunggu verifikasi' });
@@ -504,6 +509,11 @@ router.post('/:id/verify', requireRole('admin', 'verifikator'), asyncHandler(asy
     await pool.execute('UPDATE guests SET status = :status WHERE id = :id', { status, id });
   }
   await logAudit(req.user.sub, 'verify_guest', 'guest', id, { status, note: note || null, accompanied_by: accompanied_by || null });
+  notifyGuestCreator({
+    userId: rows[0].created_by,
+    guestId: Number(id),
+    message: `Pendaftaran ${rows[0].company} (${rows[0].registration_number}) telah ${status.toLowerCase()} oleh Verifikator.`,
+  });
 
   res.json({ data: { id: Number(id), status } });
 }));
