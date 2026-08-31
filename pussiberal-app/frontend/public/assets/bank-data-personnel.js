@@ -66,6 +66,19 @@ async function load() {
       <div class="detail-row"><span class="detail-label">Kunjungan Terakhir</span><span class="detail-value">${formatDateTime(p.last_visit_at)}</span></div>
     `;
 
+    const photoFrame = (label, value) => `
+      <div class="photo-widget">
+        <label class="photo-widget-label">${label}</label>
+        ${
+          value
+            ? `<div class="photo-frame" style="max-width:220px;"><img src="${escapeHtml(value)}" alt="${escapeHtml(label)}"></div>`
+            : `<div class="photo-frame" style="max-width:220px;"><div class="photo-frame-empty">Tidak ada foto</div></div>`
+        }
+      </div>
+    `;
+    document.getElementById('summaryPhotos').innerHTML =
+      photoFrame('Foto Wajah', p.photo) + photoFrame('Foto KTP', p.ktp_photo);
+
     const analysisSection = document.getElementById('analysisSection');
     if (p.analysis_notes) {
       document.getElementById('analysisNotes').textContent = p.analysis_notes;
