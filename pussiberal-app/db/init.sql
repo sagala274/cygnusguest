@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS guest_members (
   device_reason VARCHAR(500) NULL,
   affiliation VARCHAR(200) NULL,
   social_media VARCHAR(255) NULL,
+  address VARCHAR(255) NULL,
   analysis_notes TEXT NULL,
   security_category ENUM('aman','perlu_perhatian','perlu_penanganan') NULL,
   photo MEDIUMTEXT NULL,

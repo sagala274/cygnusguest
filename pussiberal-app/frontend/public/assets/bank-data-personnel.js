@@ -51,6 +51,7 @@ async function load() {
       <div class="detail-row"><span class="detail-label">Nomor HP</span><span class="detail-value">${escapeHtml(p.phone_number)}</span></div>
       <div class="detail-row"><span class="detail-label">Afiliasi</span><span class="detail-value">${escapeHtml(p.affiliation || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Media Sosial</span><span class="detail-value">${escapeHtml(p.social_media || '-')}</span></div>
+      <div class="detail-row"><span class="detail-label">Alamat Rumah</span><span class="detail-value">${escapeHtml(p.address || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Kategori Tamu Terkini</span><span class="detail-value"><span class="badge ${securityCategoryBadgeClass(p.security_category)}">${escapeHtml(securityCategoryLabel(p.security_category))}</span></span></div>
       <div class="detail-row"><span class="detail-label">Perusahaan Terkait</span><span class="detail-value">${escapeHtml(p.companies.join(', '))}</span></div>
       <div class="detail-row"><span class="detail-label">Jumlah Kunjungan</span><span class="detail-value">${p.visit_count}x</span></div>
@@ -107,6 +108,7 @@ function openEditModal() {
   document.getElementById('editPhone').value = lastPerson.phone_number || '';
   document.getElementById('editAffiliation').value = lastPerson.affiliation || '';
   document.getElementById('editSocialMedia').value = lastPerson.social_media || '';
+  document.getElementById('editAddress').value = lastPerson.address || '';
   document.getElementById('editCategory').value = lastPerson.security_category || '';
   document.getElementById('editAnalysisNotes').value = lastPerson.analysis_notes || '';
   editModal.classList.add('open');
@@ -130,6 +132,7 @@ editForm.addEventListener('submit', async (e) => {
   const payload = {
     affiliation: document.getElementById('editAffiliation').value.trim(),
     social_media: document.getElementById('editSocialMedia').value.trim(),
+    address: document.getElementById('editAddress').value.trim(),
     security_category: document.getElementById('editCategory').value || null,
     analysis_notes: document.getElementById('editAnalysisNotes').value.trim(),
   };

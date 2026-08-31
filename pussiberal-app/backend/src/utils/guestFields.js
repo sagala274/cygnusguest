@@ -75,6 +75,12 @@ async function ensureGuestMemberExtraColumns() {
         VARCHAR(255) NULL AFTER affiliation
     `);
   }
+  if (!(await columnExists('guest_members', 'address'))) {
+    await pool.query(`
+      ALTER TABLE guest_members ADD COLUMN address
+        VARCHAR(255) NULL AFTER social_media
+    `);
+  }
 }
 
 function isValidTargetOfficials(value) {
