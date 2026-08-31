@@ -257,6 +257,7 @@ async function load() {
       <div class="detail-row"><span class="detail-label">Status Kunjungan</span><span class="detail-value">${escapeHtml(g.visit_status || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Check-in</span><span class="detail-value">${formatDateTime(g.check_in_at)}</span></div>
       <div class="detail-row"><span class="detail-label">Check-out</span><span class="detail-value">${formatDateTime(g.check_out_at)}</span></div>
+      ${g.re_entry_reason ? `<div class="detail-row"><span class="detail-label">Keterangan Check-in Ulang</span><span class="detail-value">${escapeHtml(g.re_entry_reason)} <span class="label-note">(${formatDateTime(g.re_entry_at)})</span></span></div>` : ''}
       <div class="detail-row"><span class="detail-label">Terdaftar Pada</span><span class="detail-value">${formatDateTime(g.created_at)}</span></div>
     `;
 
@@ -312,6 +313,17 @@ async function load() {
         }
       } else if (g.visit_status === 'Sedang Berkunjung') {
         actions.innerHTML = `<button class="btn btn-primary" id="checkOutBtn">Check-out Semua Tamu</button>`;
+      } else if (g.visit_status === 'Selesai') {
+        // Tamu yang sudah check-out balik lagi (mis. tertinggal dokumen) --
+        // tidak perlu mendaftar ulang dari nol, cukup check-in ulang dengan
+        // menyertakan alasannya.
+        actions.innerHTML = `
+          <div class="field full" style="margin-bottom:14px;">
+            <label for="reCheckInReason">ALASAN CHECK-IN ULANG <span class="required">*</span><span class="label-note">Misal: tertinggal dokumen, lupa tanda tangan, dll</span></label>
+            <input id="reCheckInReason" type="text" placeholder="Jelaskan alasan tamu kembali masuk" maxlength="255">
+          </div>
+          <button class="btn btn-primary" id="reCheckInBtn">Check-in Ulang</button>
+        `;
       }
     }
 
@@ -320,6 +332,9 @@ async function load() {
 
     const checkOutBtn = document.getElementById('checkOutBtn');
     if (checkOutBtn) checkOutBtn.addEventListener('click', () => doVisitAction('check-out'));
+
+    const reCheckInBtn = document.getElementById('reCheckInBtn');
+    if (reCheckInBtn) reCheckInBtn.addEventListener('click', doReCheckIn);
   } catch (err) {
     document.getElementById('guestName').textContent = 'Data tidak ditemukan';
     showMessage(err.message, true);
@@ -333,6 +348,26 @@ async function doVisitAction(action) {
     load();
   } catch (err) {
     showMessage(err.message, true);
+  }
+}
+
+async function doReCheckIn() {
+  const reasonInput = document.getElementById('reCheckInReason');
+  const reason = reasonInput.value.trim();
+  if (!reason) {
+    showMessage('Alasan check-in ulang wajib diisi.', true);
+    return;
+  }
+  const btn = document.getElementById('reCheckInBtn');
+  btn.disabled = true;
+  try {
+    await api(`/guests/${guestId}/re-check-in`, { method: 'POST', body: JSON.stringify({ reason }) });
+    showMessage('Tamu berhasil check-in ulang.', false);
+    load();
+  } catch (err) {
+    showMessage(err.message, true);
+  } finally {
+    btn.disabled = false;
   }
 }
 

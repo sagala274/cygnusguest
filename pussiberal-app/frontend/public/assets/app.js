@@ -220,6 +220,7 @@ function actionLabel(action) {
     complete_guest_schedule: 'Lengkapi Kedatangan Tamu Terjadwal',
     check_in: 'Check-in Tamu',
     check_out: 'Check-out Tamu',
+    re_check_in: 'Check-in Ulang Tamu',
     delete_guest: 'Hapus Tamu',
     create_user: 'Buat Pengguna',
     update_user: 'Ubah Pengguna',

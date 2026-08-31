@@ -68,6 +68,8 @@ CREATE TABLE IF NOT EXISTS visits (
   check_in_at DATETIME NULL,
   check_out_at DATETIME NULL,
   status ENUM('Belum Check-in','Sedang Berkunjung','Selesai') NOT NULL DEFAULT 'Belum Check-in',
+  re_entry_reason VARCHAR(255) NULL,
+  re_entry_at DATETIME NULL,
   FOREIGN KEY (guest_id) REFERENCES guests(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

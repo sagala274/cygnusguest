@@ -175,7 +175,8 @@ router.get('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   const [guestRows] = await pool.execute(
-    `SELECT g.*, v.vehicle_type, v.plate_number, vi.check_in_at, vi.check_out_at, vi.status AS visit_status
+    `SELECT g.*, v.vehicle_type, v.plate_number, vi.check_in_at, vi.check_out_at, vi.status AS visit_status,
+            vi.re_entry_reason, vi.re_entry_at
      FROM guests g
      LEFT JOIN vehicles v ON v.guest_id = g.id
      LEFT JOIN visits vi ON vi.guest_id = g.id
@@ -205,6 +206,8 @@ router.get('/:id', asyncHandler(async (req, res) => {
       check_in_at: g.check_in_at,
       check_out_at: g.check_out_at,
       visit_status: g.visit_status,
+      re_entry_reason: g.re_entry_reason,
+      re_entry_at: g.re_entry_at,
       created_at: g.created_at,
       members: memberRows.map((m) => formatMember(m, req.user.role)),
     },
@@ -678,6 +681,40 @@ router.post('/:id/check-out', requireRole('admin', 'pos_depan'), asyncHandler(as
   await logAudit(req.user.sub, 'check_out', 'guest', id, null);
 
   res.json({ data: { id: Number(id), status: 'Selesai' } });
+}));
+
+// POST /api/guests/:id/re-check-in  (tamu yang sudah check-out balik lagi ke
+// area PUSSIBERAL untuk urusan singkat -- misal tertinggal dokumen -- tanpa
+// perlu mendaftar ulang dari nol. Wajib menyertakan alasan; alasan terakhir
+// disimpan & ditampilkan di Detail Tamu, jejak lengkapnya ada di Log Aktivitas.)
+router.post('/:id/re-check-in', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
+  const id = req.params.id;
+  const { reason } = req.body || {};
+
+  if (!reason || !String(reason).trim()) {
+    return res.status(400).json({ error: 'Alasan check-in ulang wajib diisi' });
+  }
+  if (String(reason).length > 255) {
+    return res.status(400).json({ error: 'Alasan check-in ulang maksimal 255 karakter' });
+  }
+
+  const [rows] = await pool.execute('SELECT status FROM visits WHERE guest_id = :id', { id });
+  if (!rows[0]) return res.status(404).json({ error: 'Data kunjungan tidak ditemukan' });
+  if (rows[0].status !== 'Selesai') {
+    return res.status(409).json({ error: 'Check-in ulang hanya berlaku untuk tamu yang sudah check-out' });
+  }
+
+  const trimmedReason = String(reason).trim();
+  await pool.execute(
+    `UPDATE visits SET status = 'Sedang Berkunjung', check_in_at = NOW(), check_out_at = NULL,
+            re_entry_reason = :reason, re_entry_at = NOW()
+     WHERE guest_id = :id`,
+    { id, reason: trimmedReason }
+  );
+  await pool.execute("UPDATE guests SET status = 'Sedang Berkunjung' WHERE id = :id", { id });
+  await logAudit(req.user.sub, 're_check_in', 'guest', id, { reason: trimmedReason });
+
+  res.json({ data: { id: Number(id), status: 'Sedang Berkunjung' } });
 }));
 
 module.exports = router;

@@ -99,6 +99,25 @@ async function ensureGuestMemberExtraColumns() {
   `);
 }
 
+// Migrasi kolom pada visits -- dipakai untuk fitur "Check-in Ulang" (tamu
+// yang sudah check-out balik lagi ke area, mis. tertinggal dokumen). Alasan
+// disimpan tunggal (bukan histori) supaya tetap sederhana, terlihat di
+// Detail Tamu; jejak lengkap tiap kejadian tetap tercatat di Log Aktivitas.
+async function ensureVisitExtraColumns() {
+  if (!(await columnExists('visits', 're_entry_reason'))) {
+    await pool.query(`
+      ALTER TABLE visits ADD COLUMN re_entry_reason
+        VARCHAR(255) NULL AFTER status
+    `);
+  }
+  if (!(await columnExists('visits', 're_entry_at'))) {
+    await pool.query(`
+      ALTER TABLE visits ADD COLUMN re_entry_at
+        DATETIME NULL AFTER re_entry_reason
+    `);
+  }
+}
+
 function isValidTargetOfficials(value) {
   return Array.isArray(value) && value.length > 0 && value.every((v) => TARGET_OFFICIALS.includes(v));
 }
@@ -120,5 +139,6 @@ module.exports = {
   TARGET_OFFICIAL_LABELS,
   ensureGuestExtraColumns,
   ensureGuestMemberExtraColumns,
+  ensureVisitExtraColumns,
   isValidTargetOfficials,
 };
