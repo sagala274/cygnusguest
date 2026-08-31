@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS guest_members (
   device_status ENUM('tidak_membawa','dititipkan','dibawa_alasan_khusus') NOT NULL DEFAULT 'dititipkan',
   device_reason VARCHAR(500) NULL,
   affiliation VARCHAR(200) NULL,
+  social_media VARCHAR(255) NULL,
   analysis_notes TEXT NULL,
   security_category ENUM('aman','perlu_perhatian','perlu_penanganan') NULL,
   photo MEDIUMTEXT NULL,

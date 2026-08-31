@@ -30,6 +30,7 @@ function formatMember(row, role) {
     device_status: row.device_status,
     device_reason: row.device_reason,
     affiliation: row.affiliation,
+    social_media: row.social_media,
     analysis_notes: row.analysis_notes,
     security_category: row.security_category,
     photo: row.photo !== undefined ? row.photo : undefined,
@@ -346,11 +347,11 @@ router.put('/:id/members/:memberId', requireRole('admin', 'pos_depan', 'verifika
   const { id, memberId } = req.params;
   const {
     full_name, phone_number, position, employee_id, device_status, device_reason, photo, ktp_photo,
-    affiliation, analysis_notes, security_category,
+    affiliation, social_media, analysis_notes, security_category,
   } = req.body || {};
 
   const touchesIdentity = [full_name, phone_number, position, employee_id, device_status, device_reason].some((v) => v !== undefined);
-  const touchesAnalysis = [affiliation, analysis_notes, security_category].some((v) => v !== undefined);
+  const touchesAnalysis = [affiliation, social_media, analysis_notes, security_category].some((v) => v !== undefined);
 
   if (touchesIdentity && !['admin', 'pos_depan'].includes(req.user.role)) {
     return res.status(403).json({ error: 'Hanya Administrator atau Pos Depan yang dapat mengubah data identitas tamu' });
@@ -375,6 +376,10 @@ router.put('/:id/members/:memberId', requireRole('admin', 'pos_depan', 'verifika
   if (affiliation !== undefined) {
     if (String(affiliation).length > 200) return res.status(400).json({ error: 'Afiliasi maksimal 200 karakter' });
     fields.push('affiliation = :affiliation'); params.affiliation = affiliation || null;
+  }
+  if (social_media !== undefined) {
+    if (String(social_media).length > 255) return res.status(400).json({ error: 'Media sosial maksimal 255 karakter' });
+    fields.push('social_media = :social_media'); params.social_media = social_media || null;
   }
   if (analysis_notes !== undefined) {
     if (String(analysis_notes).length > 2000) return res.status(400).json({ error: 'Hasil analisa maksimal 2000 karakter' });

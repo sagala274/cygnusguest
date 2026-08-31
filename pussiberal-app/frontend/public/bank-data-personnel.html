@@ -54,7 +54,10 @@
         <div class="section">
           <div class="section-header-row">
             <h2 class="section-title">Ringkasan</h2>
-            <button type="button" class="btn btn-small" id="downloadBtn">Unduh Laporan (PDF)</button>
+            <div style="display:flex; gap:8px;">
+              <button type="button" class="btn btn-small" id="editSummaryBtn"><span id="editSummaryIcon"></span> Edit</button>
+              <button type="button" class="btn btn-small" id="downloadBtn">Unduh Laporan (PDF)</button>
+            </div>
           </div>
           <div id="summaryRows"></div>
         </div>
@@ -87,6 +90,52 @@
       </div>
     </section>
   </main>
+</div>
+
+<div class="modal-overlay" id="editSummaryModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>Edit Ringkasan Data Tamu</h2>
+      <button type="button" class="modal-close" id="editSummaryCloseBtn"><span id="editSummaryCloseIcon"></span></button>
+    </div>
+    <div class="modal-body">
+      <form id="editSummaryForm" class="grid">
+        <div class="field full" id="editPositionField">
+          <label for="editPosition">JABATAN TERAKHIR</label>
+          <input id="editPosition" type="text">
+        </div>
+        <div class="field full" id="editPhoneField">
+          <label for="editPhone">NOMOR HP</label>
+          <input id="editPhone" type="text">
+        </div>
+        <div class="field full">
+          <label for="editAffiliation">AFILIASI <span class="label-note">Opsional</span></label>
+          <input id="editAffiliation" type="text" maxlength="200">
+        </div>
+        <div class="field full">
+          <label for="editSocialMedia">MEDIA SOSIAL <span class="label-note">Opsional</span></label>
+          <input id="editSocialMedia" type="text" maxlength="255" placeholder="mis. IG: @nama, FB: Nama Lengkap">
+        </div>
+        <div class="field full">
+          <label for="editCategory">KATEGORI TAMU</label>
+          <select id="editCategory">
+            <option value="">Belum Dianalisa</option>
+            <option value="aman">Aman</option>
+            <option value="perlu_perhatian">Perlu Perhatian</option>
+            <option value="perlu_penanganan">Perlu Penanganan</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="editAnalysisNotes">HASIL ANALISA <span class="label-note">Opsional</span></label>
+          <textarea id="editAnalysisNotes" maxlength="2000"></textarea>
+        </div>
+        <div class="full modal-actions">
+          <button type="button" class="btn" id="editSummaryCancelBtn">Batal</button>
+          <button type="submit" class="btn btn-accent">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script src="assets/app.js"></script>

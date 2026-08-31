@@ -66,6 +66,17 @@ async function ensureGuestExtraColumns() {
   }
 }
 
+// Migrasi kolom pada guest_members (bukan guests) -- dipisah supaya nama
+// fungsi tetap jelas menunjuk tabel mana yang diubah.
+async function ensureGuestMemberExtraColumns() {
+  if (!(await columnExists('guest_members', 'social_media'))) {
+    await pool.query(`
+      ALTER TABLE guest_members ADD COLUMN social_media
+        VARCHAR(255) NULL AFTER affiliation
+    `);
+  }
+}
+
 function isValidTargetOfficials(value) {
   return Array.isArray(value) && value.length > 0 && value.every((v) => TARGET_OFFICIALS.includes(v));
 }
@@ -86,5 +97,6 @@ module.exports = {
   PURPOSE_CATEGORIES,
   TARGET_OFFICIAL_LABELS,
   ensureGuestExtraColumns,
+  ensureGuestMemberExtraColumns,
   isValidTargetOfficials,
 };

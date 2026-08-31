@@ -34,7 +34,7 @@ async function fetchAllRecords() {
   const [rows] = await pool.query(`
     SELECT
       gm.id, gm.guest_id, gm.nik, gm.full_name, gm.phone_number, gm.position, gm.employee_id,
-      gm.affiliation, gm.analysis_notes, gm.security_category, gm.device_status, gm.device_reason,
+      gm.affiliation, gm.social_media, gm.analysis_notes, gm.security_category, gm.device_status, gm.device_reason,
       g.company, g.registration_number, g.created_at, g.status AS registration_status
     FROM guest_members gm
     JOIN guests g ON g.id = gm.guest_id
@@ -122,6 +122,7 @@ router.get('/', asyncHandler(async (req, res) => {
       position: m.position,
       employee_id: m.employee_id,
       affiliation: m.affiliation,
+      social_media: m.social_media,
       analysis_notes: m.analysis_notes,
       security_category: m.security_category,
       registration_number: m.registration_number,
@@ -178,12 +179,15 @@ router.get('/personnel/:nik', asyncHandler(async (req, res) => {
 
   res.json({
     data: {
+      guest_id: headline.guest_id,
+      member_id: headline.id,
       nik: headline.nik,
       full_name: headline.full_name,
       phone_number: headline.phone_number,
       position: headline.position,
       employee_id: headline.employee_id,
       affiliation: headline.affiliation,
+      social_media: headline.social_media,
       security_category: headline.security_category,
       analysis_notes: headline.analysis_notes,
       visit_count: headline.visit_count,
@@ -299,6 +303,7 @@ function renderPersonnelPDF(doc, visits, headlineRecord) {
   field('Jabatan Terakhir', latest.position);
   field('Nomor HP', latest.phone_number);
   field('Afiliasi', latest.affiliation);
+  field('Media Sosial', latest.social_media);
   field('Kategori Tamu Terkini', securityCategoryLabelId(latest.security_category));
   field('Jumlah Kunjungan', latest.visit_count);
 

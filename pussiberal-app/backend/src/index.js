@@ -18,7 +18,7 @@ const { startBackupScheduler } = require('./utils/backupScheduler');
 const { ensureAiSettingsTable } = require('./utils/aiSettings');
 const { ensureTelegramSettingsTable } = require('./utils/telegram');
 const { startTelegramPolling } = require('./utils/telegramBot');
-const { ensureGuestExtraColumns } = require('./utils/guestFields');
+const { ensureGuestExtraColumns, ensureGuestMemberExtraColumns } = require('./utils/guestFields');
 const { ensureUserAvatarColumn } = require('./utils/userAvatar');
 
 const app = express();
@@ -98,6 +98,7 @@ async function start() {
   await ensureAiSettingsTable();
   await ensureTelegramSettingsTable();
   await ensureGuestExtraColumns();
+  await ensureGuestMemberExtraColumns();
   await ensureUserAvatarColumn();
   startBackupScheduler();
   startTelegramPolling();
