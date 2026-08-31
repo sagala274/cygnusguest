@@ -15,8 +15,10 @@ if (!nik) {
 
 document.getElementById('editSummaryIcon').innerHTML = icon('pencil');
 document.getElementById('editSummaryCloseIcon').innerHTML = icon('close');
+document.getElementById('editNameField').style.display = isAdmin ? '' : 'none';
 document.getElementById('editPositionField').style.display = isAdmin ? '' : 'none';
 document.getElementById('editPhoneField').style.display = isAdmin ? '' : 'none';
+document.getElementById('editFullName').required = isAdmin;
 
 let lastPerson = null;
 
@@ -47,6 +49,7 @@ async function load() {
     }
 
     document.getElementById('summaryRows').innerHTML = `
+      <div class="detail-row"><span class="detail-label">Nama Lainnya</span><span class="detail-value">${escapeHtml(p.other_names || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Jabatan Terakhir</span><span class="detail-value">${escapeHtml(p.position)}</span></div>
       <div class="detail-row"><span class="detail-label">Nomor HP</span><span class="detail-value">${escapeHtml(p.phone_number)}</span></div>
       <div class="detail-row"><span class="detail-label">Afiliasi</span><span class="detail-value">${escapeHtml(p.affiliation || '-')}</span></div>
@@ -104,6 +107,8 @@ const editForm = document.getElementById('editSummaryForm');
 
 function openEditModal() {
   if (!lastPerson) return;
+  document.getElementById('editFullName').value = lastPerson.full_name || '';
+  document.getElementById('editOtherNames').value = lastPerson.other_names || '';
   document.getElementById('editPosition').value = lastPerson.position || '';
   document.getElementById('editPhone').value = lastPerson.phone_number || '';
   document.getElementById('editAffiliation').value = lastPerson.affiliation || '';
@@ -130,6 +135,7 @@ editForm.addEventListener('submit', async (e) => {
   resultBox.style.display = 'none';
 
   const payload = {
+    other_names: document.getElementById('editOtherNames').value.trim(),
     affiliation: document.getElementById('editAffiliation').value.trim(),
     social_media: document.getElementById('editSocialMedia').value.trim(),
     address: document.getElementById('editAddress').value.trim(),
@@ -137,6 +143,7 @@ editForm.addEventListener('submit', async (e) => {
     analysis_notes: document.getElementById('editAnalysisNotes').value.trim(),
   };
   if (isAdmin) {
+    payload.full_name = document.getElementById('editFullName').value.trim();
     payload.position = document.getElementById('editPosition').value.trim();
     payload.phone_number = document.getElementById('editPhone').value.trim();
   }

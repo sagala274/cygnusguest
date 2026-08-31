@@ -100,6 +100,14 @@
     </div>
     <div class="modal-body">
       <form id="editSummaryForm" class="grid">
+        <div class="field full" id="editNameField">
+          <label for="editFullName">NAMA <span class="required">*</span></label>
+          <input id="editFullName" type="text" required>
+        </div>
+        <div class="field full">
+          <label for="editOtherNames">NAMA LAINNYA <span class="label-note">Opsional -- nama panggilan/alias lain yang diketahui</span></label>
+          <input id="editOtherNames" type="text" maxlength="255" placeholder="mis. sering disapa 'Budi' atau nama alias lain">
+        </div>
         <div class="field full" id="editPositionField">
           <label for="editPosition">JABATAN TERAKHIR</label>
           <input id="editPosition" type="text">

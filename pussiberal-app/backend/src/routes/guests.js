@@ -23,6 +23,7 @@ function formatMember(row, role) {
   return {
     id: row.id,
     full_name: row.full_name,
+    other_names: row.other_names,
     nik: canSeeFullNik ? row.nik : maskNik(row.nik),
     phone_number: row.phone_number,
     position: row.position,
@@ -348,11 +349,11 @@ router.put('/:id/members/:memberId', requireRole('admin', 'pos_depan', 'verifika
   const { id, memberId } = req.params;
   const {
     full_name, phone_number, position, employee_id, device_status, device_reason, photo, ktp_photo,
-    affiliation, social_media, address, analysis_notes, security_category,
+    affiliation, social_media, address, other_names, analysis_notes, security_category,
   } = req.body || {};
 
   const touchesIdentity = [full_name, phone_number, position, employee_id, device_status, device_reason].some((v) => v !== undefined);
-  const touchesAnalysis = [affiliation, social_media, address, analysis_notes, security_category].some((v) => v !== undefined);
+  const touchesAnalysis = [affiliation, social_media, address, other_names, analysis_notes, security_category].some((v) => v !== undefined);
 
   if (touchesIdentity && !['admin', 'pos_depan'].includes(req.user.role)) {
     return res.status(403).json({ error: 'Hanya Administrator atau Pos Depan yang dapat mengubah data identitas tamu' });
@@ -368,6 +369,10 @@ router.put('/:id/members/:memberId', requireRole('admin', 'pos_depan', 'verifika
   const params = { memberId };
 
   if (full_name !== undefined) { fields.push('full_name = :full_name'); params.full_name = full_name; }
+  if (other_names !== undefined) {
+    if (String(other_names).length > 255) return res.status(400).json({ error: 'Nama lainnya maksimal 255 karakter' });
+    fields.push('other_names = :other_names'); params.other_names = other_names || null;
+  }
   if (phone_number !== undefined) {
     if (!isValidPhone(phone_number)) return res.status(400).json({ error: 'Format nomor HP tidak valid' });
     fields.push('phone_number = :phone_number'); params.phone_number = phone_number;

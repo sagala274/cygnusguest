@@ -33,7 +33,7 @@ function sanitizeFilename(value) {
 async function fetchAllRecords() {
   const [rows] = await pool.query(`
     SELECT
-      gm.id, gm.guest_id, gm.nik, gm.full_name, gm.phone_number, gm.position, gm.employee_id,
+      gm.id, gm.guest_id, gm.nik, gm.full_name, gm.other_names, gm.phone_number, gm.position, gm.employee_id,
       gm.affiliation, gm.social_media, gm.address, gm.analysis_notes, gm.security_category, gm.device_status, gm.device_reason,
       g.company, g.registration_number, g.created_at, g.status AS registration_status
     FROM guest_members gm
@@ -98,6 +98,7 @@ function applyFilters(records, { q, category }) {
     const needle = q.toLowerCase();
     filtered = filtered.filter((p) =>
       p.full_name.toLowerCase().includes(needle) ||
+      (p.other_names || '').toLowerCase().includes(needle) ||
       p.nik.includes(needle) ||
       p.company.toLowerCase().includes(needle) ||
       (p.affiliation || '').toLowerCase().includes(needle)
@@ -118,6 +119,7 @@ router.get('/', asyncHandler(async (req, res) => {
       guest_id: m.guest_id,
       nik: m.nik,
       full_name: m.full_name,
+      other_names: m.other_names,
       phone_number: m.phone_number,
       position: m.position,
       employee_id: m.employee_id,
@@ -184,6 +186,7 @@ router.get('/personnel/:nik', asyncHandler(async (req, res) => {
       member_id: headline.id,
       nik: headline.nik,
       full_name: headline.full_name,
+      other_names: headline.other_names,
       phone_number: headline.phone_number,
       position: headline.position,
       employee_id: headline.employee_id,
@@ -301,6 +304,7 @@ function renderPersonnelPDF(doc, visits, headlineRecord) {
   };
 
   field('Nama', latest.full_name);
+  field('Nama Lainnya', latest.other_names);
   field('NIK', latest.nik);
   field('Jabatan Terakhir', latest.position);
   field('Nomor HP', latest.phone_number);
