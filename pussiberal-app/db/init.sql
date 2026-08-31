@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS guest_members (
   phone_number VARCHAR(20) NOT NULL,
   position VARCHAR(100) NOT NULL,
   employee_id VARCHAR(50) NULL,
-  device_status ENUM('tidak_membawa','dititipkan','dibawa_alasan_khusus') NOT NULL DEFAULT 'dititipkan',
+  device_status ENUM('tidak_membawa','dititipkan','dibawa_alasan_khusus') NULL,
   device_reason VARCHAR(500) NULL,
   affiliation VARCHAR(200) NULL,
   social_media VARCHAR(255) NULL,

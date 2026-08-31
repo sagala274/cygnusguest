@@ -41,7 +41,10 @@ function formatMember(row, role) {
   };
 }
 
-function validateMember(member, index, errors) {
+// isScheduled: tamu terjadwal -- NIK/Nama/Jabatan/Nomor HP tetap wajib diisi
+// di muka, tapi Foto Tamu dan deklarasi Perangkat Elektronik boleh menyusul
+// saat tamu benar-benar tiba (lihat POST /:id/complete).
+function validateMember(member, index, errors, isScheduled) {
   const prefix = `members[${index}]`;
   if (!member || typeof member !== 'object') {
     errors[prefix] = 'Data tamu tidak valid';
@@ -52,14 +55,17 @@ function validateMember(member, index, errors) {
   if (!isValidPhone(member.phone_number)) errors[`${prefix}.phone_number`] = 'Format nomor HP tidak valid';
   if (!member.position || !String(member.position).trim()) errors[`${prefix}.position`] = 'Jabatan wajib diisi';
   if (member.employee_id && String(member.employee_id).length > 50) errors[`${prefix}.employee_id`] = 'Nomor ID karyawan maksimal 50 karakter';
-  if (!member.photo) errors[`${prefix}.photo`] = 'Foto tamu wajib diisi';
-  else if (!isValidPhotoDataUrl(member.photo)) errors[`${prefix}.photo`] = 'Foto tidak valid atau ukurannya terlalu besar (maks 3MB)';
+
+  if (!isScheduled && !member.photo) errors[`${prefix}.photo`] = 'Foto tamu wajib diisi';
+  else if (member.photo && !isValidPhotoDataUrl(member.photo)) errors[`${prefix}.photo`] = 'Foto tidak valid atau ukurannya terlalu besar (maks 3MB)';
   if (member.ktp_photo && !isValidPhotoDataUrl(member.ktp_photo)) errors[`${prefix}.ktp_photo`] = 'Foto KTP tidak valid atau ukurannya terlalu besar (maks 3MB)';
 
-  if (!VALID_DEVICE_STATUSES.includes(member.device_status)) {
-    errors[`${prefix}.device_status`] = 'Pilih status perangkat elektronik';
-  } else if (member.device_status === 'dibawa_alasan_khusus' && !isValidDeviceReason(member.device_reason)) {
-    errors[`${prefix}.device_reason`] = 'Alasan wajib diisi, minimal 20 dan maksimal 500 karakter';
+  if (!isScheduled || member.device_status) {
+    if (!VALID_DEVICE_STATUSES.includes(member.device_status)) {
+      errors[`${prefix}.device_status`] = 'Pilih status perangkat elektronik';
+    } else if (member.device_status === 'dibawa_alasan_khusus' && !isValidDeviceReason(member.device_reason)) {
+      errors[`${prefix}.device_reason`] = 'Alasan wajib diisi, minimal 20 dan maksimal 500 karakter';
+    }
   }
 }
 
@@ -207,7 +213,8 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
 // POST /api/guests  (Pos Depan mendaftarkan 1+ tamu dari perusahaan yang sama -> masuk antrian verifikasi)
 router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
-  const { company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, vehicle_type, plate_number, members } = req.body || {};
+  const { company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, vehicle_type, plate_number, members, is_scheduled } = req.body || {};
+  const isScheduled = !!is_scheduled;
 
   const errors = {};
   if (!company || !String(company).trim()) errors.company = 'Perusahaan/instansi wajib diisi';
@@ -222,7 +229,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
   if (!Array.isArray(members) || members.length === 0) {
     errors.members = 'Minimal satu tamu harus diisi';
   } else {
-    members.forEach((m, i) => validateMember(m, i, errors));
+    members.forEach((m, i) => validateMember(m, i, errors, isScheduled));
   }
 
   if (Object.keys(errors).length) {
@@ -248,7 +255,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
 
     const [result] = await conn.execute(
       `INSERT INTO guests (registration_number, company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, status, created_by)
-       VALUES ('', :company, :target_officials, :target_official_other, :purpose, :purpose_category, :accompanied_by, 'Menunggu Verifikasi', :created_by)`,
+       VALUES ('', :company, :target_officials, :target_official_other, :purpose, :purpose_category, :accompanied_by, :status, :created_by)`,
       {
         company,
         target_officials: target_officials.join(','),
@@ -256,6 +263,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
         purpose,
         purpose_category,
         accompanied_by: accompanied_by && String(accompanied_by).trim() ? String(accompanied_by).trim() : null,
+        status: isScheduled ? 'Draft' : 'Menunggu Verifikasi',
         created_by: req.user.sub,
       }
     );
@@ -276,7 +284,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
           phone_number: member.phone_number,
           position: member.position,
           employee_id: member.employee_id || null,
-          device_status: member.device_status,
+          device_status: member.device_status || null,
           device_reason: member.device_status === 'dibawa_alasan_khusus' ? member.device_reason.trim() : null,
           photo: member.photo || null,
           ktp_photo: member.ktp_photo || null,
@@ -295,27 +303,33 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
 
     await conn.commit();
 
-    await logAudit(req.user.sub, 'create_guest', 'guest', guestId, {
+    await logAudit(req.user.sub, isScheduled ? 'schedule_guest' : 'create_guest', 'guest', guestId, {
       registration_number: regNumber,
       company,
       member_count: members.length,
     });
-    notifyNewRegistration({
-      registrationNumber: regNumber,
-      company,
-      targetOfficials: target_officials,
-      targetOfficialOther: target_official_other,
-      purpose,
-      memberCount: members.length,
-      memberNames: members.map((m) => m.full_name),
-      createdByName: req.user.name,
-    }).catch(() => {});
-    notifyVerifiers({
-      guestId,
-      message: `Pendaftaran baru dari ${company} (${regNumber}) menunggu verifikasi Anda.`,
-    });
 
-    res.status(201).json({ data: { id: guestId, registration_number: regNumber, member_count: members.length } });
+    // Tamu terjadwal belum masuk antrian verifikasi -- notifikasi Telegram &
+    // in-app ditunda sampai kedatangannya dilengkapi lewat POST /:id/complete,
+    // supaya verifikator tidak diberi tahu untuk sesuatu yang belum siap.
+    if (!isScheduled) {
+      notifyNewRegistration({
+        registrationNumber: regNumber,
+        company,
+        targetOfficials: target_officials,
+        targetOfficialOther: target_official_other,
+        purpose,
+        memberCount: members.length,
+        memberNames: members.map((m) => m.full_name),
+        createdByName: req.user.name,
+      }).catch(() => {});
+      notifyVerifiers({
+        guestId,
+        message: `Pendaftaran baru dari ${company} (${regNumber}) menunggu verifikasi Anda.`,
+      });
+    }
+
+    res.status(201).json({ data: { id: guestId, registration_number: regNumber, member_count: members.length, status: isScheduled ? 'Draft' : 'Menunggu Verifikasi' } });
   } catch (err) {
     await conn.rollback();
     throw err;
@@ -403,7 +417,12 @@ router.put('/:id/members/:memberId', requireRole('admin', 'pos_depan', 'verifika
     return res.status(403).json({ error: 'Hanya Administrator atau Verifikator yang dapat mengisi hasil analisa' });
   }
 
-  const [memberRows] = await pool.execute('SELECT id FROM guest_members WHERE id = :memberId AND guest_id = :id', { memberId, id });
+  const [memberRows] = await pool.execute(
+    `SELECT gm.id, g.status AS guest_status FROM guest_members gm
+     JOIN guests g ON g.id = gm.guest_id
+     WHERE gm.id = :memberId AND gm.guest_id = :id`,
+    { memberId, id }
+  );
   if (!memberRows[0]) return res.status(404).json({ error: 'Tamu tidak ditemukan pada pendaftaran ini' });
 
   const fields = [];
@@ -456,7 +475,12 @@ router.put('/:id/members/:memberId', requireRole('admin', 'pos_depan', 'verifika
   }
 
   if (photo !== undefined || ktp_photo !== undefined) {
-    if (req.user.role !== 'admin') {
+    // Pos Depan boleh mengisi/mengganti foto SELAMA pendaftarannya masih
+    // berstatus Draft (tamu terjadwal yang belum lengkap datanya) -- di luar
+    // itu (sudah masuk antrian verifikasi atau lebih lanjut), tetap hanya
+    // Administrator yang boleh mengubah/menghapus foto tamu.
+    const canEditPhotoAsPosDepan = req.user.role === 'pos_depan' && memberRows[0].guest_status === 'Draft';
+    if (req.user.role !== 'admin' && !canEditPhotoAsPosDepan) {
       return res.status(403).json({ error: 'Hanya Administrator yang dapat mengubah atau menghapus foto tamu' });
     }
     if (photo !== undefined) {
@@ -479,6 +503,66 @@ router.put('/:id/members/:memberId', requireRole('admin', 'pos_depan', 'verifika
   await logAudit(req.user.sub, 'update_guest', 'guest_member', memberId, auditDetail);
 
   res.json({ data: { id: Number(memberId) } });
+}));
+
+// POST /api/guests/:id/complete  (menyelesaikan tamu TERJADWAL -- setelah
+// Foto Tamu & deklarasi Perangkat Elektronik seluruh anggota dilengkapi lewat
+// PUT .../members/:memberId, endpoint ini memindahkan status dari "Draft" ke
+// "Menunggu Verifikasi". Notifikasi Telegram & verifikator baru dikirim di
+// sini -- sebelumnya belum ada yang benar-benar perlu diverifikasi.)
+router.post('/:id/complete', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
+  const id = req.params.id;
+
+  const [guestRows] = await pool.execute(
+    `SELECT g.status, g.company, g.registration_number, g.target_officials, g.target_official_other, g.purpose, g.created_by,
+            u.full_name AS created_by_name
+     FROM guests g LEFT JOIN users u ON u.id = g.created_by
+     WHERE g.id = :id`,
+    { id }
+  );
+  const guest = guestRows[0];
+  if (!guest) return res.status(404).json({ error: 'Pendaftaran tidak ditemukan' });
+  if (guest.status !== 'Draft') {
+    return res.status(409).json({ error: 'Pendaftaran ini bukan tamu terjadwal yang belum lengkap' });
+  }
+
+  const [members] = await pool.execute(
+    'SELECT id, full_name, photo, device_status, device_reason FROM guest_members WHERE guest_id = :id',
+    { id }
+  );
+
+  const errors = {};
+  members.forEach((m, i) => {
+    if (!m.photo) errors[`members[${i}].photo`] = `Foto tamu "${m.full_name}" wajib diisi`;
+    if (!VALID_DEVICE_STATUSES.includes(m.device_status)) {
+      errors[`members[${i}].device_status`] = `Kebijakan perangkat elektronik untuk "${m.full_name}" belum dipilih`;
+    } else if (m.device_status === 'dibawa_alasan_khusus' && !isValidDeviceReason(m.device_reason)) {
+      errors[`members[${i}].device_reason`] = `Alasan membawa perangkat untuk "${m.full_name}" wajib diisi`;
+    }
+  });
+  if (Object.keys(errors).length) {
+    return res.status(400).json({ error: 'Lengkapi data yang masih kurang sebelum mengajukan verifikasi', fields: errors });
+  }
+
+  await pool.execute("UPDATE guests SET status = 'Menunggu Verifikasi' WHERE id = :id", { id });
+  await logAudit(req.user.sub, 'complete_guest_schedule', 'guest', id, { registration_number: guest.registration_number });
+
+  notifyNewRegistration({
+    registrationNumber: guest.registration_number,
+    company: guest.company,
+    targetOfficials: guest.target_officials ? guest.target_officials.split(',') : [],
+    targetOfficialOther: guest.target_official_other,
+    purpose: guest.purpose,
+    memberCount: members.length,
+    memberNames: members.map((m) => m.full_name),
+    createdByName: guest.created_by_name || '-',
+  }).catch(() => {});
+  notifyVerifiers({
+    guestId: Number(id),
+    message: `Pendaftaran tamu terjadwal dari ${guest.company} (${guest.registration_number}) sudah lengkap dan menunggu verifikasi Anda.`,
+  });
+
+  res.json({ data: { id: Number(id), status: 'Menunggu Verifikasi' } });
 }));
 
 // POST /api/guests/:id/verify  (Verifikator menyetujui/menolak seluruh pendaftaran)

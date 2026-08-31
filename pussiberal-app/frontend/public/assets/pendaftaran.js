@@ -22,6 +22,32 @@ function updateTargetOfficialOtherVisibility() {
 }
 targetOfficialOtherCheckbox.addEventListener('change', updateTargetOfficialOtherVisibility);
 
+// Tamu Terjadwal -- daftarkan NIK/Nama/Jabatan/Nomor HP di muka, Foto Tamu &
+// deklarasi Perangkat Elektronik menyusul saat kedatangan (dilengkapi lewat
+// halaman Detail Tamu). Mempengaruhi kartu tamu yang DITAMBAHKAN SETELAH
+// toggle ini diubah -- kartu yang sudah ada sebelumnya tidak dirender ulang,
+// tapi validasi submit tetap mengikuti status toggle saat ini secara global.
+const scheduledToggle = document.getElementById('scheduledToggle');
+
+// Kartu tamu yang sudah terlanjur dibuat sebelum toggle diubah tetap
+// diperbarui label-nya di tempat (tanpa render ulang, supaya data yang
+// sudah diisi tidak hilang).
+function updateMemberScheduledBadges() {
+  const isScheduled = scheduledToggle.checked;
+  const badgeHtml = isScheduled
+    ? '<span class="optional-badge">Menyusul saat kedatangan</span>'
+    : '<span class="required">*</span>';
+
+  Array.from(membersContainer.children).forEach((block) => {
+    const photoLabel = block.querySelector('[data-kind="photo"] .photo-widget-label');
+    if (photoLabel) photoLabel.innerHTML = `Foto Tamu ${badgeHtml}`;
+
+    const deviceLabel = block.querySelector('.m-device-status')?.closest('.field')?.querySelector('label');
+    if (deviceLabel) deviceLabel.innerHTML = `PERANGKAT ELEKTRONIK ${badgeHtml}`;
+  });
+}
+scheduledToggle.addEventListener('change', updateMemberScheduledBadges);
+
 // Saran nama perusahaan (autocomplete) + auto-lengkapi data tamu yang sudah
 // pernah terdaftar dari perusahaan yang sama.
 const companyInput = document.getElementById('company');
@@ -67,7 +93,14 @@ companyInput.addEventListener('input', () => {
 
 loadCompanySuggestions();
 
-function memberBlockHTML(seq) {
+function memberBlockHTML(seq, isScheduled) {
+  const photoRequiredBadge = isScheduled
+    ? '<span class="optional-badge">Menyusul saat kedatangan</span>'
+    : '<span class="required">*</span>';
+  const deviceRequiredBadge = isScheduled
+    ? '<span class="optional-badge">Menyusul saat kedatangan</span>'
+    : '<span class="required">*</span>';
+  const dititipkanChecked = isScheduled ? '' : 'checked';
   return `
     <div class="member-card" data-seq="${seq}">
       <div class="member-card-head">
@@ -100,7 +133,7 @@ function memberBlockHTML(seq) {
 
       <div class="member-photos">
         <div class="photo-widget" data-kind="photo">
-          <label class="photo-widget-label">Foto Tamu <span class="required">*</span></label>
+          <label class="photo-widget-label">Foto Tamu ${photoRequiredBadge}</label>
           <div class="photo-frame">
             <div class="photo-frame-empty">Kamera belum aktif.<br>Tekan "Aktifkan Kamera" atau unggah foto.</div>
             <video autoplay playsinline muted style="display:none;"></video>
@@ -143,14 +176,14 @@ function memberBlockHTML(seq) {
         </h3>
 
         <div class="field full">
-          <label>PERANGKAT ELEKTRONIK <span class="required">*</span></label>
+          <label>PERANGKAT ELEKTRONIK ${deviceRequiredBadge}</label>
           <div class="device-options">
             <label class="device-option">
               <input type="radio" name="deviceStatus-${seq}" class="m-device-status" value="tidak_membawa">
               <span>Tidak membawa perangkat elektronik</span>
             </label>
             <label class="device-option">
-              <input type="radio" name="deviceStatus-${seq}" class="m-device-status" value="dititipkan" checked>
+              <input type="radio" name="deviceStatus-${seq}" class="m-device-status" value="dititipkan" ${dititipkanChecked}>
               <span>Membawa dan menitipkan di Pos Penjagaan</span>
             </label>
             <label class="device-option">
@@ -230,7 +263,7 @@ function wireCompanyMemberAutofill(block) {
 
 function addMember() {
   const seq = memberSeq++;
-  membersContainer.insertAdjacentHTML('beforeend', memberBlockHTML(seq));
+  membersContainer.insertAdjacentHTML('beforeend', memberBlockHTML(seq, scheduledToggle.checked));
   const block = membersContainer.querySelector(`[data-seq="${seq}"]`);
 
   const nikInput = block.querySelector('.m-nik');
@@ -366,6 +399,13 @@ function validateAllDevicePolicies() {
     const status = selected ? selected.value : '';
     const confirmCheckbox = block.querySelector('.m-device-confirm');
 
+    // Tamu terjadwal: seluruh kebijakan perangkat elektronik (termasuk
+    // konfirmasi "sudah disampaikan ke tamu") menyusul saat kedatangan --
+    // tidak masuk akal diwajibkan sekarang karena tamunya belum tiba.
+    if (scheduledToggle.checked) {
+      return;
+    }
+
     if (status === 'dibawa_alasan_khusus') {
       const reason = block.querySelector('.m-device-reason').value.trim();
       if (!reason) {
@@ -390,6 +430,7 @@ function validateAllDevicePolicies() {
 }
 
 function validateAllPhotos() {
+  if (scheduledToggle.checked) return true;
   let valid = true;
 
   Array.from(membersContainer.children).forEach((block, idx) => {
@@ -461,6 +502,7 @@ form.addEventListener('submit', async (e) => {
     accompanied_by: document.getElementById('accompanied_by').value.trim() || undefined,
     vehicle_type: document.getElementById('vehicle').value || undefined,
     plate_number: document.getElementById('plate').value.trim() || undefined,
+    is_scheduled: scheduledToggle.checked || undefined,
     members: collectMembers(),
   };
 
@@ -468,7 +510,9 @@ form.addEventListener('submit', async (e) => {
     const res = await api('/guests', { method: 'POST', body: JSON.stringify(payload) });
     resultBox.style.display = 'block';
     const count = res.data.member_count;
-    resultBox.innerHTML = `Pendaftaran berhasil untuk ${count} tamu. Nomor registrasi: <strong>${escapeHtml(res.data.registration_number)}</strong> — <a class="link" href="detail-tamu?id=${res.data.id}">Lihat detail</a>`;
+    resultBox.innerHTML = res.data.status === 'Draft'
+      ? `Tamu terjadwal berhasil disimpan untuk ${count} tamu. Nomor registrasi: <strong>${escapeHtml(res.data.registration_number)}</strong> — lengkapi Foto Tamu &amp; deklarasi Perangkat Elektronik saat tamu tiba di <a class="link" href="detail-tamu?id=${res.data.id}">halaman Detail Tamu</a>.`
+      : `Pendaftaran berhasil untuk ${count} tamu. Nomor registrasi: <strong>${escapeHtml(res.data.registration_number)}</strong> — <a class="link" href="detail-tamu?id=${res.data.id}">Lihat detail</a>`;
     resetForm();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (err) {

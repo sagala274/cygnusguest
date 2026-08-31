@@ -53,7 +53,14 @@
 
         <div class="section">
           <h2 class="section-title">Daftar Tamu</h2>
+          <div class="callout" id="scheduledInfoCallout" style="display:none;">
+            <span class="callout-label">Tamu Terjadwal -- Belum Lengkap</span>
+            <p>Pendaftaran ini dibuat di muka sebelum tamu tiba. Lengkapi Foto Tamu dan Kebijakan Perangkat Elektronik yang masih kosong di bawah, lalu klik "Selesaikan &amp; Ajukan Verifikasi" saat tamu sudah benar-benar berada di lokasi.</p>
+          </div>
           <div id="membersList"></div>
+          <div class="inline-form" id="completeScheduleActions" style="display:none; margin-top:22px;">
+            <button class="btn btn-primary" id="completeScheduleBtn">✔ Selesaikan &amp; Ajukan Verifikasi</button>
+          </div>
         </div>
 
         <div class="section" id="verifySection" style="display:none;">

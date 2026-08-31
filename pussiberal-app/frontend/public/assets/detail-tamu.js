@@ -19,21 +19,69 @@ function showMessage(message, isError) {
   resultBox.classList.toggle('error-box', !!isError);
 }
 
-function memberCardHTML(m) {
-  const photoBlock = (kind, label, value) => `
-    <div class="photo-widget">
-      <label class="photo-widget-label">${label}</label>
-      ${
-        value
-          ? `<div class="photo-frame" style="max-width:220px;"><img src="${escapeHtml(value)}" alt="${escapeHtml(label)}"></div>
-             ${isAdmin ? `<div class="photo-actions"><button type="button" class="btn btn-danger btn-small delete-photo-btn" data-member-id="${m.id}" data-kind="${kind}">Hapus ${label}</button></div>` : ''}`
-          : `<div class="photo-frame" style="max-width:220px;"><div class="photo-frame-empty">Tidak ada foto</div></div>`
-      }
-    </div>
-  `;
+// Widget foto & kebijakan perangkat yang dibuat untuk melengkapi tamu
+// terjadwal (guest.status === 'Draft') -- dipetakan per member.id supaya
+// nilainya bisa diambil lagi saat "Selesaikan & Ajukan Verifikasi" ditekan.
+const completionWidgets = new Map();
+
+function memberCardHTML(m, isDraftGuest) {
+  const needsPhotoUpload = isDraftGuest && canManage && !m.photo;
+  const needsDeviceDeclaration = isDraftGuest && canManage && !m.device_status;
+
+  const photoBlock = (kind, label, value) => {
+    if (kind === 'photo' && needsPhotoUpload) {
+      return `
+        <div class="photo-widget" data-kind="photo">
+          <label class="photo-widget-label">${label} <span class="required">*</span> <span class="label-note">Lengkapi saat tamu tiba</span></label>
+          <div class="photo-frame">
+            <div class="photo-frame-empty">Kamera belum aktif.<br>Tekan "Aktifkan Kamera" atau unggah foto.</div>
+            <video autoplay playsinline muted style="display:none;"></video>
+            <img alt="Pratinjau foto tamu" style="display:none;">
+          </div>
+          <canvas style="display:none;"></canvas>
+          <div class="photo-actions">
+            <button type="button" class="btn btn-small start-camera-btn">Aktifkan Kamera</button>
+            <button type="button" class="btn btn-small btn-primary capture-btn" style="display:none;">Ambil Foto</button>
+            <button type="button" class="btn btn-small retake-btn" style="display:none;">Ambil Ulang</button>
+            <button type="button" class="btn btn-small upload-btn">Unggah</button>
+            <input type="file" class="file-input-hidden photo-file-input" accept="image/*">
+          </div>
+          <p class="photo-hint"></p>
+        </div>
+      `;
+    }
+    return `
+      <div class="photo-widget">
+        <label class="photo-widget-label">${label}</label>
+        ${
+          value
+            ? `<div class="photo-frame" style="max-width:220px;"><img src="${escapeHtml(value)}" alt="${escapeHtml(label)}"></div>
+               ${isAdmin ? `<div class="photo-actions"><button type="button" class="btn btn-danger btn-small delete-photo-btn" data-member-id="${m.id}" data-kind="${kind}">Hapus ${label}</button></div>` : ''}`
+            : `<div class="photo-frame" style="max-width:220px;"><div class="photo-frame-empty">Tidak ada foto</div></div>`
+        }
+      </div>
+    `;
+  };
+
+  const deviceBlock = needsDeviceDeclaration
+    ? `
+      <div class="subsection-divider">
+        <h3 class="subsection-title">Kebijakan Perangkat Elektronik <span class="required">*</span> <span class="label-note">Lengkapi saat tamu tiba</span></h3>
+        <div class="device-options mc-device-options">
+          <label class="device-option"><input type="radio" name="deviceStatusComplete-${m.id}" class="mc-device-status" value="tidak_membawa"><span>Tidak membawa perangkat elektronik</span></label>
+          <label class="device-option"><input type="radio" name="deviceStatusComplete-${m.id}" class="mc-device-status" value="dititipkan"><span>Membawa dan menitipkan di Pos Penjagaan</span></label>
+          <label class="device-option"><input type="radio" name="deviceStatusComplete-${m.id}" class="mc-device-status" value="dibawa_alasan_khusus"><span>Tetap membawa HP/perangkat elektronik lainnya dengan alasan khusus</span></label>
+        </div>
+        <div class="field full mc-device-reason-field" style="display:none; margin-top:14px;">
+          <label>ALASAN MEMBAWA HP/PERANGKAT ELEKTRONIK <span class="required">*</span></label>
+          <textarea class="mc-device-reason" maxlength="500" placeholder="Jelaskan alasan khusus mengapa HP/perangkat elektronik lainnya perlu tetap dibawa..."></textarea>
+        </div>
+      </div>
+    `
+    : '';
 
   return `
-    <div class="member-card">
+    <div class="member-card" data-member-id="${m.id}">
       <div class="member-card-head">
         <span class="member-card-title">${escapeHtml(m.full_name)}</span>
       </div>
@@ -41,7 +89,7 @@ function memberCardHTML(m) {
       <div class="detail-row"><span class="detail-label">Nomor HP</span><span class="detail-value">${escapeHtml(m.phone_number)}</span></div>
       <div class="detail-row"><span class="detail-label">Jabatan</span><span class="detail-value">${escapeHtml(m.position)}</span></div>
       <div class="detail-row"><span class="detail-label">Nomor ID Karyawan</span><span class="detail-value">${escapeHtml(m.employee_id || '-')}</span></div>
-      <div class="detail-row"><span class="detail-label">Perangkat Elektronik</span><span class="detail-value">${escapeHtml(deviceStatusLabel(m.device_status))}</span></div>
+      ${!needsDeviceDeclaration ? `<div class="detail-row"><span class="detail-label">Perangkat Elektronik</span><span class="detail-value">${escapeHtml(deviceStatusLabel(m.device_status))}</span></div>` : ''}
       ${m.device_status === 'dibawa_alasan_khusus' ? `<div class="detail-row"><span class="detail-label">Alasan Membawa HP/Perangkat Elektronik</span><span class="detail-value">${escapeHtml(m.device_reason)}</span></div>` : ''}
       ${canVerify ? `
         <div class="detail-row"><span class="detail-label">Afiliasi</span><span class="detail-value">${escapeHtml(m.affiliation || '-')}</span></div>
@@ -53,8 +101,30 @@ function memberCardHTML(m) {
         ${photoBlock('photo', 'Foto Tamu', m.photo)}
         ${photoBlock('ktp_photo', 'Foto KTP', m.ktp_photo)}
       </div>
+      ${deviceBlock}
     </div>
   `;
+}
+
+function wireDeviceCompletion(block, memberId) {
+  const radios = block.querySelectorAll('.mc-device-status');
+  const reasonField = block.querySelector('.mc-device-reason-field');
+  const reasonInput = block.querySelector('.mc-device-reason');
+  if (!radios.length) return;
+
+  radios.forEach((r) => {
+    r.addEventListener('change', () => {
+      const needsReason = r.checked && r.value === 'dibawa_alasan_khusus';
+      if (needsReason) reasonField.style.display = 'block';
+    });
+  });
+  block.querySelectorAll('.mc-device-status').forEach((r) => {
+    r.addEventListener('change', () => {
+      const selected = block.querySelector('.mc-device-status:checked');
+      reasonField.style.display = selected && selected.value === 'dibawa_alasan_khusus' ? 'block' : 'none';
+      if (!(selected && selected.value === 'dibawa_alasan_khusus')) reasonInput.value = '';
+    });
+  });
 }
 
 async function load() {
@@ -72,18 +142,37 @@ async function load() {
       <div class="detail-row"><span class="detail-label">Detail Tujuan Menghadap</span><span class="detail-value">${escapeHtml(g.purpose)}</span></div>
       <div class="detail-row"><span class="detail-label">Tamu Didampingi Oleh</span><span class="detail-value">${escapeHtml(g.accompanied_by || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Kendaraan</span><span class="detail-value">${escapeHtml(g.vehicle_type || '-')} ${g.plate_number ? '&middot; ' + escapeHtml(g.plate_number) : ''}</span></div>
-      <div class="detail-row"><span class="detail-label">Status Pendaftaran</span><span class="detail-value"><span class="badge ${statusBadgeClass(g.status)}">${escapeHtml(g.status)}</span></span></div>
+      <div class="detail-row"><span class="detail-label">Status Pendaftaran</span><span class="detail-value"><span class="badge ${statusBadgeClass(g.status)}">${escapeHtml(guestStatusLabel(g.status))}</span></span></div>
       <div class="detail-row"><span class="detail-label">Status Kunjungan</span><span class="detail-value">${escapeHtml(g.visit_status || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Check-in</span><span class="detail-value">${formatDateTime(g.check_in_at)}</span></div>
       <div class="detail-row"><span class="detail-label">Check-out</span><span class="detail-value">${formatDateTime(g.check_out_at)}</span></div>
       <div class="detail-row"><span class="detail-label">Terdaftar Pada</span><span class="detail-value">${formatDateTime(g.created_at)}</span></div>
     `;
 
-    document.getElementById('membersList').innerHTML = g.members.map(memberCardHTML).join('');
+    const isDraftGuest = g.status === 'Draft';
+    document.getElementById('membersList').innerHTML = g.members.map((m) => memberCardHTML(m, isDraftGuest)).join('');
 
     document.querySelectorAll('.delete-photo-btn').forEach((btn) => {
       btn.addEventListener('click', () => deletePhoto(btn.dataset.memberId, btn.dataset.kind));
     });
+
+    // Tamu terjadwal: aktifkan widget kamera/unggah foto & radio kebijakan
+    // perangkat pada kartu tamu yang datanya masih belum lengkap.
+    completionWidgets.clear();
+    if (isDraftGuest && canManage) {
+      document.querySelectorAll('.member-card').forEach((card) => {
+        const memberId = card.dataset.memberId;
+        const photoRoot = card.querySelector('.photo-widget[data-kind="photo"]');
+        if (photoRoot) completionWidgets.set(memberId, initPhotoWidget(photoRoot, 'user'));
+        wireDeviceCompletion(card, memberId);
+      });
+    }
+
+    const scheduledInfoCallout = document.getElementById('scheduledInfoCallout');
+    const completeScheduleActions = document.getElementById('completeScheduleActions');
+    const showCompletion = isDraftGuest && canManage;
+    scheduledInfoCallout.style.display = showCompletion ? 'block' : 'none';
+    completeScheduleActions.style.display = showCompletion ? 'flex' : 'none';
 
     // Verifikasi (verifikator/admin): hanya tampil saat status masih menunggu verifikasi
     const verifySection = document.getElementById('verifySection');
@@ -154,6 +243,50 @@ async function doVerify(status) {
     showMessage(err.message, true);
   }
 }
+
+async function completeSchedule() {
+  const completeBtn = document.getElementById('completeScheduleBtn');
+  completeBtn.disabled = true;
+  try {
+    for (const card of document.querySelectorAll('.member-card')) {
+      const memberId = card.dataset.memberId;
+      const payload = {};
+
+      const widget = completionWidgets.get(memberId);
+      if (widget) {
+        const photoValue = widget.getValue();
+        if (photoValue) payload.photo = photoValue;
+      }
+
+      const deviceRadio = card.querySelector('.mc-device-status:checked');
+      if (deviceRadio) {
+        payload.device_status = deviceRadio.value;
+        if (deviceRadio.value === 'dibawa_alasan_khusus') {
+          payload.device_reason = card.querySelector('.mc-device-reason').value.trim();
+        }
+      }
+
+      if (Object.keys(payload).length) {
+        await api(`/guests/${guestId}/members/${memberId}`, { method: 'PUT', body: JSON.stringify(payload) });
+      }
+    }
+
+    await api(`/guests/${guestId}/complete`, { method: 'POST' });
+    showMessage('Tamu terjadwal berhasil dilengkapi dan diajukan untuk verifikasi.', false);
+    load();
+  } catch (err) {
+    let message = err.message;
+    if (err.fields) {
+      message += ' — ' + Object.values(err.fields).join('; ');
+    }
+    showMessage(message, true);
+  } finally {
+    completeBtn.disabled = false;
+  }
+}
+
+const completeScheduleBtn = document.getElementById('completeScheduleBtn');
+if (completeScheduleBtn) completeScheduleBtn.addEventListener('click', completeSchedule);
 
 const approveBtn = document.getElementById('approveBtn');
 if (approveBtn) approveBtn.addEventListener('click', () => doVerify('Disetujui'));

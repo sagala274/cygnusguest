@@ -157,7 +157,7 @@ function deviceStatusLabel(status) {
     tidak_membawa: 'Tidak membawa perangkat elektronik',
     dititipkan: 'Dititipkan di Pos Penjagaan',
     dibawa_alasan_khusus: 'Tetap membawa HP/perangkat elektronik lainnya (alasan khusus)',
-  }[status] || status;
+  }[status] || (status ? status : 'Belum dideklarasikan');
 }
 
 function securityCategoryLabel(category) {
@@ -216,6 +216,8 @@ function actionLabel(action) {
     create_guest: 'Daftarkan Tamu',
     update_guest: 'Ubah Data Tamu',
     verify_guest: 'Verifikasi Tamu',
+    schedule_guest: 'Jadwalkan Tamu',
+    complete_guest_schedule: 'Lengkapi Kedatangan Tamu Terjadwal',
     check_in: 'Check-in Tamu',
     check_out: 'Check-out Tamu',
     delete_guest: 'Hapus Tamu',
@@ -242,6 +244,15 @@ function formatAuditDetail(raw) {
   } catch (err) {
     return raw;
   }
+}
+
+// "Draft" (nama status di database, sudah ada sejak skema awal) dipakai
+// ulang untuk merepresentasikan tamu TERJADWAL -- didaftarkan di muka
+// (NIK/Nama/Jabatan/No. HP), foto & deklarasi perangkat elektronik menyusul
+// saat kedatangan. Label yang ditampilkan ke pengguna sengaja "Terjadwal",
+// bukan "Draft", supaya lebih jelas maksudnya.
+function guestStatusLabel(status) {
+  return status === 'Draft' ? 'Terjadwal' : status;
 }
 
 function statusBadgeClass(status) {

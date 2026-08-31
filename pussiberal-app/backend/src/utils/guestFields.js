@@ -87,6 +87,16 @@ async function ensureGuestMemberExtraColumns() {
         VARCHAR(255) NULL AFTER full_name
     `);
   }
+
+  // Diubah dari NOT NULL DEFAULT 'dititipkan' jadi boleh NULL -- dipakai
+  // untuk merepresentasikan "belum dideklarasikan" pada tamu terjadwal
+  // (dibuat sebelum kedatangan, deklarasi perangkat elektronik menyusul saat
+  // tamu benar-benar tiba). Aman dijalankan berulang di data yang sudah ada
+  // karena baris lama semuanya sudah terisi nilai valid, tidak pernah NULL.
+  await pool.query(`
+    ALTER TABLE guest_members MODIFY COLUMN device_status
+      ENUM('tidak_membawa','dititipkan','dibawa_alasan_khusus') NULL
+  `);
 }
 
 function isValidTargetOfficials(value) {
