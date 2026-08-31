@@ -318,11 +318,13 @@ async function load() {
         // tidak perlu mendaftar ulang dari nol, cukup check-in ulang dengan
         // menyertakan alasannya.
         actions.innerHTML = `
-          <div class="field full" style="margin-bottom:14px;">
+          <div class="field full" style="width:100%; margin-bottom:0;">
             <label for="reCheckInReason">ALASAN CHECK-IN ULANG <span class="required">*</span><span class="label-note">Misal: tertinggal dokumen, lupa tanda tangan, dll</span></label>
-            <input id="reCheckInReason" type="text" placeholder="Jelaskan alasan tamu kembali masuk" maxlength="255">
+            <div class="inline-form" style="margin-top:8px; flex-wrap:nowrap;">
+              <input id="reCheckInReason" type="text" placeholder="Jelaskan alasan tamu kembali masuk" maxlength="255" style="flex:1; min-width:0;">
+              <button class="btn btn-primary" id="reCheckInBtn" style="flex-shrink:0;">Check-in Ulang</button>
+            </div>
           </div>
-          <button class="btn btn-primary" id="reCheckInBtn">Check-in Ulang</button>
         `;
       }
     }
