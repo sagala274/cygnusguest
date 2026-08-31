@@ -221,6 +221,8 @@ function actionLabel(action) {
     check_in: 'Check-in Tamu',
     check_out: 'Check-out Tamu',
     re_check_in: 'Check-in Ulang Tamu',
+    rename_bank_data_company: 'Ubah Nama Perusahaan (Bank Data)',
+    delete_bank_data_company: 'Hapus Perusahaan (Bank Data)',
     delete_guest: 'Hapus Tamu',
     create_user: 'Buat Pengguna',
     update_user: 'Ubah Pengguna',

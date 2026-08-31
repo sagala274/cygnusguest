@@ -2,6 +2,14 @@ requireAuth();
 requireRole('admin', 'verifikator');
 renderNav('bank-data');
 
+const user = getUser();
+const isAdmin = user && user.role === 'admin';
+
+// Kelompok "Lainnya" (tamu tanpa afiliasi instansi) menggabungkan banyak
+// nilai company mentah yang berbeda (kosong, "pribadi", "umum", dst) --
+// tidak bisa diubah/dihapus sebagai satu nama perusahaan lewat sini.
+const INDEPENDENT_GROUP_LABEL = 'Lainnya';
+
 const searchInput = document.getElementById('searchInput');
 const categoryFilter = document.getElementById('categoryFilter');
 const groupsContainer = document.getElementById('groupsContainer');
@@ -60,7 +68,13 @@ function groupCardHTML(group) {
       <div class="section">
         <div class="section-header-row">
           <h2 class="section-title">${escapeHtml(group.company)} <span class="optional-badge">${group.members.length} catatan</span></h2>
-          <button type="button" class="btn btn-small download-group-btn" data-company="${escapeHtml(group.company)}">Unduh PDF Kelompok</button>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-small download-group-btn" data-company="${escapeHtml(group.company)}">Unduh PDF Kelompok</button>
+            ${isAdmin && group.company !== INDEPENDENT_GROUP_LABEL ? `
+              <button type="button" class="btn btn-small edit-company-btn" data-company="${escapeHtml(group.company)}">Edit Nama Perusahaan</button>
+              <button type="button" class="btn btn-small btn-danger delete-company-btn" data-company="${escapeHtml(group.company)}" data-count="${group.members.length}">Hapus Perusahaan</button>
+            ` : ''}
+          </div>
         </div>
         <div class="table-wrap">
           <table>
@@ -110,8 +124,59 @@ async function load() {
     document.querySelectorAll('.download-group-btn').forEach((btn) => {
       btn.addEventListener('click', () => downloadGroupPdf(btn.dataset.company));
     });
+
+    document.querySelectorAll('.edit-company-btn').forEach((btn) => {
+      btn.addEventListener('click', () => renameCompany(btn.dataset.company));
+    });
+
+    document.querySelectorAll('.delete-company-btn').forEach((btn) => {
+      btn.addEventListener('click', () => deleteCompany(btn.dataset.company, Number(btn.dataset.count)));
+    });
   } catch (err) {
     groupsContainer.innerHTML = `<p class="page-description" style="color: var(--danger);">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function renameCompany(oldCompany) {
+  resultBox.style.display = 'none';
+  const newCompany = prompt(`Ubah nama perusahaan "${oldCompany}" menjadi:`, oldCompany);
+  if (newCompany === null) return;
+  const trimmed = newCompany.trim();
+  if (!trimmed) {
+    showMessage('Nama perusahaan tidak boleh kosong.', true);
+    return;
+  }
+  if (trimmed === oldCompany) return;
+
+  try {
+    const res = await api('/bank-data/company', {
+      method: 'PUT',
+      body: JSON.stringify({ old_company: oldCompany, new_company: trimmed }),
+    });
+    showMessage(`Nama perusahaan berhasil diubah menjadi "${trimmed}". ${res.data.updated_guests} pendaftaran diperbarui.`, false);
+    load();
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
+async function deleteCompany(company, recordCount) {
+  resultBox.style.display = 'none';
+  const typed = prompt(
+    `PERINGATAN: Ini akan MENGHAPUS PERMANEN seluruh ${recordCount} catatan tamu dari perusahaan "${company}" beserta seluruh foto, riwayat kunjungan, dan datanya. Tindakan ini TIDAK BISA DIBATALKAN.\n\nKetik ulang nama perusahaan persis seperti ini untuk konfirmasi: ${company}`
+  );
+  if (typed === null) return;
+  if (typed.trim() !== company) {
+    showMessage('Nama perusahaan yang diketik tidak cocok -- penghapusan dibatalkan.', true);
+    return;
+  }
+
+  try {
+    const res = await api(`/bank-data/company?company=${encodeURIComponent(company)}`, { method: 'DELETE' });
+    showMessage(`Berhasil menghapus ${res.data.deleted_guests} pendaftaran dari "${company}".`, false);
+    load();
+  } catch (err) {
+    showMessage(err.message, true);
   }
 }
 

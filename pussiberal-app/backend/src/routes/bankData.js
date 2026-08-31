@@ -4,6 +4,7 @@ const pool = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { isIndependentCompany } = require('../utils/validators');
 const { formatJakartaDateTime, formatJakartaDate } = require('../utils/datetime');
+const { logAudit } = require('../utils/audit');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
@@ -143,6 +144,76 @@ router.get('/', asyncHandler(async (req, res) => {
     total_unique_nik: uniqueNikCount,
     total_groups: data.length,
   });
+}));
+
+// PUT /api/bank-data/company  (ubah nama perusahaan untuk seluruh pendaftaran
+// dalam kelompok ini sekaligus -- admin saja, karena berdampak ke banyak
+// pendaftaran tamu langsung). Kelompok "Lainnya" (tamu tanpa afiliasi
+// instansi -- lihat isIndependentCompany) sengaja tidak bisa diubah lewat
+// sini karena bukan satu nilai company yang sama, melainkan gabungan banyak
+// nilai berbeda (kosong, "pribadi", "umum", dst).
+router.put('/company', requireRole('admin'), asyncHandler(async (req, res) => {
+  const { old_company, new_company } = req.body || {};
+
+  if (!old_company || !String(old_company).trim()) {
+    return res.status(400).json({ error: 'Nama perusahaan lama wajib diisi' });
+  }
+  if (isIndependentCompany(old_company)) {
+    return res.status(400).json({ error: 'Kelompok "Lainnya" tidak bisa diubah namanya di sini' });
+  }
+  const trimmedNew = String(new_company || '').trim();
+  if (!trimmedNew) {
+    return res.status(400).json({ error: 'Nama perusahaan baru wajib diisi' });
+  }
+  if (trimmedNew.length > 150) {
+    return res.status(400).json({ error: 'Nama perusahaan maksimal 150 karakter' });
+  }
+
+  const oldTrimmed = String(old_company).trim();
+  const [result] = await pool.execute(
+    'UPDATE guests SET company = :new_company WHERE TRIM(company) = :old_company',
+    { new_company: trimmedNew, old_company: oldTrimmed }
+  );
+  if (result.affectedRows === 0) {
+    return res.status(404).json({ error: 'Tidak ada pendaftaran ditemukan untuk perusahaan ini' });
+  }
+
+  await logAudit(req.user.sub, 'rename_bank_data_company', 'guest_company', null, {
+    old_company: oldTrimmed,
+    new_company: trimmedNew,
+    updated_guests: result.affectedRows,
+  });
+
+  res.json({ data: { updated_guests: result.affectedRows } });
+}));
+
+// DELETE /api/bank-data/company?company=...  (hapus SELURUH pendaftaran tamu
+// dari satu perusahaan sekaligus -- admin saja. Menghapus baris di tabel
+// guests otomatis ikut menghapus guest_members/vehicles/visits/notifications
+// terkait lewat FOREIGN KEY ... ON DELETE CASCADE -- termasuk seluruh foto
+// tamu & foto KTP tersimpan di baris tersebut. TIDAK BISA DIBATALKAN.
+router.delete('/company', requireRole('admin'), asyncHandler(async (req, res) => {
+  const { company } = req.query;
+
+  if (!company || !String(company).trim()) {
+    return res.status(400).json({ error: 'Nama perusahaan wajib diisi' });
+  }
+  if (isIndependentCompany(company)) {
+    return res.status(400).json({ error: 'Kelompok "Lainnya" tidak bisa dihapus lewat sini' });
+  }
+
+  const trimmed = String(company).trim();
+  const [result] = await pool.execute('DELETE FROM guests WHERE TRIM(company) = :company', { company: trimmed });
+  if (result.affectedRows === 0) {
+    return res.status(404).json({ error: 'Tidak ada pendaftaran ditemukan untuk perusahaan ini' });
+  }
+
+  await logAudit(req.user.sub, 'delete_bank_data_company', 'guest_company', null, {
+    company: trimmed,
+    deleted_guests: result.affectedRows,
+  });
+
+  res.json({ data: { deleted_guests: result.affectedRows } });
 }));
 
 // GET /api/bank-data/personnel/:nik  (laporan lengkap satu orang, seluruh riwayat kunjungan)
