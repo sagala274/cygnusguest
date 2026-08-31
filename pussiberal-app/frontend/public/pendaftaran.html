@@ -60,7 +60,8 @@
           <div class="grid">
             <div class="field">
               <label for="company">PERUSAHAAN / INSTANSI ASAL <span class="required">*</span></label>
-              <input id="company" name="company" type="text" placeholder="Nama instansi" required>
+              <input id="company" name="company" type="text" placeholder="Nama instansi" list="companySuggestions" autocomplete="off" required>
+              <datalist id="companySuggestions"></datalist>
             </div>
           </div>
 
@@ -120,6 +121,12 @@
             <p>Setiap tamu yang membawa perangkat elektronik <strong>wajib menitipkan perangkat tersebut di Pos Penjagaan</strong> sebelum memasuki area PUSSIBERAL. Termasuk namun tidak terbatas pada: Handphone/Smartphone, Tablet, Laptop, Smartwatch, Kamera, dan perangkat elektronik komunikasi atau perekaman lainnya.</p>
             <p>Apabila terdapat kebutuhan khusus untuk tetap membawa HP/perangkat elektronik lainnya, tamu wajib mencantumkan alasannya dan menunggu persetujuan petugas. Setiap tamu wajib mengonfirmasi kebijakan ini secara terpisah pada kartu masing-masing di bawah.</p>
           </div>
+
+          <div id="companyMembersHint" class="callout" style="display:none; margin-bottom:18px;">
+            <span class="callout-label">Tamu dari perusahaan ini sebelumnya</span>
+            <p>Nama tamu yang sudah pernah terdaftar dari perusahaan yang sama akan muncul sebagai saran saat Anda mengetik di kolom Nama Lengkap -- pilih untuk melengkapi otomatis NIK, jabatan, dan nomor HP-nya.</p>
+          </div>
+          <datalist id="companyMemberSuggestions"></datalist>
 
           <div id="membersContainer"></div>
         </section>

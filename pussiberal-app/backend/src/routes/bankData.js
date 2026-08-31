@@ -163,6 +163,12 @@ router.get('/personnel/:nik', asyncHandler(async (req, res) => {
   const requestedMemberId = req.query.member_id ? Number(req.query.member_id) : null;
   const headline = (requestedMemberId && visits.find((v) => v.id === requestedMemberId)) || visits[0];
 
+  // Foto (bisa sampai beberapa MB per baris) sengaja TIDAK ikut di-SELECT di
+  // fetchAllRecords() (dipakai juga oleh endpoint daftar Bank Data yang bisa
+  // memuat ratusan baris sekaligus) -- diambil terpisah di sini, hanya untuk
+  // satu baris (headline) yang benar-benar dibutuhkan laporan personel ini.
+  const [[photoRow]] = await pool.execute('SELECT photo, ktp_photo FROM guest_members WHERE id = :id', { id: headline.id });
+
   // SELURUH laporan (ringkasan maupun riwayat kunjungan) di-scope ke nama
   // headline saja -- bukan seluruh riwayat NIK -- supaya saat satu NIK
   // dipakai >1 nama berbeda (anomali, biasanya NIK dummy/placeholder yang
@@ -193,6 +199,8 @@ router.get('/personnel/:nik', asyncHandler(async (req, res) => {
       affiliation: headline.affiliation,
       social_media: headline.social_media,
       address: headline.address,
+      photo: photoRow.photo,
+      ktp_photo: photoRow.ktp_photo,
       security_category: headline.security_category,
       analysis_notes: headline.analysis_notes,
       visit_count: headline.visit_count,

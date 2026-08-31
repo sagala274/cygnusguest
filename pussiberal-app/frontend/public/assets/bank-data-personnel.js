@@ -18,7 +18,11 @@ document.getElementById('editSummaryCloseIcon').innerHTML = icon('close');
 document.getElementById('editNameField').style.display = isAdmin ? '' : 'none';
 document.getElementById('editPositionField').style.display = isAdmin ? '' : 'none';
 document.getElementById('editPhoneField').style.display = isAdmin ? '' : 'none';
+document.getElementById('editPhotosField').style.display = isAdmin ? '' : 'none';
 document.getElementById('editFullName').required = isAdmin;
+
+const photoWidget = initPhotoWidget(document.querySelector('#editPhotosField [data-kind="photo"]'), 'user');
+const ktpPhotoWidget = initPhotoWidget(document.querySelector('#editPhotosField [data-kind="ktp_photo"]'), 'environment');
 
 let lastPerson = null;
 
@@ -109,6 +113,8 @@ function openEditModal() {
   if (!lastPerson) return;
   document.getElementById('editFullName').value = lastPerson.full_name || '';
   document.getElementById('editOtherNames').value = lastPerson.other_names || '';
+  photoWidget.setValue(lastPerson.photo || null);
+  ktpPhotoWidget.setValue(lastPerson.ktp_photo || null);
   document.getElementById('editPosition').value = lastPerson.position || '';
   document.getElementById('editPhone').value = lastPerson.phone_number || '';
   document.getElementById('editAffiliation').value = lastPerson.affiliation || '';
@@ -121,6 +127,8 @@ function openEditModal() {
 
 function closeEditModal() {
   editModal.classList.remove('open');
+  photoWidget.stopCamera();
+  ktpPhotoWidget.stopCamera();
 }
 
 document.getElementById('editSummaryBtn').addEventListener('click', openEditModal);
@@ -146,6 +154,10 @@ editForm.addEventListener('submit', async (e) => {
     payload.full_name = document.getElementById('editFullName').value.trim();
     payload.position = document.getElementById('editPosition').value.trim();
     payload.phone_number = document.getElementById('editPhone').value.trim();
+    const newPhoto = photoWidget.getValue();
+    const newKtpPhoto = ktpPhotoWidget.getValue();
+    if (newPhoto) payload.photo = newPhoto;
+    if (newKtpPhoto) payload.ktp_photo = newKtpPhoto;
   }
 
   try {

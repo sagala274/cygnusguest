@@ -108,6 +108,43 @@
           <label for="editOtherNames">NAMA LAINNYA <span class="label-note">Opsional -- nama panggilan/alias lain yang diketahui</span></label>
           <input id="editOtherNames" type="text" maxlength="255" placeholder="mis. sering disapa 'Budi' atau nama alias lain">
         </div>
+        <div class="full member-photos" id="editPhotosField" style="margin-top:0; padding-top:0; border-top:none;">
+          <div class="photo-widget" data-kind="photo">
+            <label class="photo-widget-label">Foto Wajah</label>
+            <div class="photo-frame">
+              <div class="photo-frame-empty">Kamera belum aktif.<br>Tekan "Aktifkan Kamera" atau unggah foto.</div>
+              <video autoplay playsinline muted style="display:none;"></video>
+              <img alt="Pratinjau foto wajah" style="display:none;">
+            </div>
+            <canvas style="display:none;"></canvas>
+            <div class="photo-actions">
+              <button type="button" class="btn btn-small start-camera-btn">Aktifkan Kamera</button>
+              <button type="button" class="btn btn-small btn-primary capture-btn" style="display:none;">Ambil Foto</button>
+              <button type="button" class="btn btn-small retake-btn" style="display:none;">Ganti Foto</button>
+              <button type="button" class="btn btn-small upload-btn">Unggah</button>
+              <input type="file" class="file-input-hidden photo-file-input" accept="image/*">
+            </div>
+            <p class="photo-hint"></p>
+          </div>
+
+          <div class="photo-widget" data-kind="ktp_photo">
+            <label class="photo-widget-label">Foto KTP</label>
+            <div class="photo-frame">
+              <div class="photo-frame-empty">Kamera belum aktif.<br>Tekan "Aktifkan Kamera" atau unggah foto KTP.</div>
+              <video autoplay playsinline muted style="display:none;"></video>
+              <img alt="Pratinjau foto KTP" style="display:none;">
+            </div>
+            <canvas style="display:none;"></canvas>
+            <div class="photo-actions">
+              <button type="button" class="btn btn-small start-camera-btn">Aktifkan Kamera</button>
+              <button type="button" class="btn btn-small btn-primary capture-btn" style="display:none;">Ambil Foto</button>
+              <button type="button" class="btn btn-small retake-btn" style="display:none;">Ganti Foto</button>
+              <button type="button" class="btn btn-small upload-btn">Unggah</button>
+              <input type="file" class="file-input-hidden photo-file-input" accept="image/*">
+            </div>
+            <p class="photo-hint"></p>
+          </div>
+        </div>
         <div class="field full" id="editPositionField">
           <label for="editPosition">JABATAN TERAKHIR</label>
           <input id="editPosition" type="text">

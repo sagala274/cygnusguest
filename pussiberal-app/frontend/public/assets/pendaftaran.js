@@ -22,6 +22,51 @@ function updateTargetOfficialOtherVisibility() {
 }
 targetOfficialOtherCheckbox.addEventListener('change', updateTargetOfficialOtherVisibility);
 
+// Saran nama perusahaan (autocomplete) + auto-lengkapi data tamu yang sudah
+// pernah terdaftar dari perusahaan yang sama.
+const companyInput = document.getElementById('company');
+const companySuggestionsList = document.getElementById('companySuggestions');
+const companyMemberSuggestionsList = document.getElementById('companyMemberSuggestions');
+const companyMembersHint = document.getElementById('companyMembersHint');
+
+let companyMembers = [];
+let companyFetchTimer = null;
+
+async function loadCompanySuggestions() {
+  try {
+    const res = await api('/guests/meta/companies');
+    companySuggestionsList.innerHTML = res.data.map((c) => `<option value="${escapeHtml(c)}">`).join('');
+  } catch (err) {
+    // Gagal memuat saran nama perusahaan tidak menghalangi pengisian formulir manual.
+  }
+}
+
+async function loadCompanyMembers(company) {
+  if (!company) {
+    companyMembers = [];
+    companyMemberSuggestionsList.innerHTML = '';
+    companyMembersHint.style.display = 'none';
+    return;
+  }
+  try {
+    const res = await api(`/guests/meta/company-members?company=${encodeURIComponent(company)}`);
+    companyMembers = res.data;
+    companyMemberSuggestionsList.innerHTML = companyMembers.map((m) => `<option value="${escapeHtml(m.full_name)}">`).join('');
+    companyMembersHint.style.display = companyMembers.length ? 'block' : 'none';
+  } catch (err) {
+    companyMembers = [];
+    companyMemberSuggestionsList.innerHTML = '';
+    companyMembersHint.style.display = 'none';
+  }
+}
+
+companyInput.addEventListener('input', () => {
+  clearTimeout(companyFetchTimer);
+  companyFetchTimer = setTimeout(() => loadCompanyMembers(companyInput.value.trim()), 400);
+});
+
+loadCompanySuggestions();
+
 function memberBlockHTML(seq) {
   return `
     <div class="member-card" data-seq="${seq}">
@@ -37,7 +82,7 @@ function memberBlockHTML(seq) {
         </div>
         <div class="field">
           <label>NAMA LENGKAP <span class="required">*</span></label>
-          <input type="text" class="m-name" placeholder="Sesuai kartu identitas" required>
+          <input type="text" class="m-name" placeholder="Sesuai kartu identitas" list="companyMemberSuggestions" autocomplete="off" required>
         </div>
         <div class="field">
           <label>JABATAN <span class="required">*</span></label>
@@ -136,107 +181,8 @@ function memberBlockHTML(seq) {
   `;
 }
 
-function initPhotoWidget(root, facingMode) {
-  let mediaStream = null;
-  let capturedPhoto = null;
-
-  const placeholder = root.querySelector('.photo-frame-empty');
-  const video = root.querySelector('video');
-  const img = root.querySelector('img');
-  const canvas = root.querySelector('canvas');
-  const startBtn = root.querySelector('.start-camera-btn');
-  const captureBtn = root.querySelector('.capture-btn');
-  const retakeBtn = root.querySelector('.retake-btn');
-  const uploadBtn = root.querySelector('.upload-btn');
-  const fileInput = root.querySelector('.photo-file-input');
-  const hint = root.querySelector('.photo-hint');
-
-  function showError(msg) { hint.textContent = msg || ''; }
-
-  function stopCamera() {
-    if (mediaStream) {
-      mediaStream.getTracks().forEach((t) => t.stop());
-      mediaStream = null;
-    }
-  }
-
-  function reset() {
-    stopCamera();
-    capturedPhoto = null;
-    showError('');
-    img.src = '';
-    img.style.display = 'none';
-    video.style.display = 'none';
-    placeholder.style.display = 'flex';
-    startBtn.style.display = 'inline-block';
-    captureBtn.style.display = 'none';
-    retakeBtn.style.display = 'none';
-  }
-
-  function applyImage(source, w, h) {
-    const maxW = 640;
-    const scale = Math.min(1, maxW / w);
-    canvas.width = Math.round(w * scale);
-    canvas.height = Math.round(h * scale);
-    canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
-    capturedPhoto = canvas.toDataURL('image/jpeg', 0.8);
-
-    stopCamera();
-    video.style.display = 'none';
-    img.src = capturedPhoto;
-    img.style.display = 'block';
-    placeholder.style.display = 'none';
-    captureBtn.style.display = 'none';
-    retakeBtn.style.display = 'inline-block';
-    startBtn.style.display = 'none';
-  }
-
-  startBtn.addEventListener('click', async () => {
-    showError('');
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showError('Browser ini tidak mendukung akses kamera. Gunakan opsi unggah.');
-      return;
-    }
-    try {
-      mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode }, audio: false });
-      video.srcObject = mediaStream;
-      placeholder.style.display = 'none';
-      img.style.display = 'none';
-      video.style.display = 'block';
-      startBtn.style.display = 'none';
-      captureBtn.style.display = 'inline-block';
-      retakeBtn.style.display = 'none';
-    } catch (err) {
-      showError('Tidak dapat mengakses kamera (' + err.message + ').');
-    }
-  });
-
-  captureBtn.addEventListener('click', () => {
-    applyImage(video, video.videoWidth || 640, video.videoHeight || 480);
-  });
-
-  retakeBtn.addEventListener('click', reset);
-  uploadBtn.addEventListener('click', () => fileInput.click());
-
-  fileInput.addEventListener('change', () => {
-    showError('');
-    const file = fileInput.files[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) { showError('File harus berupa gambar.'); return; }
-    if (file.size > 8 * 1024 * 1024) { showError('Ukuran file maksimal 8MB.'); return; }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const im = new Image();
-      im.onload = () => applyImage(im, im.width, im.height);
-      im.onerror = () => showError('Gagal membaca file gambar.');
-      im.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  return { getValue: () => capturedPhoto, reset, stopCamera };
-}
+// initPhotoWidget() sekarang ada di app.js (dipakai bersama dengan modal
+// edit Ringkasan Data Tamu di Bank Data).
 
 function wireDevicePolicy(block) {
   const radios = block.querySelectorAll('.m-device-status');
@@ -268,6 +214,20 @@ function renumberMembers() {
   });
 }
 
+function wireCompanyMemberAutofill(block) {
+  const nameInput = block.querySelector('.m-name');
+  nameInput.addEventListener('input', () => {
+    const typed = nameInput.value.trim().toLowerCase();
+    if (!typed) return;
+    const match = companyMembers.find((m) => m.full_name.trim().toLowerCase() === typed);
+    if (!match) return;
+    block.querySelector('.m-nik').value = match.nik || '';
+    block.querySelector('.m-position').value = match.position || '';
+    block.querySelector('.m-phone').value = match.phone_number || '';
+    block.querySelector('.m-employee-id').value = match.employee_id || '';
+  });
+}
+
 function addMember() {
   const seq = memberSeq++;
   membersContainer.insertAdjacentHTML('beforeend', memberBlockHTML(seq));
@@ -283,6 +243,7 @@ function addMember() {
   memberWidgets.set(block, { photo: photoWidget, ktp_photo: ktpWidget });
 
   wireDevicePolicy(block);
+  wireCompanyMemberAutofill(block);
 
   block.querySelector('.remove-member-btn').addEventListener('click', () => {
     const widgets = memberWidgets.get(block);

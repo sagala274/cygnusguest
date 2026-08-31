@@ -127,6 +127,42 @@ router.get('/', asyncHandler(async (req, res) => {
   });
 }));
 
+// GET /api/guests/meta/companies -- daftar nama perusahaan yang pernah
+// terdaftar (untuk saran/autocomplete di formulir Pendaftaran Tamu)
+router.get('/meta/companies', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
+  const [rows] = await pool.query('SELECT DISTINCT company FROM guests ORDER BY company');
+  res.json({ data: rows.map((r) => r.company) });
+}));
+
+// GET /api/guests/meta/company-members?company=...  -- tamu yang pernah
+// terdaftar dari perusahaan yang sama (untuk auto-lengkapi data tamu yang
+// sudah pernah datang, dikelompokkan per NIK+nama supaya satu orang tidak
+// muncul berkali-kali walau sudah berkunjung berulang)
+router.get('/meta/company-members', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
+  const { company } = req.query;
+  if (!company || !String(company).trim()) return res.json({ data: [] });
+
+  const [rows] = await pool.query(
+    `SELECT gm.full_name, gm.nik, gm.phone_number, gm.position, gm.employee_id, MAX(g.created_at) AS last_created_at
+     FROM guest_members gm
+     JOIN guests g ON g.id = gm.guest_id
+     WHERE g.company = :company
+     GROUP BY gm.nik, gm.full_name, gm.phone_number, gm.position, gm.employee_id
+     ORDER BY last_created_at DESC`,
+    { company: String(company).trim() }
+  );
+
+  res.json({
+    data: rows.map((r) => ({
+      full_name: r.full_name,
+      nik: r.nik,
+      phone_number: r.phone_number,
+      position: r.position,
+      employee_id: r.employee_id,
+    })),
+  });
+}));
+
 // GET /api/guests/:id
 router.get('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
