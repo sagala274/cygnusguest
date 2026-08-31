@@ -57,6 +57,14 @@ function groupCardHTML(group) {
           data-category="${escapeHtml(m.security_category || '')}"
           data-notes="${escapeHtml(m.analysis_notes || '')}"
         >Kelola Analisa</button>
+        ${isAdmin ? `
+          <button class="btn btn-small btn-danger delete-member-btn"
+            data-guest-id="${m.guest_id}"
+            data-member-id="${m.id}"
+            data-name="${escapeHtml(m.full_name)}"
+            style="margin-left:6px;"
+          >Hapus</button>
+        ` : ''}
       </td>
     </tr>
   `
@@ -121,6 +129,10 @@ async function load() {
       btn.addEventListener('click', () => openEdit(btn.dataset));
     });
 
+    document.querySelectorAll('.delete-member-btn').forEach((btn) => {
+      btn.addEventListener('click', () => deleteMember(btn.dataset.guestId, btn.dataset.memberId, btn.dataset.name));
+    });
+
     document.querySelectorAll('.download-group-btn').forEach((btn) => {
       btn.addEventListener('click', () => downloadGroupPdf(btn.dataset.company));
     });
@@ -134,6 +146,24 @@ async function load() {
     });
   } catch (err) {
     groupsContainer.innerHTML = `<p class="page-description" style="color: var(--danger);">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function deleteMember(guestId, memberId, name) {
+  resultBox.style.display = 'none';
+  if (!confirm(`Hapus data tamu "${name}" ini secara permanen (termasuk foto & riwayat kunjungannya)? Tindakan ini tidak bisa dibatalkan.`)) return;
+
+  try {
+    const res = await api(`/guests/${guestId}/members/${memberId}`, { method: 'DELETE' });
+    showMessage(
+      res.data.registration_deleted
+        ? `Data tamu "${name}" berhasil dihapus. Pendaftarannya ikut terhapus karena tidak ada tamu lain di dalamnya.`
+        : `Data tamu "${name}" berhasil dihapus.`,
+      false
+    );
+    load();
+  } catch (err) {
+    showMessage(err.message, true);
   }
 }
 

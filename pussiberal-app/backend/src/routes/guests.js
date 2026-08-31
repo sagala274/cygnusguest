@@ -523,6 +523,39 @@ router.put('/:id/members/:memberId', requireRole('admin', 'pos_depan', 'verifika
   res.json({ data: { id: Number(memberId) } });
 }));
 
+// DELETE /api/guests/:id/members/:memberId  (hapus data satu tamu -- dipakai
+// dari Bank Data untuk menghapus catatan kunjungan seorang personel secara
+// individual, tanpa ikut menghapus tamu lain dalam pendaftaran yang sama.
+// Kalau tamu yang dihapus adalah satu-satunya anggota pendaftaran tersebut,
+// pendaftarannya (guests) ikut dihapus sekalian lewat cascade FK supaya
+// tidak menyisakan pendaftaran kosong tanpa tamu.)
+router.delete('/:id/members/:memberId', requireRole('admin'), asyncHandler(async (req, res) => {
+  const { id, memberId } = req.params;
+
+  const [memberRows] = await pool.execute(
+    'SELECT id, full_name FROM guest_members WHERE id = :memberId AND guest_id = :id',
+    { memberId, id }
+  );
+  if (!memberRows[0]) return res.status(404).json({ error: 'Tamu tidak ditemukan pada pendaftaran ini' });
+
+  await pool.execute('DELETE FROM guest_members WHERE id = :memberId', { memberId });
+
+  const [countRows] = await pool.execute('SELECT COUNT(*) AS remaining FROM guest_members WHERE guest_id = :id', { id });
+  let registrationDeleted = false;
+  if (countRows[0].remaining === 0) {
+    await pool.execute('DELETE FROM guests WHERE id = :id', { id });
+    registrationDeleted = true;
+  }
+
+  await logAudit(req.user.sub, 'delete_guest_member', 'guest_member', memberId, {
+    full_name: memberRows[0].full_name,
+    guest_id: Number(id),
+    registration_deleted: registrationDeleted,
+  });
+
+  res.json({ data: { id: Number(memberId), registration_deleted: registrationDeleted } });
+}));
+
 // POST /api/guests/:id/complete  (menyelesaikan tamu TERJADWAL -- setelah
 // Foto Tamu & deklarasi Perangkat Elektronik seluruh anggota dilengkapi lewat
 // PUT .../members/:memberId, endpoint ini memindahkan status dari "Draft" ke

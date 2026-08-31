@@ -224,6 +224,7 @@ function actionLabel(action) {
     rename_bank_data_company: 'Ubah Nama Perusahaan (Bank Data)',
     delete_bank_data_company: 'Hapus Perusahaan (Bank Data)',
     delete_guest: 'Hapus Tamu',
+    delete_guest_member: 'Hapus Data Tamu',
     create_user: 'Buat Pengguna',
     update_user: 'Ubah Pengguna',
     delete_user: 'Hapus Pengguna',
