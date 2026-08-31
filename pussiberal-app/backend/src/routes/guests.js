@@ -50,8 +50,7 @@ function validateMember(member, index, errors) {
   if (member.employee_id && String(member.employee_id).length > 50) errors[`${prefix}.employee_id`] = 'Nomor ID karyawan maksimal 50 karakter';
   if (!member.photo) errors[`${prefix}.photo`] = 'Foto tamu wajib diisi';
   else if (!isValidPhotoDataUrl(member.photo)) errors[`${prefix}.photo`] = 'Foto tidak valid atau ukurannya terlalu besar (maks 3MB)';
-  if (!member.ktp_photo) errors[`${prefix}.ktp_photo`] = 'Foto KTP wajib diisi';
-  else if (!isValidPhotoDataUrl(member.ktp_photo)) errors[`${prefix}.ktp_photo`] = 'Foto KTP tidak valid atau ukurannya terlalu besar (maks 3MB)';
+  if (member.ktp_photo && !isValidPhotoDataUrl(member.ktp_photo)) errors[`${prefix}.ktp_photo`] = 'Foto KTP tidak valid atau ukurannya terlalu besar (maks 3MB)';
 
   if (!VALID_DEVICE_STATUSES.includes(member.device_status)) {
     errors[`${prefix}.device_status`] = 'Pilih status perangkat elektronik';

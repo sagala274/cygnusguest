@@ -73,7 +73,7 @@ function memberBlockHTML(seq) {
         </div>
 
         <div class="photo-widget" data-kind="ktp_photo">
-          <label class="photo-widget-label">Foto KTP <span class="required">*</span></label>
+          <label class="photo-widget-label">Foto KTP <span class="optional-badge">Opsional</span></label>
           <div class="photo-frame">
             <div class="photo-frame-empty">Kamera belum aktif.<br>Tekan "Aktifkan Kamera" atau unggah foto KTP.</div>
             <video autoplay playsinline muted style="display:none;"></video>
@@ -435,10 +435,6 @@ function validateAllPhotos() {
     const widgets = memberWidgets.get(block);
     if (!widgets.photo.getValue()) {
       showFieldError(`members[${idx}].photo`, 'Foto tamu wajib diisi');
-      valid = false;
-    }
-    if (!widgets.ktp_photo.getValue()) {
-      showFieldError(`members[${idx}].ktp_photo`, 'Foto KTP wajib diisi');
       valid = false;
     }
   });
