@@ -592,7 +592,7 @@ a.link:hover { text-decoration: underline; }
 .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eef0f4; font-size: 13px; }
 .detail-row:last-child { border-bottom: 0; }
 .detail-label { color: var(--muted); font-weight: 700; }
-.detail-value { font-weight: 700; text-align: right; }
+.detail-value { font-weight: 700; text-align: right; white-space: pre-line; }
 
 .inline-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
