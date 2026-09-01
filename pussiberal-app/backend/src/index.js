@@ -24,6 +24,7 @@ const { ensureGuestExtraColumns, ensureGuestMemberExtraColumns, ensureVisitExtra
 const { ensureUserAvatarColumn } = require('./utils/userAvatar');
 const { ensureNotificationsTable } = require('./utils/notifications');
 const { ensureTraineesTable } = require('./utils/trainees');
+const { ensureCompanyProfilesTable } = require('./utils/companyProfiles');
 
 const app = express();
 
@@ -109,6 +110,7 @@ async function start() {
   await ensureUserAvatarColumn();
   await ensureNotificationsTable();
   await ensureTraineesTable();
+  await ensureCompanyProfilesTable();
   startBackupScheduler();
   startTelegramPolling();
   app.listen(port, () => console.log(`Backend berjalan di port ${port}`));

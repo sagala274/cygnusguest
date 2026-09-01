@@ -2,7 +2,7 @@ const express = require('express');
 const PDFDocument = require('pdfkit');
 const pool = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { isIndependentCompany } = require('../utils/validators');
+const { isIndependentCompany, VALID_SECURITY_CATEGORIES } = require('../utils/validators');
 const { formatJakartaDateTime, formatJakartaDate } = require('../utils/datetime');
 const { logAudit } = require('../utils/audit');
 const asyncHandler = require('../utils/asyncHandler');
@@ -113,8 +113,14 @@ function applyFilters(records, { q, category }) {
 router.get('/', asyncHandler(async (req, res) => {
   const records = applyFilters(await fetchAllRecords(), req.query);
 
+  const [profileRows] = await pool.query(
+    'SELECT company, security_category, profiling_notes, updated_at FROM company_profiles'
+  );
+  const profileMap = new Map(profileRows.map((r) => [r.company, r]));
+
   const data = groupByCompany(records).map((g) => ({
     company: g.company,
+    profile: profileMap.get(g.company) || null,
     members: g.members.map((m) => ({
       id: m.id,
       guest_id: m.guest_id,
@@ -214,6 +220,48 @@ router.delete('/company', requireRole('admin'), asyncHandler(async (req, res) =>
   });
 
   res.json({ data: { deleted_guests: result.affectedRows } });
+}));
+
+// PUT /api/bank-data/company-profile  (isi/ubah hasil profiling untuk
+// PERUSAHAAN itu sendiri -- terpisah dari analisa per-personel. Admin &
+// Verifikator, mengikuti pola yang sama dengan "Kelola Analisa" per tamu.
+// Kelompok "Lainnya" sengaja tidak bisa diberi profiling di sini karena
+// bukan satu nilai company yang sama (lihat catatan di rute rename/hapus).
+router.put('/company-profile', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
+  const { company, security_category, profiling_notes } = req.body || {};
+
+  if (!company || !String(company).trim()) {
+    return res.status(400).json({ error: 'Nama perusahaan wajib diisi' });
+  }
+  const trimmedCompany = String(company).trim();
+  if (isIndependentCompany(trimmedCompany)) {
+    return res.status(400).json({ error: 'Kelompok "Lainnya" tidak bisa diberi profiling perusahaan di sini' });
+  }
+  if (security_category && !VALID_SECURITY_CATEGORIES.includes(security_category)) {
+    return res.status(400).json({ error: 'Kategori tidak valid' });
+  }
+  if (profiling_notes && String(profiling_notes).length > 2000) {
+    return res.status(400).json({ error: 'Hasil profiling maksimal 2000 karakter' });
+  }
+
+  await pool.execute(
+    `INSERT INTO company_profiles (company, security_category, profiling_notes, updated_by)
+     VALUES (:company, :security_category, :profiling_notes, :updated_by)
+     ON DUPLICATE KEY UPDATE
+       security_category = VALUES(security_category),
+       profiling_notes = VALUES(profiling_notes),
+       updated_by = VALUES(updated_by)`,
+    {
+      company: trimmedCompany,
+      security_category: security_category || null,
+      profiling_notes: profiling_notes && String(profiling_notes).trim() ? String(profiling_notes).trim() : null,
+      updated_by: req.user.sub,
+    }
+  );
+
+  await logAudit(req.user.sub, 'update_company_profile', 'company_profile', null, { company: trimmedCompany });
+
+  res.json({ data: { company: trimmedCompany } });
 }));
 
 // GET /api/bank-data/personnel/:nik  (laporan lengkap satu orang, seluruh riwayat kunjungan)
@@ -348,7 +396,25 @@ const VISIT_HISTORY_COLUMNS = [
   { header: 'Status', width: 65, value: (r) => r.registration_status },
 ];
 
-function renderFullBankDataPDF(doc, groups) {
+// Blok "Hasil Profiling Perusahaan" -- dicetak sebelum tabel personel,
+// baik di rekap lengkap maupun PDF per-perusahaan. Tidak menulis apa pun
+// kalau belum ada profiling yang diisi (mis. kelompok "Lainnya").
+function renderCompanyProfileBlock(doc, profile) {
+  if (!profile || (!profile.security_category && !profile.profiling_notes)) return;
+
+  doc.fontSize(10);
+  doc.font('Helvetica-Bold').text('Kategori Perusahaan: ', { continued: true })
+    .font('Helvetica').text(securityCategoryLabelId(profile.security_category));
+  if (profile.profiling_notes) {
+    doc.moveDown(0.2);
+    doc.font('Helvetica-Bold').text('Hasil Profiling Perusahaan:');
+    doc.font('Helvetica').text(profile.profiling_notes);
+  }
+  doc.moveDown(0.5);
+  doc.fontSize(9);
+}
+
+function renderFullBankDataPDF(doc, groups, profiles) {
   doc.fontSize(16).font('Helvetica-Bold').text('Rekap Bank Data Personel Tamu - PUSSIBERAL', { align: 'center' });
   doc.fontSize(9).font('Helvetica').text(`Dicetak: ${formatJakartaDateTime(new Date())}`, { align: 'center' });
   doc.moveDown();
@@ -358,15 +424,17 @@ function renderFullBankDataPDF(doc, groups) {
     doc.fontSize(13).font('Helvetica-Bold').text(`${g.company} (${g.members.length} catatan)`);
     doc.moveDown(0.4);
     doc.fontSize(9);
+    renderCompanyProfileBlock(doc, profiles ? profiles.get(g.company) : null);
     drawPersonnelTable(doc, g.members, GROUP_COLUMNS);
   });
 }
 
-function renderGroupPDF(doc, company, records) {
+function renderGroupPDF(doc, company, records, profile) {
   doc.fontSize(16).font('Helvetica-Bold').text(`Bank Data Personel - ${company}`, { align: 'center' });
   doc.fontSize(9).font('Helvetica').text(`Dicetak: ${formatJakartaDateTime(new Date())} • ${records.length} catatan`, { align: 'center' });
   doc.moveDown();
   doc.fontSize(9);
+  renderCompanyProfileBlock(doc, profile);
   drawPersonnelTable(doc, records, GROUP_COLUMNS);
 }
 
@@ -448,13 +516,24 @@ router.get('/export', asyncHandler(async (req, res) => {
     });
     if (!groupRecords.length) return res.status(404).json({ error: 'Tidak ada data untuk perusahaan ini' });
 
+    const [profileRows] = await pool.execute(
+      'SELECT security_category, profiling_notes FROM company_profiles WHERE company = :company',
+      { company }
+    );
+    const profile = profileRows[0] || null;
+
     filename = `bank-data-${sanitizeFilename(company)}.pdf`;
-    renderFn = (doc) => renderGroupPDF(doc, company, groupRecords);
+    renderFn = (doc) => renderGroupPDF(doc, company, groupRecords, profile);
   } else {
     const filtered = applyFilters(allRecords, { q, category });
     if (!filtered.length) return res.status(404).json({ error: 'Tidak ada data untuk diunduh' });
 
-    renderFn = (doc) => renderFullBankDataPDF(doc, groupByCompany(filtered));
+    const [profileRows] = await pool.query(
+      'SELECT company, security_category, profiling_notes FROM company_profiles'
+    );
+    const profiles = new Map(profileRows.map((r) => [r.company, r]));
+
+    renderFn = (doc) => renderFullBankDataPDF(doc, groupByCompany(filtered), profiles);
   }
 
   res.setHeader('Content-Type', 'application/pdf');

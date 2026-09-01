@@ -224,6 +224,7 @@ function actionLabel(action) {
     re_check_in: 'Check-in Ulang Tamu',
     rename_bank_data_company: 'Ubah Nama Perusahaan (Bank Data)',
     delete_bank_data_company: 'Hapus Perusahaan (Bank Data)',
+    update_company_profile: 'Isi Profiling Perusahaan (Bank Data)',
     create_trainee: 'Tambah Personel Pembelajaran',
     update_trainee: 'Ubah Personel Pembelajaran',
     delete_trainee: 'Hapus Personel Pembelajaran',

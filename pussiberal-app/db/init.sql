@@ -98,6 +98,19 @@ CREATE TABLE IF NOT EXISTS trainees (
   FOREIGN KEY (created_by) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Hasil profiling tingkat PERUSAHAAN (bukan per-personel) di Bank Data --
+-- satu baris per nama perusahaan.
+CREATE TABLE IF NOT EXISTS company_profiles (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  company VARCHAR(150) NOT NULL UNIQUE,
+  security_category ENUM('aman','perlu_perhatian','perlu_penanganan') NULL,
+  profiling_notes TEXT NULL,
+  updated_by INT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (updated_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Baris tunggal (id selalu 1) menyimpan konfigurasi provider/model AI Chat.
 CREATE TABLE IF NOT EXISTS ai_settings (
   id TINYINT PRIMARY KEY DEFAULT 1,

@@ -22,8 +22,14 @@ const editAffiliation = document.getElementById('editAffiliation');
 const editCategory = document.getElementById('editCategory');
 const editAnalysisNotes = document.getElementById('editAnalysisNotes');
 
+const companyProfilePanel = document.getElementById('companyProfilePanel');
+const profileCompanyName = document.getElementById('profileCompanyName');
+const profileCategory = document.getElementById('profileCategory');
+const profileNotes = document.getElementById('profileNotes');
+
 let editingGuestId = null;
 let editingMemberId = null;
+let editingCompany = null;
 let debounceTimer = null;
 
 function showMessage(message, isError) {
@@ -71,6 +77,10 @@ function groupCardHTML(group) {
     )
     .join('');
 
+  const profile = group.profile;
+  const hasProfile = profile && (profile.security_category || profile.profiling_notes);
+  const canEditProfile = group.company !== INDEPENDENT_GROUP_LABEL;
+
   return `
     <div class="form-card" style="margin-bottom:20px;">
       <div class="section">
@@ -78,12 +88,25 @@ function groupCardHTML(group) {
           <h2 class="section-title">${escapeHtml(group.company)} <span class="optional-badge">${group.members.length} catatan</span></h2>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button type="button" class="btn btn-small download-group-btn" data-company="${escapeHtml(group.company)}">Unduh PDF Kelompok</button>
-            ${isAdmin && group.company !== INDEPENDENT_GROUP_LABEL ? `
+            ${canEditProfile ? `
+              <button type="button" class="btn btn-small profile-company-btn"
+                data-company="${escapeHtml(group.company)}"
+                data-category="${escapeHtml((profile && profile.security_category) || '')}"
+                data-notes="${escapeHtml((profile && profile.profiling_notes) || '')}"
+              >Profiling Perusahaan</button>
+            ` : ''}
+            ${isAdmin && canEditProfile ? `
               <button type="button" class="btn btn-small edit-company-btn" data-company="${escapeHtml(group.company)}">Edit Nama Perusahaan</button>
               <button type="button" class="btn btn-small btn-danger delete-company-btn" data-company="${escapeHtml(group.company)}" data-count="${group.members.length}">Hapus Perusahaan</button>
             ` : ''}
           </div>
         </div>
+        ${hasProfile ? `
+          <div class="callout" style="margin-bottom:18px;">
+            <span class="callout-label">Hasil Profiling Perusahaan${profile.security_category ? ` &middot; <span class="badge ${securityCategoryBadgeClass(profile.security_category)}">${escapeHtml(securityCategoryLabel(profile.security_category))}</span>` : ''}</span>
+            ${profile.profiling_notes ? `<p style="white-space:pre-line; margin-top:8px;">${escapeHtml(profile.profiling_notes)}</p>` : ''}
+          </div>
+        ` : ''}
         <div class="table-wrap">
           <table>
             <thead>
@@ -143,6 +166,10 @@ async function load() {
 
     document.querySelectorAll('.delete-company-btn').forEach((btn) => {
       btn.addEventListener('click', () => deleteCompany(btn.dataset.company, Number(btn.dataset.count)));
+    });
+
+    document.querySelectorAll('.profile-company-btn').forEach((btn) => {
+      btn.addEventListener('click', () => openCompanyProfile(btn.dataset));
     });
   } catch (err) {
     groupsContainer.innerHTML = `<p class="page-description" style="color: var(--danger);">${escapeHtml(err.message)}</p>`;
@@ -244,6 +271,43 @@ document.getElementById('saveEditBtn').addEventListener('click', async () => {
     });
     showMessage('Hasil analisa berhasil disimpan.', false);
     closeEdit();
+    load();
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+});
+
+function openCompanyProfile(data) {
+  editingCompany = data.company;
+  profileCompanyName.textContent = data.company;
+  profileCategory.value = data.category || '';
+  profileNotes.value = data.notes || '';
+  companyProfilePanel.style.display = 'block';
+  companyProfilePanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function closeCompanyProfile() {
+  editingCompany = null;
+  companyProfilePanel.style.display = 'none';
+}
+
+document.getElementById('cancelProfileBtn').addEventListener('click', closeCompanyProfile);
+
+document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+  resultBox.style.display = 'none';
+  const payload = {
+    company: editingCompany,
+    security_category: profileCategory.value || null,
+    profiling_notes: profileNotes.value.trim() || null,
+  };
+
+  try {
+    await api('/bank-data/company-profile', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+    showMessage(`Profiling perusahaan "${editingCompany}" berhasil disimpan.`, false);
+    closeCompanyProfile();
     load();
   } catch (err) {
     showMessage(err.message, true);

@@ -90,6 +90,31 @@
           </div>
         </div>
       </div>
+
+      <div class="form-card" id="companyProfilePanel" style="display:none; margin-top:24px;">
+        <div class="section">
+          <h2 class="section-title">Profiling Perusahaan: <span id="profileCompanyName"></span></h2>
+          <div class="grid">
+            <div class="field">
+              <label for="profileCategory">KATEGORI PERUSAHAAN <span class="label-note">Opsional</span></label>
+              <select id="profileCategory">
+                <option value="">Belum Dianalisa</option>
+                <option value="aman">Aman</option>
+                <option value="perlu_perhatian">Perlu Perhatian</option>
+                <option value="perlu_penanganan">Perlu Penanganan</option>
+              </select>
+            </div>
+          </div>
+          <div class="field full" style="margin-top:21px;">
+            <label for="profileNotes">HASIL PROFILING PERUSAHAAN <span class="label-note">Opsional</span></label>
+            <textarea id="profileNotes" placeholder="Catatan hasil profiling terhadap perusahaan/instansi ini secara keseluruhan..." maxlength="2000"></textarea>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn" id="cancelProfileBtn">Batal</button>
+            <button type="button" class="btn btn-primary" id="saveProfileBtn">Simpan Profiling</button>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 </div>
