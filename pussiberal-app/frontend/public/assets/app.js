@@ -37,6 +37,7 @@ const ICONS = {
   people: '<circle cx="8.5" cy="8" r="3"/><path d="M2.5,20 a6,5.6 0 0 1 12,0"/><circle cx="16.5" cy="9" r="2.3"/><path d="M14.8,13 a4.6,4 0 0 1 6.7,4.2"/>',
   clipboard: '<rect x="5" y="5" width="14" height="16" rx="2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="16" y2="15"/>',
   activity: '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8.5" stroke-dasharray="2 3"/>',
+  graduation: '<polygon points="12,4 21,8.5 12,13 3,8.5"/><path d="M7,10.5 V15.5 C7,17 9.2,18.5 12,18.5 C14.8,18.5 17,17 17,15.5 V10.5"/><line x1="21" y1="8.5" x2="21" y2="14"/>',
 };
 
 function icon(name, extraClass) {
@@ -223,6 +224,9 @@ function actionLabel(action) {
     re_check_in: 'Check-in Ulang Tamu',
     rename_bank_data_company: 'Ubah Nama Perusahaan (Bank Data)',
     delete_bank_data_company: 'Hapus Perusahaan (Bank Data)',
+    create_trainee: 'Tambah Personel Pembelajaran',
+    update_trainee: 'Ubah Personel Pembelajaran',
+    delete_trainee: 'Hapus Personel Pembelajaran',
     delete_guest: 'Hapus Tamu',
     delete_guest_member: 'Hapus Data Tamu',
     create_user: 'Buat Pengguna',
@@ -287,6 +291,20 @@ function formatDateTime(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '-';
   return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+// Untuk kolom bertipe DATE (tanpa jam) seperti tanggal lahir/mulai/selesai --
+// pakai parsing manual (bukan `new Date(value)`) supaya tidak digeser mundur
+// sehari akibat "YYYY-MM-DD" ditafsirkan sebagai tengah malam UTC lalu
+// dikonversi ke zona waktu lokal (WIB, UTC+7 -> tanggal berkurang saat < jam 7 pagi UTC dianggap hari sebelumnya di UI).
+function formatDate(value) {
+  if (!value) return '-';
+  const str = String(value).slice(0, 10);
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return '-';
+  const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleDateString('id-ID', { dateStyle: 'medium' });
 }
 
 /* Widget foto (kamera + unggah), dipakai di Pendaftaran Tamu dan modal edit
@@ -515,6 +533,7 @@ function renderNav(active) {
     { href: 'daftar-tamu?status=Menunggu%20Verifikasi', label: 'Verifikasi Tamu', icon: 'verifikasi', roles: ['admin', 'verifikator'], matchHref: 'daftar-tamu' },
     { href: 'laporan', label: 'Laporan', icon: 'laporan', roles: ['admin', 'verifikator'] },
     { href: 'bank-data', label: 'Bank Data', icon: 'bank-data', roles: ['admin', 'verifikator'] },
+    { href: 'personel-pembelajaran', label: 'Personel Pembelajaran', icon: 'graduation', roles: ['admin', 'pos_depan', 'verifikator'] },
     { href: 'ai-chat', label: 'AI Chat', icon: 'ai-chat', roles: ['admin'] },
     { href: 'users', label: 'Manajemen Pengguna', icon: 'users', roles: ['admin'] },
     { href: 'audit-log', label: 'Log Aktivitas', icon: 'audit-log', roles: ['admin'] },

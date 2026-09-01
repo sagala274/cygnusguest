@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personel Pembelajaran - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <img class="brand-mark" src="assets/logo.png" alt="PUSSIBERAL">
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav"></nav>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">Personel Pembelajaran</div>
+      <div class="top-right">
+        <div class="profile-menu" id="profileMenu">
+          <button type="button" class="profile" id="profileTrigger">
+            <div class="profile-text">
+              <div class="profile-name" id="profileName"></div>
+              <div class="profile-role" id="profileRole"></div>
+            </div>
+            <div class="avatar"></div>
+          </button>
+          <div class="profile-dropdown" id="profileDropdown">
+            <a href="#" id="logoutBtn" class="profile-dropdown-item"><span class="nav-icon">⎋</span><span>Logout</span></a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content" style="max-width: 1160px;">
+      <div class="page-header-row">
+        <div class="page-header-text">
+          <h1 class="page-title">Personel Pembelajaran</h1>
+          <p class="page-description">Data teknisi, siswa, atau mahasiswa yang sedang/akan melaksanakan pembelajaran, magang, atau PKL di PUSSIBERAL.</p>
+        </div>
+        <button type="button" class="btn btn-accent" id="addTraineeBtn" style="display:none;">+ Tambah Personel</button>
+      </div>
+
+      <div id="resultBox" class="result-box" style="display:none;"></div>
+
+      <div class="table-toolbar">
+        <div class="search-input-wrap">
+          <span class="icon-slot" id="searchIconSlot"></span>
+          <input type="text" id="searchInput" placeholder="Cari nama, jabatan, atau instansi...">
+        </div>
+        <div class="select-filter-wrap">
+          <span class="icon-slot" id="statusIconSlot"></span>
+          <select id="statusFilter">
+            <option value="">Semua Status</option>
+            <option value="Akan Datang">Akan Datang</option>
+            <option value="Aktif">Aktif</option>
+            <option value="Selesai">Selesai</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nama</th>
+                <th>Jabatan</th>
+                <th>Instansi / Perusahaan</th>
+                <th>Periode</th>
+                <th>Status</th>
+                <th>Hasil Profiling</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="traineeTableBody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-overlay" id="traineeModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="modalTitle">Tambah Personel Pembelajaran</h2>
+      <button type="button" class="modal-close" id="modalCloseBtn"><span class="icon-slot" id="closeIconSlot"></span></button>
+    </div>
+    <div class="modal-body">
+      <form id="traineeForm" class="grid">
+        <div class="field full" id="identitySectionTitle" style="margin-bottom:-8px;">
+          <label style="text-transform:none; font-size:13px; color:#172033; font-weight:800;">Data Identitas &amp; Kegiatan</label>
+        </div>
+        <div class="field">
+          <label for="formFullName">NAMA <span class="required">*</span></label>
+          <input id="formFullName" required>
+        </div>
+        <div class="field">
+          <label for="formRank">PANGKAT <span class="label-note">Jika ada</span></label>
+          <input id="formRank" maxlength="100">
+        </div>
+        <div class="field">
+          <label for="formPosition">JABATAN <span class="required">*</span></label>
+          <input id="formPosition" required>
+        </div>
+        <div class="field">
+          <label for="formInstitution">INSTANSI / PERUSAHAAN <span class="required">*</span></label>
+          <input id="formInstitution" required>
+        </div>
+        <div class="field">
+          <label for="formBirthPlace">TEMPAT LAHIR <span class="label-note">Opsional</span></label>
+          <input id="formBirthPlace" maxlength="100">
+        </div>
+        <div class="field">
+          <label for="formBirthDate">TANGGAL LAHIR <span class="label-note">Opsional</span></label>
+          <input id="formBirthDate" type="date">
+        </div>
+        <div class="field full">
+          <label for="formAddress">ALAMAT <span class="label-note">Opsional</span></label>
+          <textarea id="formAddress" maxlength="255" style="min-height:60px;"></textarea>
+        </div>
+        <div class="field full">
+          <label for="formActivities">KEGIATAN YANG DILAKUKAN <span class="required">*</span></label>
+          <textarea id="formActivities" required style="min-height:70px;"></textarea>
+        </div>
+        <div class="field">
+          <label for="formStartDate">MULAI TANGGAL <span class="required">*</span></label>
+          <input id="formStartDate" type="date" required>
+        </div>
+        <div class="field">
+          <label for="formEndDate">SAMPAI TANGGAL <span class="required">*</span></label>
+          <input id="formEndDate" type="date" required>
+        </div>
+
+        <div class="field full" id="profilingSectionTitle" style="margin-bottom:-8px; margin-top:8px; padding-top:18px; border-top:1px solid #e4e7ec;">
+          <label style="text-transform:none; font-size:13px; color:#172033; font-weight:800;">Hasil Profiling Awal</label>
+        </div>
+        <div class="field">
+          <label for="formCategory">KATEGORI</label>
+          <select id="formCategory">
+            <option value="">Belum Dianalisa</option>
+            <option value="aman">Aman</option>
+            <option value="perlu_perhatian">Perlu Perhatian</option>
+            <option value="perlu_penanganan">Perlu Penanganan</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="formProfilingNotes">CATATAN PROFILING <span class="label-note">Opsional</span></label>
+          <textarea id="formProfilingNotes" maxlength="2000" style="min-height:70px;"></textarea>
+        </div>
+
+        <div class="full modal-actions">
+          <button type="button" class="btn" id="modalCancelBtn">Batal</button>
+          <button type="submit" class="btn btn-accent" id="modalSubmitBtn">Tambah Personel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/personel-pembelajaran.js"></script>
+</body>
+</html>
