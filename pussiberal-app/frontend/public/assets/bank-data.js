@@ -43,9 +43,13 @@ function groupCardHTML(group) {
     .map(
       (m) => `
     <tr>
-      <td><a class="link" href="bank-data-personnel?nik=${encodeURIComponent(m.nik)}&member_id=${encodeURIComponent(m.id)}">${escapeHtml(m.full_name)}</a></td>
+      <td>${
+        m.nik
+          ? `<a class="link" href="bank-data-personnel?nik=${encodeURIComponent(m.nik)}&member_id=${encodeURIComponent(m.id)}">${escapeHtml(m.full_name)}</a>`
+          : escapeHtml(m.full_name)
+      }</td>
       <td>
-        ${escapeHtml(m.nik)}
+        ${escapeHtml(m.nik || '-')}
         ${m.nik_shared_by_multiple_names ? '<span title="NIK ini juga tercatat dengan nama berbeda pada pendaftaran lain — periksa kembali" style="color: var(--danger); cursor:help;"> ⚠</span>' : ''}
       </td>
       <td>${escapeHtml(m.position)}</td>

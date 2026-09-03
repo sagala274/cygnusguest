@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS guest_members (
   guest_id INT NOT NULL,
   full_name VARCHAR(150) NOT NULL,
   other_names VARCHAR(255) NULL,
-  nik VARCHAR(16) NOT NULL,
+  nik VARCHAR(16) NULL,
   phone_number VARCHAR(20) NOT NULL,
   position VARCHAR(100) NOT NULL,
   employee_id VARCHAR(50) NULL,

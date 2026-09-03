@@ -135,8 +135,8 @@ function memberBlockHTML(seq, isScheduled) {
 
       <div class="grid">
         <div class="field">
-          <label>NIK KTP <span class="required">*</span><span class="label-note">16 Digit</span></label>
-          <input type="text" class="m-nik" inputmode="numeric" maxlength="16" placeholder="Masukkan NIK KTP" required>
+          <label>NIK KTP <span class="optional-badge">Opsional</span><span class="label-note">16 Digit</span></label>
+          <input type="text" class="m-nik" inputmode="numeric" maxlength="16" placeholder="Masukkan NIK KTP (jika ada)">
         </div>
         <div class="field">
           <label>NAMA LENGKAP <span class="required">*</span></label>
@@ -479,7 +479,7 @@ function collectMembers() {
     const selectedDevice = block.querySelector('.m-device-status:checked');
     return {
       full_name: block.querySelector('.m-name').value.trim(),
-      nik: block.querySelector('.m-nik').value.trim(),
+      nik: block.querySelector('.m-nik').value.trim() || undefined,
       phone_number: block.querySelector('.m-phone').value.trim(),
       position: block.querySelector('.m-position').value.trim(),
       employee_id: block.querySelector('.m-employee-id').value.trim() || undefined,

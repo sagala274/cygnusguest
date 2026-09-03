@@ -41,7 +41,9 @@ function formatMember(row, role) {
   };
 }
 
-// isScheduled: tamu terjadwal -- NIK/Nama/Jabatan/Nomor HP tetap wajib diisi
+// NIK bersifat opsional (mis. tamu yang belum/tidak membawa KTP) -- kalau
+// diisi, formatnya tetap divalidasi harus 16 digit angka.
+// isScheduled: tamu terjadwal -- Nama/Jabatan/Nomor HP tetap wajib diisi
 // di muka, tapi Foto Tamu dan deklarasi Perangkat Elektronik boleh menyusul
 // saat tamu benar-benar tiba (lihat POST /:id/complete).
 function validateMember(member, index, errors, isScheduled) {
@@ -51,7 +53,7 @@ function validateMember(member, index, errors, isScheduled) {
     return;
   }
   if (!member.full_name || !String(member.full_name).trim()) errors[`${prefix}.full_name`] = 'Nama tamu wajib diisi';
-  if (!isValidNik(member.nik)) errors[`${prefix}.nik`] = 'NIK harus terdiri dari 16 digit numerik';
+  if (member.nik && !isValidNik(member.nik)) errors[`${prefix}.nik`] = 'NIK harus terdiri dari 16 digit numerik';
   if (!isValidPhone(member.phone_number)) errors[`${prefix}.phone_number`] = 'Format nomor HP tidak valid';
   if (!member.position || !String(member.position).trim()) errors[`${prefix}.position`] = 'Jabatan wajib diisi';
   if (member.employee_id && String(member.employee_id).length > 50) errors[`${prefix}.employee_id`] = 'Nomor ID karyawan maksimal 50 karakter';
@@ -254,8 +256,12 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
     return res.status(400).json({ error: 'Validasi gagal', fields: errors });
   }
 
-  // Cegah duplikat: NIK yang sama tidak boleh punya pendaftaran aktif di hari yang sama
+  // Cegah duplikat: NIK yang sama tidak boleh punya pendaftaran aktif di hari
+  // yang sama -- dilewati untuk tamu yang tidak mengisi NIK, karena NIK
+  // kosong bukan identitas yang valid untuk dibandingkan (bukan berarti
+  // "orang yang sama").
   for (const member of members) {
+    if (!member.nik) continue;
     const [dupRows] = await pool.execute(
       `SELECT gm.id FROM guest_members gm
        JOIN guests g ON g.id = gm.guest_id
@@ -298,7 +304,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
         {
           guestId,
           full_name: member.full_name,
-          nik: member.nik,
+          nik: member.nik || null,
           phone_number: member.phone_number,
           position: member.position,
           employee_id: member.employee_id || null,

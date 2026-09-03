@@ -49,27 +49,33 @@ async function fetchAllRecords() {
   // (NIK + nama, dinormalisasi) -- bukan per-NIK saja -- supaya statistik
   // kunjungan satu nama TIDAK ikut tercampur dengan nama lain yang kebetulan
   // berbagi NIK yang sama (mis. NIK dummy/placeholder yang dipakai berulang).
+  // NIK opsional -- baris tanpa NIK sengaja TIDAK ikut dihitung di
+  // namesByNik (mengelompokkan semuanya di bawah kunci kosong yang sama
+  // akan salah memicu peringatan "NIK dipakai >1 nama" padahal mereka
+  // memang tidak punya NIK sama sekali, bukan anomali NIK ganda).
   const namesByNik = new Map();
   const visitCountByIdentity = new Map();
   const lastVisitByIdentity = new Map();
   rows.forEach((r) => {
-    if (!namesByNik.has(r.nik)) namesByNik.set(r.nik, new Set());
     const normalizedName = r.full_name.trim().toLowerCase();
-    namesByNik.get(r.nik).add(normalizedName);
+    if (r.nik) {
+      if (!namesByNik.has(r.nik)) namesByNik.set(r.nik, new Set());
+      namesByNik.get(r.nik).add(normalizedName);
+    }
 
-    const identityKey = `${r.nik}|${normalizedName}`;
+    const identityKey = `${r.nik || ''}|${normalizedName}`;
     visitCountByIdentity.set(identityKey, (visitCountByIdentity.get(identityKey) || 0) + 1);
     const prev = lastVisitByIdentity.get(identityKey);
     if (!prev || new Date(r.created_at) > new Date(prev)) lastVisitByIdentity.set(identityKey, r.created_at);
   });
 
   return rows.map((r) => {
-    const identityKey = `${r.nik}|${r.full_name.trim().toLowerCase()}`;
+    const identityKey = `${r.nik || ''}|${r.full_name.trim().toLowerCase()}`;
     return {
       ...r,
       visit_count: visitCountByIdentity.get(identityKey),
       last_visit_at: lastVisitByIdentity.get(identityKey),
-      nik_shared_by_multiple_names: namesByNik.get(r.nik).size > 1,
+      nik_shared_by_multiple_names: r.nik ? namesByNik.get(r.nik).size > 1 : false,
     };
   });
 }
@@ -100,7 +106,7 @@ function applyFilters(records, { q, category }) {
     filtered = filtered.filter((p) =>
       p.full_name.toLowerCase().includes(needle) ||
       (p.other_names || '').toLowerCase().includes(needle) ||
-      p.nik.includes(needle) ||
+      (p.nik || '').includes(needle) ||
       p.company.toLowerCase().includes(needle) ||
       (p.affiliation || '').toLowerCase().includes(needle)
     );
@@ -142,7 +148,7 @@ router.get('/', asyncHandler(async (req, res) => {
     })),
   }));
 
-  const uniqueNikCount = new Set(records.map((p) => p.nik)).size;
+  const uniqueNikCount = new Set(records.filter((p) => p.nik).map((p) => p.nik)).size;
 
   res.json({
     data,

@@ -196,7 +196,7 @@ function memberCardHTML(m, isDraftGuest) {
       <div class="member-card-head">
         <span class="member-card-title">${escapeHtml(m.full_name)}</span>
       </div>
-      <div class="detail-row"><span class="detail-label">NIK</span><span class="detail-value">${escapeHtml(m.nik)}</span></div>
+      <div class="detail-row"><span class="detail-label">NIK</span><span class="detail-value">${escapeHtml(m.nik || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Nomor HP</span><span class="detail-value">${escapeHtml(m.phone_number)}</span></div>
       <div class="detail-row"><span class="detail-label">Jabatan</span><span class="detail-value">${escapeHtml(m.position)}</span></div>
       <div class="detail-row"><span class="detail-label">Nomor ID Karyawan</span><span class="detail-value">${escapeHtml(m.employee_id || '-')}</span></div>

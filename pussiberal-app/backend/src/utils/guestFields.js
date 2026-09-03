@@ -97,6 +97,13 @@ async function ensureGuestMemberExtraColumns() {
     ALTER TABLE guest_members MODIFY COLUMN device_status
       ENUM('tidak_membawa','dititipkan','dibawa_alasan_khusus') NULL
   `);
+
+  // NIK diubah dari wajib jadi opsional (mis. tamu yang belum/tidak membawa
+  // KTP) -- aman dijalankan berulang, indeks pada kolom ini bukan UNIQUE
+  // sehingga banyak baris NULL tidak bermasalah.
+  await pool.query(`
+    ALTER TABLE guest_members MODIFY COLUMN nik VARCHAR(16) NULL
+  `);
 }
 
 // Migrasi kolom pada visits -- dipakai untuk fitur "Check-in Ulang" (tamu

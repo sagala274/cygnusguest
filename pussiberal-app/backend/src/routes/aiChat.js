@@ -29,7 +29,8 @@ async function buildPlatformContext() {
   const [[nikStats]] = await pool.query('SELECT COUNT(DISTINCT nik) AS unique_nik FROM guest_members');
   const [[nikConflict]] = await pool.query(`
     SELECT COUNT(*) AS conflicting_nik FROM (
-      SELECT nik FROM guest_members GROUP BY nik HAVING COUNT(DISTINCT LOWER(TRIM(full_name))) > 1
+      SELECT nik FROM guest_members WHERE nik IS NOT NULL
+      GROUP BY nik HAVING COUNT(DISTINCT LOWER(TRIM(full_name))) > 1
     ) t
   `);
   const [topCompanies] = await pool.query(
