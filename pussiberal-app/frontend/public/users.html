@@ -103,8 +103,8 @@
     <div class="modal-body">
       <form id="userForm" class="grid">
         <div class="field full" id="usernameField">
-          <label for="formUsername">USERNAME <span class="required">*</span></label>
-          <input id="formUsername" required>
+          <label for="formUsername">USERNAME <span class="required">*</span><span class="label-note">Huruf, angka, titik, garis bawah, atau strip</span></label>
+          <input id="formUsername" pattern="[a-zA-Z0-9._-]{3,50}" title="Hanya huruf, angka, titik, garis bawah, atau strip (3-50 karakter)" required>
         </div>
         <div class="field full">
           <label for="formFullName">NAMA LENGKAP <span class="required">*</span></label>

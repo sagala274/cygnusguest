@@ -7,6 +7,12 @@ const asyncHandler = require('../utils/asyncHandler');
 
 const VALID_ROLES = ['admin', 'verifikator', 'pos_depan'];
 
+// Dibatasi ke karakter aman (bukan karena escaping di tampilan tidak
+// memadai -- sudah diverifikasi aman -- tapi sebagai lapisan pertahanan
+// tambahan yang tidak bergantung sepenuhnya pada benarnya escaping di
+// setiap titik tampilan ke depannya).
+const USERNAME_PATTERN = /^[a-zA-Z0-9._-]{3,50}$/;
+
 const router = express.Router();
 router.use(authenticate, requireRole('admin'));
 
@@ -21,6 +27,9 @@ router.post('/', asyncHandler(async (req, res) => {
   const { username, password, full_name, role } = req.body || {};
   if (!username || !password || !full_name || !role) {
     return res.status(400).json({ error: 'Semua field wajib diisi' });
+  }
+  if (!USERNAME_PATTERN.test(username)) {
+    return res.status(400).json({ error: 'Username hanya boleh berisi huruf, angka, titik, garis bawah, atau strip (3-50 karakter)' });
   }
   if (!VALID_ROLES.includes(role)) {
     return res.status(400).json({ error: 'Role tidak valid' });
