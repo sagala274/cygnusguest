@@ -6,6 +6,7 @@ const pool = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { logAudit } = require('../utils/audit');
 const { notifyLogin, notifyLogout } = require('../utils/telegram');
+const { recordLoginIp } = require('../utils/userLoginIps');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
@@ -79,8 +80,13 @@ router.post('/login', loginLimiter, asyncHandler(async (req, res) => {
     { expiresIn: '8h' }
   );
 
-  await logAudit(user.id, 'login', 'user', user.id, { username: user.username });
-  notifyLogin({ username: user.username, fullName: user.full_name, role: user.role, ipAddress: req.ip }).catch(() => {});
+  // Dicatat untuk indikator sederhana User Behavior Analysis: menandai di
+  // Log Aktivitas kalau alamat IP ini belum pernah tercatat untuk akun
+  // tersebut sebelumnya (lihat utils/userLoginIps.js).
+  const isNewIp = await recordLoginIp(user.id, req.ip);
+
+  await logAudit(user.id, 'login', 'user', user.id, { username: user.username, ip_address: req.ip, is_new_ip: isNewIp });
+  notifyLogin({ username: user.username, fullName: user.full_name, role: user.role, ipAddress: req.ip, isNewIp }).catch(() => {});
 
   res.json({
     token,

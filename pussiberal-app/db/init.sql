@@ -12,6 +12,19 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Riwayat alamat IP yang pernah dipakai tiap akun untuk login berhasil --
+-- dasar untuk menandai "IP Baru" di Log Aktivitas.
+CREATE TABLE IF NOT EXISTS user_login_ips (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  ip_address VARCHAR(45) NOT NULL,
+  first_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  last_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  login_count INT NOT NULL DEFAULT 1,
+  UNIQUE KEY uq_user_ip (user_id, ip_address),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- "guests" merepresentasikan SATU PENDAFTARAN (bisa berisi 1 atau lebih tamu
 -- dari perusahaan yang sama). Identitas per-orang ada di tabel guest_members.
 CREATE TABLE IF NOT EXISTS guests (

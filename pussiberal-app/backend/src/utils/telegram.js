@@ -124,16 +124,16 @@ async function notifyNewRegistration({ registrationNumber, company, targetOffici
   await sendTelegramMessage(lines.join('\n'));
 }
 
-async function notifyLogin({ username, fullName, role, ipAddress }) {
+async function notifyLogin({ username, fullName, role, ipAddress, isNewIp }) {
   const settings = await getTelegramSettings();
   if (!settings || !settings.notify_login) return;
 
   const lines = [
-    '🔐 *Akses Sistem \\(Login\\)*',
+    isNewIp ? '🔐 *Akses Sistem \\(Login\\)* ⚠️ *IP Baru*' : '🔐 *Akses Sistem \\(Login\\)*',
     '',
     `Pengguna: ${escapeMarkdown(fullName)} \\(${escapeMarkdown(username)}\\)`,
     `Role: ${escapeMarkdown(role)}`,
-    `IP: \`${escapeMarkdownCode(ipAddress || '-')}\``,
+    `IP: \`${escapeMarkdownCode(ipAddress || '-')}\`${isNewIp ? ' _\\(belum pernah tercatat untuk akun ini\\)_' : ''}`,
     `Waktu: ${escapeMarkdown(formatJakartaDateTime(new Date()))}`,
   ];
   await sendTelegramMessage(lines.join('\n'));
