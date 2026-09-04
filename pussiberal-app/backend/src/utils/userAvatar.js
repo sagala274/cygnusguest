@@ -17,4 +17,17 @@ async function ensureUserAvatarColumn() {
   }
 }
 
-module.exports = { ensureUserAvatarColumn };
+// Penguncian akun otomatis setelah beberapa kali gagal login beruntun --
+// pelengkap rate limiter berbasis IP yang sudah ada (lihat routes/auth.js),
+// supaya percobaan brute-force yang menyasar SATU akun tertentu dari
+// banyak alamat IP berbeda tetap tercegah.
+async function ensureUserLockoutColumns() {
+  if (!(await columnExists('users', 'failed_login_attempts'))) {
+    await pool.query('ALTER TABLE users ADD COLUMN failed_login_attempts INT NOT NULL DEFAULT 0 AFTER is_active');
+  }
+  if (!(await columnExists('users', 'locked_until'))) {
+    await pool.query('ALTER TABLE users ADD COLUMN locked_until DATETIME NULL AFTER failed_login_attempts');
+  }
+}
+
+module.exports = { ensureUserAvatarColumn, ensureUserLockoutColumns };

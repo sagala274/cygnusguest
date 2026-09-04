@@ -214,6 +214,7 @@ function actionLabel(action) {
   const map = {
     login: 'Login',
     logout: 'Logout',
+    account_locked: 'Akun Terkunci (Percobaan Login Gagal)',
     create_guest: 'Daftarkan Tamu',
     update_guest: 'Ubah Data Tamu',
     verify_guest: 'Verifikasi Tamu',

@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
   avatar_url VARCHAR(255) NULL,
   role ENUM('admin','verifikator','pos_depan') NOT NULL DEFAULT 'pos_depan',
   is_active TINYINT(1) NOT NULL DEFAULT 1,
+  failed_login_attempts INT NOT NULL DEFAULT 0,
+  locked_until DATETIME NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

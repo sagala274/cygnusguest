@@ -12,12 +12,19 @@ const router = express.Router();
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true,
   message: { error: 'Terlalu banyak percobaan login. Coba lagi dalam beberapa menit.' },
 });
+
+// Penguncian per-akun setelah 5 kali gagal login beruntun -- pelengkap
+// loginLimiter di atas (yang berbasis alamat IP). Rate limiter berbasis IP
+// tidak menahan percobaan yang menyasar SATU akun tertentu dari banyak
+// alamat IP berbeda; penguncian per-akun ini menutup celah itu.
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
 
 router.post('/login', loginLimiter, asyncHandler(async (req, res) => {
   const { username, password } = req.body || {};
@@ -26,7 +33,7 @@ router.post('/login', loginLimiter, asyncHandler(async (req, res) => {
   }
 
   const [rows] = await pool.execute(
-    'SELECT id, username, password_hash, full_name, role, is_active, avatar_url FROM users WHERE username = :username',
+    'SELECT id, username, password_hash, full_name, role, is_active, avatar_url, failed_login_attempts, locked_until FROM users WHERE username = :username',
     { username }
   );
 
@@ -35,9 +42,35 @@ router.post('/login', loginLimiter, asyncHandler(async (req, res) => {
     return res.status(401).json({ error: 'Username atau password salah' });
   }
 
+  if (user.locked_until && new Date(user.locked_until) > new Date()) {
+    const minutesLeft = Math.max(1, Math.ceil((new Date(user.locked_until) - new Date()) / 60000));
+    return res.status(423).json({
+      error: `Akun terkunci sementara karena terlalu banyak percobaan login gagal. Coba lagi dalam ${minutesLeft} menit.`,
+    });
+  }
+
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) {
+    const attempts = user.failed_login_attempts + 1;
+    if (attempts >= MAX_FAILED_ATTEMPTS) {
+      await pool.execute(
+        'UPDATE users SET failed_login_attempts = 0, locked_until = DATE_ADD(NOW(), INTERVAL :minutes MINUTE) WHERE id = :id',
+        { minutes: LOCKOUT_MINUTES, id: user.id }
+      );
+      await logAudit(user.id, 'account_locked', 'user', user.id, {
+        username: user.username,
+        reason: `${MAX_FAILED_ATTEMPTS} percobaan login gagal beruntun`,
+      });
+      return res.status(423).json({
+        error: `Akun terkunci sementara karena terlalu banyak percobaan login gagal. Coba lagi dalam ${LOCKOUT_MINUTES} menit.`,
+      });
+    }
+    await pool.execute('UPDATE users SET failed_login_attempts = :attempts WHERE id = :id', { attempts, id: user.id });
     return res.status(401).json({ error: 'Username atau password salah' });
+  }
+
+  if (user.failed_login_attempts > 0 || user.locked_until) {
+    await pool.execute('UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = :id', { id: user.id });
   }
 
   const token = jwt.sign(
