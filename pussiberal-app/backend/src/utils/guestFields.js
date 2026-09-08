@@ -98,6 +98,16 @@ async function ensureGuestMemberExtraColumns() {
         DATETIME NULL AFTER security_category
     `);
   }
+  // Isi ulang analyzed_at untuk baris LAMA yang sudah punya hasil analisa
+  // dari sebelum kolom ini ada (pakai created_at sebagai perkiraan terbaik
+  // yang tersedia) -- tanpa ini, analisa lama yang sudah ada tidak akan
+  // pernah terhitung sebagai "analisa paling baru" untuk orang tersebut,
+  // karena analyzed_at-nya kosong. Aman dijalankan berulang: begitu terisi,
+  // baris itu tidak lagi cocok dengan kondisi WHERE-nya.
+  await pool.query(`
+    UPDATE guest_members SET analyzed_at = created_at
+    WHERE analyzed_at IS NULL AND (security_category IS NOT NULL OR analysis_notes IS NOT NULL)
+  `);
 
   // Diubah dari NOT NULL DEFAULT 'dititipkan' jadi boleh NULL -- dipakai
   // untuk merepresentasikan "belum dideklarasikan" pada tamu terjadwal
