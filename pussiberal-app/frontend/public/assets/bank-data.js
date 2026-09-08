@@ -77,6 +77,7 @@ function groupCardHTML(group) {
             data-guest-id="${m.guest_id}"
             data-member-id="${m.id}"
             data-name="${escapeHtml(m.full_name)}"
+            data-visit-count="${m.visit_count}"
             style="margin-left:6px;"
           >Hapus</button>
         ` : ''}
@@ -94,7 +95,7 @@ function groupCardHTML(group) {
     <div class="form-card" style="margin-bottom:20px;">
       <div class="section">
         <div class="section-header-row">
-          <h2 class="section-title">${escapeHtml(group.company)} <span class="optional-badge">${group.members.length} catatan</span></h2>
+          <h2 class="section-title">${escapeHtml(group.company)} <span class="optional-badge">${group.members.length} orang${group.total_registrations !== group.members.length ? ` &middot; ${group.total_registrations} kunjungan` : ''}</span></h2>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button type="button" class="btn btn-small download-group-btn" data-company="${escapeHtml(group.company)}">Unduh PDF Kelompok</button>
             ${canEditProfile ? `
@@ -106,7 +107,7 @@ function groupCardHTML(group) {
             ` : ''}
             ${isAdmin && canEditProfile ? `
               <button type="button" class="btn btn-small edit-company-btn" data-company="${escapeHtml(group.company)}">Edit Nama Perusahaan</button>
-              <button type="button" class="btn btn-small btn-danger delete-company-btn" data-company="${escapeHtml(group.company)}" data-count="${group.members.length}">Hapus Perusahaan</button>
+              <button type="button" class="btn btn-small btn-danger delete-company-btn" data-company="${escapeHtml(group.company)}" data-count="${group.total_registrations}">Hapus Perusahaan</button>
             ` : ''}
           </div>
         </div>
@@ -148,7 +149,7 @@ async function load() {
     });
     const res = await api(`/bank-data?${params.toString()}`);
 
-    summaryLine.textContent = `${res.total_records} catatan pendaftaran (${res.total_unique_nik} NIK unik) dalam ${res.total_groups} kelompok perusahaan. Satu baris = satu kali kunjungan; NIK yang sama bisa muncul lebih dari sekali.`;
+    summaryLine.textContent = `${res.total_records} catatan pendaftaran (${res.total_unique_nik} NIK unik) dalam ${res.total_groups} kelompok perusahaan. Satu baris di tabel = satu orang (kunjungan berulang untuk perusahaan yang sama sudah digabung ke kolom "Kunjungan").`;
 
     if (!res.data.length) {
       groupsContainer.innerHTML = '<p class="page-description">Tidak ada data personel ditemukan.</p>';
@@ -162,7 +163,7 @@ async function load() {
     });
 
     document.querySelectorAll('.delete-member-btn').forEach((btn) => {
-      btn.addEventListener('click', () => deleteMember(btn.dataset.guestId, btn.dataset.memberId, btn.dataset.name));
+      btn.addEventListener('click', () => deleteMember(btn.dataset.guestId, btn.dataset.memberId, btn.dataset.name, Number(btn.dataset.visitCount)));
     });
 
     document.querySelectorAll('.download-group-btn').forEach((btn) => {
@@ -185,9 +186,12 @@ async function load() {
   }
 }
 
-async function deleteMember(guestId, memberId, name) {
+async function deleteMember(guestId, memberId, name, visitCount) {
   resultBox.style.display = 'none';
-  if (!confirm(`Hapus data tamu "${name}" ini secara permanen (termasuk foto & riwayat kunjungannya)? Tindakan ini tidak bisa dibatalkan.`)) return;
+  const message = visitCount > 1
+    ? `Baris ini mewakili kunjungan PALING BARU "${name}" (total ${visitCount}x kunjungan tercatat). Menghapus di sini hanya menghapus data kunjungan yang paling baru itu beserta fotonya -- riwayat kunjungan sebelumnya tetap ada dan bisa ditelusuri lewat Laporan Personel. Lanjutkan?`
+    : `Hapus data tamu "${name}" ini secara permanen (termasuk foto & riwayat kunjungannya)? Tindakan ini tidak bisa dibatalkan.`;
+  if (!confirm(message)) return;
 
   try {
     const res = await api(`/guests/${guestId}/members/${memberId}`, { method: 'DELETE' });

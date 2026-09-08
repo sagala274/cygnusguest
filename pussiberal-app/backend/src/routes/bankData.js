@@ -129,6 +129,30 @@ function groupByCompany(records) {
   return data;
 }
 
+// Bank Data tetap menyimpan satu baris mentah per pendaftaran (lihat
+// fetchAllRecords()), tapi untuk DAFTAR yang ditampilkan per perusahaan,
+// orang yang sama (NIK+nama sama) yang datang berulang kali TIDAK perlu
+// ditulis berulang sebagai baris terpisah -- jumlah kunjungannya sudah
+// terkompilasi di kolom "Kunjungan". Baris yang ditampilkan mewakili
+// kunjungan PALING BARU orang itu (posisi/jabatan/afiliasi terkini);
+// riwayat kunjungan lengkapnya tetap bisa ditelusuri lewat Laporan
+// Personel. Ini TIDAK menyembunyikan anomali NIK dipakai >1 nama --
+// deteksi itu (nik_shared_by_multiple_names) tetap berjalan di NIK yang
+// sama dengan NAMA BERBEDA, yang justru tidak pernah digabung di sini.
+function collapseMembersByIdentity(members) {
+  const byIdentity = new Map();
+  members.forEach((m) => {
+    const identityKey = `${m.nik || ''}|${m.full_name.trim().toLowerCase()}`;
+    // members sudah terurut created_at DESC (lihat ORDER BY di
+    // fetchAllRecords()), jadi kemunculan pertama untuk suatu identitas
+    // adalah kunjungannya yang paling baru.
+    if (!byIdentity.has(identityKey)) {
+      byIdentity.set(identityKey, m);
+    }
+  });
+  return Array.from(byIdentity.values());
+}
+
 function applyFilters(records, { q, category }) {
   let filtered = records;
   if (q) {
@@ -157,7 +181,12 @@ router.get('/', asyncHandler(async (req, res) => {
   const data = groupByCompany(records).map((g) => ({
     company: g.company,
     profile: profileMap.get(g.company) || null,
-    members: g.members.map((m) => ({
+    // total_registrations: jumlah pendaftaran MENTAH (sebelum digabung per
+    // orang) -- dipakai saat konfirmasi "Hapus Perusahaan", karena
+    // penghapusan menghapus SELURUH pendaftaran, bukan cuma sejumlah orang
+    // unik yang ditampilkan (bisa lebih sedikit kalau ada yang datang berulang).
+    total_registrations: g.members.length,
+    members: collapseMembersByIdentity(g.members).map((m) => ({
       id: m.id,
       guest_id: m.guest_id,
       nik: m.nik,
@@ -463,7 +492,7 @@ function renderFullBankDataPDF(doc, groups, profiles) {
 
   groups.forEach((g, idx) => {
     if (idx > 0) doc.addPage();
-    doc.fontSize(13).font('Helvetica-Bold').text(`${g.company} (${g.members.length} catatan)`);
+    doc.fontSize(13).font('Helvetica-Bold').text(`${g.company} (${g.members.length} orang)`);
     doc.moveDown(0.4);
     doc.fontSize(9);
     renderCompanyProfileBlock(doc, profiles ? profiles.get(g.company) : null);
@@ -473,7 +502,7 @@ function renderFullBankDataPDF(doc, groups, profiles) {
 
 function renderGroupPDF(doc, company, records, profile) {
   doc.fontSize(16).font('Helvetica-Bold').text(`Bank Data Personel - ${company}`, { align: 'center' });
-  doc.fontSize(9).font('Helvetica').text(`Dicetak: ${formatJakartaDateTime(new Date())} • ${records.length} catatan`, { align: 'center' });
+  doc.fontSize(9).font('Helvetica').text(`Dicetak: ${formatJakartaDateTime(new Date())} • ${records.length} orang`, { align: 'center' });
   doc.moveDown();
   doc.fontSize(9);
   renderCompanyProfileBlock(doc, profile);
@@ -565,7 +594,7 @@ router.get('/export', asyncHandler(async (req, res) => {
     const profile = profileRows[0] || null;
 
     filename = `bank-data-${sanitizeFilename(company)}.pdf`;
-    renderFn = (doc) => renderGroupPDF(doc, company, groupRecords, profile);
+    renderFn = (doc) => renderGroupPDF(doc, company, collapseMembersByIdentity(groupRecords), profile);
   } else {
     const filtered = applyFilters(allRecords, { q, category });
     if (!filtered.length) return res.status(404).json({ error: 'Tidak ada data untuk diunduh' });
@@ -575,7 +604,8 @@ router.get('/export', asyncHandler(async (req, res) => {
     );
     const profiles = new Map(profileRows.map((r) => [r.company, r]));
 
-    renderFn = (doc) => renderFullBankDataPDF(doc, groupByCompany(filtered), profiles);
+    const collapsedGroups = groupByCompany(filtered).map((g) => ({ company: g.company, members: collapseMembersByIdentity(g.members) }));
+    renderFn = (doc) => renderFullBankDataPDF(doc, collapsedGroups, profiles);
   }
 
   res.setHeader('Content-Type', 'application/pdf');
