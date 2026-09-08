@@ -87,6 +87,17 @@ async function ensureGuestMemberExtraColumns() {
         VARCHAR(255) NULL AFTER full_name
     `);
   }
+  // Kapan terakhir security_category/analysis_notes diisi/diubah pada baris
+  // ini -- dipakai Bank Data untuk menentukan hasil analisa PALING BARU
+  // milik satu orang (NIK+nama) di antara semua kunjungannya, supaya
+  // kunjungan yang belum sempat dianalisa ulang tetap menampilkan hasil
+  // analisa terakhir yang diketahui, bukan seolah belum pernah dianalisa.
+  if (!(await columnExists('guest_members', 'analyzed_at'))) {
+    await pool.query(`
+      ALTER TABLE guest_members ADD COLUMN analyzed_at
+        DATETIME NULL AFTER security_category
+    `);
+  }
 
   // Diubah dari NOT NULL DEFAULT 'dititipkan' jadi boleh NULL -- dipakai
   // untuk merepresentasikan "belum dideklarasikan" pada tamu terjadwal

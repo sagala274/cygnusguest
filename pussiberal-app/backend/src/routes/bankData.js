@@ -35,7 +35,8 @@ async function fetchAllRecords() {
   const [rows] = await pool.query(`
     SELECT
       gm.id, gm.guest_id, gm.nik, gm.full_name, gm.other_names, gm.phone_number, gm.position, gm.employee_id,
-      gm.affiliation, gm.social_media, gm.address, gm.analysis_notes, gm.security_category, gm.device_status, gm.device_reason,
+      gm.affiliation, gm.social_media, gm.address, gm.analysis_notes, gm.security_category, gm.analyzed_at,
+      gm.device_status, gm.device_reason,
       g.company, g.registration_number, g.created_at, g.status AS registration_status
     FROM guest_members gm
     JOIN guests g ON g.id = gm.guest_id
@@ -53,9 +54,15 @@ async function fetchAllRecords() {
   // namesByNik (mengelompokkan semuanya di bawah kunci kosong yang sama
   // akan salah memicu peringatan "NIK dipakai >1 nama" padahal mereka
   // memang tidak punya NIK sama sekali, bukan anomali NIK ganda).
+  // latestAnalysisByIdentity: hasil analisa (kategori/catatan) PALING BARU
+  // milik satu identitas (NIK+nama), diambil dari kunjungan MANAPUN yang
+  // sudah dianalisa (bukan cuma kunjungan terbaru) -- supaya kunjungan yang
+  // belum sempat dianalisa ulang tetap menampilkan hasil analisa terakhir
+  // yang diketahui untuk orang itu, bukan seolah belum pernah dianalisa.
   const namesByNik = new Map();
   const visitCountByIdentity = new Map();
   const lastVisitByIdentity = new Map();
+  const latestAnalysisByIdentity = new Map();
   rows.forEach((r) => {
     const normalizedName = r.full_name.trim().toLowerCase();
     if (r.nik) {
@@ -67,15 +74,38 @@ async function fetchAllRecords() {
     visitCountByIdentity.set(identityKey, (visitCountByIdentity.get(identityKey) || 0) + 1);
     const prev = lastVisitByIdentity.get(identityKey);
     if (!prev || new Date(r.created_at) > new Date(prev)) lastVisitByIdentity.set(identityKey, r.created_at);
+
+    if (r.analyzed_at) {
+      const prevAnalysis = latestAnalysisByIdentity.get(identityKey);
+      if (!prevAnalysis || new Date(r.analyzed_at) > new Date(prevAnalysis.analyzed_at)) {
+        latestAnalysisByIdentity.set(identityKey, {
+          member_id: r.id,
+          security_category: r.security_category,
+          analysis_notes: r.analysis_notes,
+          analyzed_at: r.analyzed_at,
+          registration_number: r.registration_number,
+        });
+      }
+    }
   });
 
   return rows.map((r) => {
     const identityKey = `${r.nik || ''}|${r.full_name.trim().toLowerCase()}`;
+    const latestAnalysis = latestAnalysisByIdentity.get(identityKey);
     return {
       ...r,
       visit_count: visitCountByIdentity.get(identityKey),
       last_visit_at: lastVisitByIdentity.get(identityKey),
       nik_shared_by_multiple_names: r.nik ? namesByNik.get(r.nik).size > 1 : false,
+      effective_security_category: latestAnalysis ? latestAnalysis.security_category : r.security_category,
+      effective_analysis_notes: latestAnalysis ? latestAnalysis.analysis_notes : r.analysis_notes,
+      analysis_source: latestAnalysis
+        ? {
+            is_inherited: latestAnalysis.member_id !== r.id,
+            registration_number: latestAnalysis.registration_number,
+            analyzed_at: latestAnalysis.analyzed_at,
+          }
+        : null,
     };
   });
 }
@@ -111,7 +141,7 @@ function applyFilters(records, { q, category }) {
       (p.affiliation || '').toLowerCase().includes(needle)
     );
   }
-  if (category) filtered = filtered.filter((p) => p.security_category === category);
+  if (category) filtered = filtered.filter((p) => p.effective_security_category === category);
   return filtered;
 }
 
@@ -141,6 +171,9 @@ router.get('/', asyncHandler(async (req, res) => {
       address: m.address,
       analysis_notes: m.analysis_notes,
       security_category: m.security_category,
+      effective_security_category: m.effective_security_category,
+      effective_analysis_notes: m.effective_analysis_notes,
+      analysis_source: m.analysis_source,
       registration_number: m.registration_number,
       visit_count: m.visit_count,
       last_visit_at: m.last_visit_at,
@@ -328,6 +361,9 @@ router.get('/personnel/:nik', asyncHandler(async (req, res) => {
       ktp_photo: photoRow.ktp_photo,
       security_category: headline.security_category,
       analysis_notes: headline.analysis_notes,
+      effective_security_category: headline.effective_security_category,
+      effective_analysis_notes: headline.effective_analysis_notes,
+      analysis_source: headline.analysis_source,
       visit_count: headline.visit_count,
       first_visit_at: sameIdentityVisits[sameIdentityVisits.length - 1].created_at,
       last_visit_at: headline.last_visit_at,
@@ -388,7 +424,7 @@ const GROUP_COLUMNS = [
   { header: 'Jabatan', width: 100, value: (r) => r.position },
   { header: 'No. HP', width: 90, value: (r) => r.phone_number },
   { header: 'Afiliasi', width: 110, value: (r) => r.affiliation },
-  { header: 'Kategori', width: 100, value: (r) => securityCategoryLabelId(r.security_category) },
+  { header: 'Kategori', width: 100, value: (r) => securityCategoryLabelId(r.effective_security_category) },
   { header: 'Kunj.', width: 40, value: (r) => r.visit_count },
 ];
 
@@ -464,7 +500,7 @@ function renderPersonnelPDF(doc, visits, headlineRecord) {
   field('Afiliasi', latest.affiliation);
   field('Media Sosial', latest.social_media);
   field('Alamat Rumah', latest.address);
-  field('Kategori Tamu Terkini', securityCategoryLabelId(latest.security_category));
+  field('Kategori Tamu Terkini', securityCategoryLabelId(latest.effective_security_category));
   field('Jumlah Kunjungan', latest.visit_count);
 
   if (latest.nik_shared_by_multiple_names) {
@@ -473,10 +509,10 @@ function renderPersonnelPDF(doc, visits, headlineRecord) {
     doc.fillColor('black').font('Helvetica');
   }
 
-  if (latest.analysis_notes) {
+  if (latest.effective_analysis_notes) {
     doc.moveDown(0.5);
     doc.font('Helvetica-Bold').text('Hasil Analisa Terkini:');
-    doc.font('Helvetica').text(latest.analysis_notes, { width: 500 });
+    doc.font('Helvetica').text(latest.effective_analysis_notes, { width: 500 });
   }
 
   doc.moveDown();

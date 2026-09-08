@@ -59,7 +59,7 @@ async function load() {
       <div class="detail-row"><span class="detail-label">Afiliasi</span><span class="detail-value">${escapeHtml(p.affiliation || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Media Sosial</span><span class="detail-value">${escapeHtml(p.social_media || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Alamat Rumah</span><span class="detail-value">${escapeHtml(p.address || '-')}</span></div>
-      <div class="detail-row"><span class="detail-label">Kategori Tamu Terkini</span><span class="detail-value"><span class="badge ${securityCategoryBadgeClass(p.security_category)}">${escapeHtml(securityCategoryLabel(p.security_category))}</span></span></div>
+      <div class="detail-row"><span class="detail-label">Kategori Tamu Terkini</span><span class="detail-value"><span class="badge ${securityCategoryBadgeClass(p.effective_security_category)}">${escapeHtml(securityCategoryLabel(p.effective_security_category))}</span>${p.analysis_source && p.analysis_source.is_inherited ? ` <span title="Diambil dari hasil analisa paling baru untuk orang ini, pendaftaran ${escapeHtml(p.analysis_source.registration_number)} (dianalisa ${formatDateTime(p.analysis_source.analyzed_at)})" style="color: var(--muted); cursor:help; font-size:11px;">ⓘ dari kunjungan lain</span>` : ''}</span></div>
       <div class="detail-row"><span class="detail-label">Perusahaan Terkait</span><span class="detail-value">${escapeHtml(p.companies.join(', '))}</span></div>
       <div class="detail-row"><span class="detail-label">Jumlah Kunjungan</span><span class="detail-value">${p.visit_count}x</span></div>
       <div class="detail-row"><span class="detail-label">Kunjungan Pertama</span><span class="detail-value">${formatDateTime(p.first_visit_at)}</span></div>
@@ -80,8 +80,8 @@ async function load() {
       photoFrame('Foto Wajah', p.photo) + photoFrame('Foto KTP', p.ktp_photo);
 
     const analysisSection = document.getElementById('analysisSection');
-    if (p.analysis_notes) {
-      document.getElementById('analysisNotes').textContent = p.analysis_notes;
+    if (p.effective_analysis_notes) {
+      document.getElementById('analysisNotes').textContent = p.effective_analysis_notes;
       analysisSection.style.display = 'block';
     } else {
       analysisSection.style.display = 'none';

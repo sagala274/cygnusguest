@@ -486,6 +486,12 @@ router.put('/:id/members/:memberId', requireRole('admin', 'pos_depan', 'verifika
     fields.push('security_category = :security_category');
     params.security_category = security_category || null;
   }
+  // Dicatat setiap kali hasil analisa (kategori/catatan) diubah -- dipakai
+  // Bank Data untuk menentukan analisa PALING BARU milik satu orang di
+  // antara semua kunjungannya (lihat routes/bankData.js).
+  if (security_category !== undefined || analysis_notes !== undefined) {
+    fields.push('analyzed_at = NOW()');
+  }
   if (device_status !== undefined) {
     if (!VALID_DEVICE_STATUSES.includes(device_status)) {
       return res.status(400).json({ error: 'Pilih status perangkat elektronik' });

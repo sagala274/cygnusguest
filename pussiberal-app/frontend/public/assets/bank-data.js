@@ -55,7 +55,12 @@ function groupCardHTML(group) {
       <td>${escapeHtml(m.position)}</td>
       <td>${escapeHtml(m.phone_number)}</td>
       <td>${escapeHtml(m.affiliation || '-')}</td>
-      <td><span class="badge ${securityCategoryBadgeClass(m.security_category)}">${escapeHtml(securityCategoryLabel(m.security_category))}</span></td>
+      <td>
+        <span class="badge ${securityCategoryBadgeClass(m.effective_security_category)}">${escapeHtml(securityCategoryLabel(m.effective_security_category))}</span>
+        ${m.analysis_source && m.analysis_source.is_inherited
+          ? `<span title="Kategori ini diambil dari hasil analisa paling baru untuk orang ini, dari pendaftaran ${escapeHtml(m.analysis_source.registration_number)} (dianalisa ${formatDateTime(m.analysis_source.analyzed_at)}) -- bukan dari pendaftaran ini" style="color: var(--muted); cursor:help; font-size:11px; margin-left:4px;">ⓘ dari kunjungan lain</span>`
+          : ''}
+      </td>
       <td>${m.visit_count}x</td>
       <td>${formatDateTime(m.last_visit_at)}</td>
       <td>

@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS guest_members (
   address VARCHAR(255) NULL,
   analysis_notes TEXT NULL,
   security_category ENUM('aman','perlu_perhatian','perlu_penanganan') NULL,
+  analyzed_at DATETIME NULL,
   photo MEDIUMTEXT NULL,
   ktp_photo MEDIUMTEXT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
