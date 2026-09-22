@@ -51,7 +51,7 @@
 .map-edge-label-bg { fill: #fcfcfd; opacity: .92; pointer-events: none; }
 
 .map-inline-editor {
-  position: absolute; z-index: 20; padding: 4px 8px; border: 2px solid var(--navy);
+  position: fixed; z-index: 20; padding: 4px 8px; border: 2px solid var(--navy);
   border-radius: 6px; font-size: 13px; font-weight: 700; font-family: inherit;
   text-align: center; background: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.15);
 }
