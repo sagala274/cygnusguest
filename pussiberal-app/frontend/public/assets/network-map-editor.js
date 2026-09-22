@@ -153,17 +153,36 @@ function updateConnectedEdges(nodeId) {
   });
 }
 
+// Sengaja TIDAK memanggil renderAll() (yang membongkar-pasang seluruh DOM
+// SVG) hanya untuk perubahan seleksi -- cukup toggle class "is-selected"
+// pada elemen yang bersangkutan. Ini penting supaya klik dua kali (dobel
+// klik) untuk ganti label tetap terdeteksi browser sebagai satu rangkaian
+// dblclick: kalau DOM node-nya sempat dibongkar-pasang di antara klik
+// pertama dan kedua (akibat renderAll()), sebagian browser gagal
+// mengenali itu sebagai dblclick pada elemen yang sama.
+function elementDomFor(sel) {
+  if (!sel) return null;
+  return sel.type === 'node'
+    ? nodesLayer.querySelector(`[data-node-id="${sel.id}"]`)
+    : edgesLayer.querySelector(`[data-edge-id="${sel.id}"] .map-edge`);
+}
+
 function selectElement(type, id) {
+  const prev = selected;
   selected = { type, id };
   connectPendingNodeId = null;
-  renderAll();
+  const prevEl = elementDomFor(prev);
+  if (prevEl) prevEl.classList.remove('is-selected');
+  const nextEl = elementDomFor(selected);
+  if (nextEl) nextEl.classList.add('is-selected');
   updateToolbarForSelection();
 }
 
 function deselect() {
   if (!selected) return;
+  const prevEl = elementDomFor(selected);
+  if (prevEl) prevEl.classList.remove('is-selected');
   selected = null;
-  renderAll();
   updateToolbarForSelection();
 }
 
@@ -379,7 +398,10 @@ document.addEventListener('mousemove', (e) => {
 
 document.addEventListener('mouseup', () => {
   if (dragState) {
-    markDirty();
+    const node = state.nodes.find((n) => n.id === dragState.nodeId);
+    if (node && (node.x !== dragState.origX || node.y !== dragState.origY)) {
+      markDirty();
+    }
     dragState = null;
   }
 });
