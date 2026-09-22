@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pemetaan Hubungan - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <img class="brand-mark" src="assets/logo.png" alt="PUSSIBERAL">
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav"></nav>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">Pemetaan Hubungan</div>
+      <div class="top-right">
+        <div class="profile-menu" id="profileMenu">
+          <button type="button" class="profile" id="profileTrigger">
+            <div class="profile-text">
+              <div class="profile-name" id="profileName"></div>
+              <div class="profile-role" id="profileRole"></div>
+            </div>
+            <div class="avatar"></div>
+          </button>
+          <div class="profile-dropdown" id="profileDropdown">
+            <a href="#" id="logoutBtn" class="profile-dropdown-item"><span class="nav-icon">⎋</span><span>Logout</span></a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content" style="max-width: 1000px;">
+      <div class="page-header-row">
+        <div class="page-header-text">
+          <h1 class="page-title">Pemetaan Hubungan</h1>
+          <p class="page-description">Gambarkan keterkaitan antara nama personel dengan perusahaan/instansi lain sebagai diagram -- kotak, lingkaran, garis penghubung, dan warna bisa diatur bebas.</p>
+        </div>
+        <button type="button" class="btn btn-accent" id="createBtn">+ Buat Pemetaan Baru</button>
+      </div>
+
+      <div id="resultBox" class="result-box" style="display:none;"></div>
+
+      <div class="form-card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nama Pemetaan</th>
+                <th>Terakhir Diubah</th>
+                <th>Diubah Oleh</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="diagramTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/network-map.js"></script>
+</body>
+</html>

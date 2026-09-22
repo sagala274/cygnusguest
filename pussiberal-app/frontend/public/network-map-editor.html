@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor Pemetaan Hubungan - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/network-map-editor.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <img class="brand-mark" src="assets/logo.png" alt="PUSSIBERAL">
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav"></nav>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">Editor Pemetaan Hubungan</div>
+      <div class="top-right">
+        <div class="profile-menu" id="profileMenu">
+          <button type="button" class="profile" id="profileTrigger">
+            <div class="profile-text">
+              <div class="profile-name" id="profileName"></div>
+              <div class="profile-role" id="profileRole"></div>
+            </div>
+            <div class="avatar"></div>
+          </button>
+          <div class="profile-dropdown" id="profileDropdown">
+            <a href="#" id="logoutBtn" class="profile-dropdown-item"><span class="nav-icon">⎋</span><span>Logout</span></a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content" style="max-width: none;">
+      <p><a class="link" href="network-map">&larr; Kembali ke Daftar Pemetaan</a></p>
+
+      <div class="map-header-row">
+        <input id="diagramName" class="map-name-input" type="text" placeholder="Nama pemetaan" maxlength="150">
+        <span id="saveStatus" class="map-save-status">Tersimpan</span>
+        <button type="button" class="btn btn-accent" id="saveBtn">Simpan</button>
+      </div>
+
+      <div id="resultBox" class="result-box" style="display:none;"></div>
+
+      <div class="map-toolbar">
+        <div class="map-toolbar-group">
+          <button type="button" class="btn btn-small" id="addPersonBtn">+ Tambah Orang</button>
+          <button type="button" class="btn btn-small" id="addCompanyBtn">+ Tambah Perusahaan</button>
+        </div>
+        <div class="map-toolbar-group">
+          <button type="button" class="btn btn-small" id="connectModeBtn">🔗 Hubungkan</button>
+          <span class="map-toolbar-hint" id="connectHint" style="display:none;">Klik kotak/lingkaran pertama, lalu klik yang kedua untuk membuat garis penghubung. Klik "Hubungkan" lagi untuk berhenti.</span>
+        </div>
+        <div class="map-toolbar-group" id="colorGroup" style="display:none;">
+          <span class="map-toolbar-label">Warna:</span>
+          <div class="map-color-swatches" id="colorSwatches"></div>
+        </div>
+        <div class="map-toolbar-group" id="selectionActions" style="display:none;">
+          <button type="button" class="btn btn-small" id="renameElementBtn">Ganti Label</button>
+          <button type="button" class="btn btn-small btn-danger" id="deleteElementBtn">Hapus Elemen</button>
+        </div>
+      </div>
+
+      <div class="map-canvas-wrap" id="canvasWrap">
+        <svg id="mapCanvas" width="2400" height="1400">
+          <defs>
+            <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#667085" />
+            </marker>
+          </defs>
+          <g id="edgesLayer"></g>
+          <g id="nodesLayer"></g>
+        </svg>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/network-map-editor.js"></script>
+</body>
+</html>

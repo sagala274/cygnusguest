@@ -37,6 +37,7 @@ const ACTION_ICON = {
   rename_bank_data_company: 'pencil', delete_bank_data_company: 'trash', delete_guest_member: 'trash',
   create_trainee: 'graduation', update_trainee: 'pencil', delete_trainee: 'trash',
   update_company_profile: 'pencil',
+  create_network_diagram: 'network', delete_network_diagram: 'trash',
 };
 
 const ACTION_COLOR = {
@@ -47,6 +48,7 @@ const ACTION_COLOR = {
   rename_bank_data_company: 'icon-bubble-blue', delete_bank_data_company: 'icon-bubble-danger', delete_guest_member: 'icon-bubble-danger',
   update_company_profile: 'icon-bubble-blue',
   create_trainee: 'icon-bubble-teal', update_trainee: 'icon-bubble-blue', delete_trainee: 'icon-bubble-danger',
+  create_network_diagram: 'icon-bubble-teal', delete_network_diagram: 'icon-bubble-danger',
   delete_user: 'icon-bubble-danger', create_backup: 'icon-bubble-teal', download_backup: 'icon-bubble-teal',
   ai_chat_query: 'icon-bubble-accent', update_ai_settings: 'icon-bubble-accent', update_telegram_settings: 'icon-bubble-blue',
 };
