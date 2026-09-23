@@ -297,7 +297,7 @@ input:focus, select:focus, textarea:focus {
 .login-card .field label { color: #172033; }
 
 /* Stat cards */
-.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
 .stat-card { background: #fff; border: 1px solid #dce1e8; border-radius: 6px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
 .stat-card-head { display: flex; align-items: flex-start; gap: 14px; }
 .stat-card-text { flex: 1; min-width: 0; }
@@ -328,13 +328,28 @@ input:focus, select:focus, textarea:focus {
 }
 .date-badge-btn .icon { width: 16px; height: 16px; color: #667085; }
 
-/* Grid kartu ringkasan dashboard */
-.dashboard-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 24px; align-items: stretch; }
+/* Grid kartu ringkasan dashboard -- auto-fit supaya jumlah kartu yang
+   berubah-ubah menurut role (2 s.d. 5 kartu) tetap tersusun rapi tanpa
+   perlu class kombinasi jumlah-kartu yang baru tiap kali kartu baru
+   ditambahkan. */
+.dashboard-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 24px; align-items: stretch; }
 .dashboard-row .form-card { margin: 0; }
 .dashboard-row-bottom { grid-template-columns: 2fr 1fr; }
-.dashboard-row-2col { grid-template-columns: repeat(2, 1fr); }
-.dashboard-row-4col { grid-template-columns: repeat(4, 1fr); }
 .dashboard-row-single { grid-template-columns: 1fr; }
+
+/* Kartu "Perlu Perhatian" -- state siaga (merah) kalau ada yang perlu
+   ditindaklanjuti, atau state aman (hijau) kalau semua sudah lengkap. */
+.alert-card { border-radius: 6px; padding: 24px; height: 100%; display: flex; flex-direction: column; }
+.alert-card.is-warning { background: #fef3f2; border: 1px solid #fda29b; }
+.alert-card.is-ok { background: #ecfdf3; border: 1px solid #a6f4c5; }
+.alert-card-title { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 800; margin-bottom: 16px; }
+.alert-card.is-warning .alert-card-title { color: var(--danger); }
+.alert-card.is-ok .alert-card-title { color: var(--success); }
+.alert-card-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: auto; }
+.alert-card-row { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: #172033; line-height: 1.5; }
+.alert-card-row .icon { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--amber); }
+.alert-card .dashboard-card-link { margin-top: 18px; }
+.alert-card.is-warning .dashboard-card-link { color: var(--danger); }
 .dashboard-card-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; font-size: 12.5px; }
 
 /* Donut chart */
@@ -738,7 +753,7 @@ a.link:hover { text-decoration: underline; }
   .sidebar { width: 210px; }
   .content { margin-top: 28px; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
-  .dashboard-row, .dashboard-row-bottom, .dashboard-row-2col, .dashboard-row-4col { grid-template-columns: 1fr; }
+  .dashboard-row, .dashboard-row-bottom { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 700px) {

@@ -50,7 +50,61 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
     `);
   }
 
-  res.json({ data: { total, totalGuests, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats, attendanceStats } });
+  // Daftar personel yang PERLU PERHATIAN hari ini: belum diisi absensinya
+  // sama sekali, atau sudah diisi tapi statusnya "Tanpa Keterangan" --
+  // dipakai kartu "Perlu Perhatian" dan tabel di dashboard. "Tanpa
+  // Keterangan" ditaruh lebih dulu karena lebih mendesak dari sekadar
+  // belum diisi (yang masih mungkin diisi nanti di hari yang sama).
+  let attendanceAttention = null;
+  if (['admin', 'verifikator', 'pimpinan'].includes(req.user.role)) {
+    [attendanceAttention] = await pool.query(`
+      SELECT p.id, p.full_name, p.rank_info, p.position, ar.status, ar.notes AS attendance_notes
+      FROM personnel p
+      LEFT JOIN attendance_records ar ON ar.personnel_id = p.id AND ar.attendance_date = CURDATE()
+      WHERE p.is_active = 1 AND (ar.status IS NULL OR ar.status = 'tanpa_keterangan')
+      ORDER BY (ar.status = 'tanpa_keterangan') DESC, p.category, p.sort_order, p.id
+    `);
+  }
+
+  res.json({
+    data: {
+      total, totalGuests, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats,
+      attendanceStats, attendanceAttention,
+    },
+  });
+}));
+
+// GET /reports/attendance-trend?count=4  -- persentase Hadir per minggu,
+// dipakai grafik "Tren Kehadiran Personel" di dashboard. Satu minggu tanpa
+// data sama sekali (belum pernah diisi) dikirim sebagai pct: null supaya
+// frontend bisa membedakan "0% hadir" dari "belum ada data direkam".
+router.get('/attendance-trend', requireRole('admin', 'verifikator', 'pimpinan'), asyncHandler(async (req, res) => {
+  const count = Math.min(Math.max(parseInt(req.query.count, 10) || 4, 2), 12);
+  const periods = buildPeriods('week', count);
+  const since = periods[0].start;
+
+  const [rows] = await pool.query(
+    'SELECT attendance_date, status FROM attendance_records WHERE attendance_date >= :since',
+    { since }
+  );
+
+  const recorded = periods.map(() => 0);
+  const hadir = periods.map(() => 0);
+  rows.forEach((row) => {
+    const t = new Date(row.attendance_date).getTime();
+    const idx = periods.findIndex((p) => t >= p.start.getTime() && t < p.end.getTime());
+    if (idx === -1) return;
+    recorded[idx] += 1;
+    if (row.status === 'hadir') hadir[idx] += 1;
+  });
+
+  res.json({
+    data: periods.map((p, i) => ({
+      label: p.label,
+      pct: recorded[i] > 0 ? Math.round((hadir[i] / recorded[i]) * 100) : null,
+      recordedCount: recorded[i],
+    })),
+  });
 }));
 
 function buildPeriods(period, count) {

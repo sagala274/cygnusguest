@@ -4,6 +4,11 @@ renderNav('dashboard');
 const user = getUser();
 const isAdmin = user && user.role === 'admin';
 const canSeeVisitChart = user && ['admin', 'verifikator'].includes(user.role);
+const canManageAttendance = user && ['admin', 'verifikator'].includes(user.role);
+if (!canManageAttendance) {
+  document.getElementById('personnelStatLink').style.display = 'none';
+  document.getElementById('attendanceAttentionLink').style.display = 'none';
+}
 
 const STATUS_COLOR = {
   Draft: '#98a2b3',
@@ -213,7 +218,7 @@ async function load() {
 
   try {
     const res = await api('/reports/dashboard');
-    const { total, totalGuests, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats, attendanceStats } = res.data;
+    const { total, totalGuests, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats, attendanceStats, attendanceAttention } = res.data;
 
     document.getElementById('statGrid').innerHTML = [
       statCardHtml({ bubbleClass: 'icon-bubble-accent', iconName: 'people', label: 'Total Tamu', value: totalGuests, caption: 'Total individu tamu tercatat' }),
@@ -221,6 +226,24 @@ async function load() {
       statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Tamu Aktif (Saat Ini)', value: active, caption: 'Sedang berada di area' }),
       statCardHtml({ bubbleClass: 'icon-bubble-amber', iconName: 'audit-log', label: 'Belum Check-out', value: pendingCheckout, caption: 'Perlu perhatian petugas' }),
     ].join('');
+
+    if (attendanceStats) {
+      const segs = attendanceBucketSegments(attendanceStats);
+      const byKey = {};
+      ATTENDANCE_BUCKETS.forEach((b, i) => { byKey[b.key] = segs[i]; });
+      const totalPersonnel = segs.reduce((sum, s) => sum + s.count, 0);
+      const pct = (count) => (totalPersonnel > 0 ? `${((count / totalPersonnel) * 100).toFixed(1)}% dari total` : '-');
+
+      document.getElementById('personnelStatHeader').style.display = 'flex';
+      document.getElementById('personnelStatGrid').style.display = 'grid';
+      document.getElementById('personnelStatGrid').innerHTML = [
+        statCardHtml({ bubbleClass: 'icon-bubble-accent', iconName: 'people', label: 'Total Personel', value: totalPersonnel, caption: 'Seluruh personel aktif' }),
+        statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Hadir', value: byKey.hadir.count, caption: pct(byKey.hadir.count) }),
+        statCardHtml({ bubbleClass: 'icon-bubble-blue', iconName: 'login', label: 'Bertugas', value: byKey.bertugas.count, caption: pct(byKey.bertugas.count) }),
+        statCardHtml({ bubbleClass: 'icon-bubble-amber', iconName: 'calendar', label: 'Berhalangan', value: byKey.berhalangan.count, caption: pct(byKey.berhalangan.count) }),
+        statCardHtml({ bubbleClass: 'icon-bubble-danger', iconName: 'close', label: 'Tanpa Keterangan', value: byKey.tanpa_keterangan.count, caption: pct(byKey.tanpa_keterangan.count) }),
+      ].join('');
+    }
 
     const midCards = [];
     midCards.push(`
@@ -250,16 +273,35 @@ async function load() {
         </div>
       </div>
     `);
+    let attendanceSegments = null;
     if (attendanceStats) {
-      const segments = attendanceBucketSegments(attendanceStats);
-      const totalPersonnel = segments.reduce((sum, s) => sum + s.count, 0);
-      const canManageAttendance = ['admin', 'verifikator'].includes(user.role);
+      attendanceSegments = attendanceBucketSegments(attendanceStats);
+      const totalPersonnel = attendanceSegments.reduce((sum, s) => sum + s.count, 0);
       midCards.push(`
         <div class="form-card">
           <div class="section">
             <h2 class="section-title">Kondisi Absensi Hari Ini</h2>
-            ${renderDonut(segments, totalPersonnel, 'Personel')}
+            ${renderDonut(attendanceSegments, totalPersonnel, 'Personel')}
             ${canManageAttendance ? '<a class="link dashboard-card-link" href="absensi">Lihat detail &rarr;</a>' : ''}
+          </div>
+        </div>
+      `);
+    }
+    if (attendanceAttention) {
+      const tk = attendanceAttention.filter((p) => p.status === 'tanpa_keterangan').length;
+      const belum = attendanceAttention.filter((p) => p.status === null).length;
+      const hasIssue = tk > 0 || belum > 0;
+      const rows = [];
+      if (tk > 0) rows.push(`${icon('close', 'icon')}<span>${tk} personel tanpa keterangan</span>`);
+      if (belum > 0) rows.push(`${icon('clipboard', 'icon')}<span>${belum} personel belum melaksanakan absensi</span>`);
+      midCards.push(`
+        <div class="form-card">
+          <div class="alert-card ${hasIssue ? 'is-warning' : 'is-ok'}">
+            <div class="alert-card-title">${icon(hasIssue ? 'bell' : 'checkCircle')}<span>Perlu Perhatian</span></div>
+            <div class="alert-card-list">
+              ${hasIssue ? rows.map((r) => `<div class="alert-card-row">${r}</div>`).join('') : '<div class="alert-card-row">Semua personel sudah tercatat kehadirannya hari ini.</div>'}
+            </div>
+            ${canManageAttendance ? '<a class="link dashboard-card-link" href="absensi">Lihat Detail &rarr;</a>' : ''}
           </div>
         </div>
       `);
@@ -288,8 +330,27 @@ async function load() {
     }
     const midRow = document.getElementById('dashboardMidRow');
     midRow.innerHTML = midCards.join('');
-    midRow.classList.toggle('dashboard-row-2col', midCards.length === 2);
-    midRow.classList.toggle('dashboard-row-4col', midCards.length === 4);
+
+    if (attendanceAttention) {
+      document.getElementById('personnelBottomRow').style.display = 'grid';
+      const STATUS_BADGE = {
+        tanpa_keterangan: '<span class="badge badge-red">Tanpa Keterangan</span>',
+        null: '<span class="badge badge-amber">Belum Absensi</span>',
+      };
+      document.getElementById('attendanceAttentionTableBody').innerHTML = attendanceAttention.length
+        ? attendanceAttention
+            .map(
+              (p) => `
+        <tr>
+          <td>${escapeHtml(p.full_name)}${p.position ? ` <span class="label-note">(${escapeHtml(p.position)})</span>` : ''}</td>
+          <td>${STATUS_BADGE[p.status === null ? 'null' : p.status]}</td>
+        </tr>
+      `
+            )
+            .join('')
+        : '<tr><td colspan="2">Semua personel sudah tercatat kehadirannya hari ini.</td></tr>';
+      loadAttendanceTrend();
+    }
   } catch (err) {
     document.querySelector('.content').insertAdjacentHTML(
       'beforeend',
@@ -298,6 +359,83 @@ async function load() {
   }
 
   if (isAdmin) loadActivity();
+}
+
+// ---- Tren Kehadiran Personel (Admin, Verifikator, Pimpinan) ----
+// Sumbu Y selalu 0-100% (persentase), jadi tidak perlu penyesuaian skala
+// dinamis seperti grafik kunjungan tamu (yang skalanya tergantung jumlah).
+function renderAttendanceTrendChart(data) {
+  const container = document.getElementById('attendanceTrendChart');
+  const width = 720;
+  const height = 220;
+  const marginLeft = 40;
+  const marginBottom = 30;
+  const marginTop = 12;
+  const marginRight = 8;
+  const plotWidth = width - marginLeft - marginRight;
+  const plotHeight = height - marginTop - marginBottom;
+
+  if (!data.some((d) => d.pct !== null)) {
+    container.innerHTML = '<p class="page-description" style="margin:0;">Belum ada data absensi yang cukup untuk ditampilkan.</p>';
+    return;
+  }
+
+  const stepX = data.length > 1 ? plotWidth / (data.length - 1) : 0;
+
+  let gridlines = '';
+  let yLabels = '';
+  [0, 25, 50, 75, 100].forEach((mark) => {
+    const y = marginTop + plotHeight - (plotHeight * mark) / 100;
+    gridlines += `<line x1="${marginLeft}" y1="${y}" x2="${width - marginRight}" y2="${y}" class="chart-gridline" />`;
+    yLabels += `<text x="${marginLeft - 8}" y="${y + 3}" class="chart-axis-label" text-anchor="end">${mark}%</text>`;
+  });
+
+  const points = data.map((d, i) => ({
+    x: marginLeft + (data.length > 1 ? i * stepX : plotWidth / 2),
+    y: d.pct === null ? null : marginTop + plotHeight - (d.pct / 100) * plotHeight,
+    pct: d.pct,
+    label: d.label,
+  }));
+
+  const validPoints = points.filter((p) => p.y !== null);
+  const linePath = validPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const areaPath = validPoints.length
+    ? `${linePath} L${validPoints[validPoints.length - 1].x.toFixed(1)},${(marginTop + plotHeight).toFixed(1)} L${validPoints[0].x.toFixed(1)},${(marginTop + plotHeight).toFixed(1)} Z`
+    : '';
+
+  let xLabels = '';
+  let markers = '';
+  let valueLabels = '';
+  points.forEach((p, i) => {
+    xLabels += `<text x="${p.x}" y="${height - marginBottom + 18}" class="chart-axis-label" text-anchor="middle">${escapeHtml(p.label)}</text>`;
+    if (p.y === null) return;
+    const isLast = i === points.length - 1;
+    markers += `<circle cx="${p.x}" cy="${p.y}" r="${isLast ? 5 : 4}" class="chart-point${isLast ? ' chart-point-last' : ''}" />`;
+    valueLabels += `<text x="${p.x}" y="${p.y - 12}" class="chart-axis-label" text-anchor="middle" font-weight="800">${p.pct}%</text>`;
+  });
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" class="bar-chart-svg" role="img" aria-label="Grafik tren kehadiran personel per minggu">
+      ${gridlines}
+      ${yLabels}
+      <path d="${areaPath}" class="chart-area-fill" />
+      <path d="${linePath}" class="chart-area-line" />
+      ${markers}
+      ${valueLabels}
+      ${xLabels}
+    </svg>
+  `;
+}
+
+async function loadAttendanceTrend() {
+  const container = document.getElementById('attendanceTrendChart');
+  container.innerHTML = '<p class="page-description" style="margin:0;">Memuat grafik...</p>';
+  try {
+    const res = await api('/reports/attendance-trend?count=4');
+    renderAttendanceTrendChart(res.data);
+  } catch (err) {
+    container.innerHTML = `<p class="page-description" style="margin:0; color: var(--danger);">${escapeHtml(err.message)}</p>`;
+  }
 }
 
 load();
