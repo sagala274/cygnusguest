@@ -5,7 +5,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { logAudit } = require('../utils/audit');
 const asyncHandler = require('../utils/asyncHandler');
 
-const VALID_ROLES = ['admin', 'verifikator', 'pos_depan'];
+const VALID_ROLES = ['admin', 'verifikator', 'pos_depan', 'pimpinan'];
 
 // Dibatasi ke karakter aman (bukan karena escaping di tampilan tidak
 // memadai -- sudah diverifikasi aman -- tapi sebagai lapisan pertahanan

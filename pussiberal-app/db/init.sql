@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255) NOT NULL,
   full_name VARCHAR(150) NOT NULL,
   avatar_url VARCHAR(255) NULL,
-  role ENUM('admin','verifikator','pos_depan') NOT NULL DEFAULT 'pos_depan',
+  role ENUM('admin','verifikator','pos_depan','pimpinan') NOT NULL DEFAULT 'pos_depan',
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   failed_login_attempts INT NOT NULL DEFAULT 0,
   locked_until DATETIME NULL,

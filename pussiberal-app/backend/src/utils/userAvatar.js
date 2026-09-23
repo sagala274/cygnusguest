@@ -30,4 +30,12 @@ async function ensureUserLockoutColumns() {
   }
 }
 
-module.exports = { ensureUserAvatarColumn, ensureUserLockoutColumns };
+// MySQL juga tidak punya "ALTER TYPE ADD VALUE" untuk ENUM -- MODIFY COLUMN
+// di sini dijalankan tiap start backend (bukan dikondisikan seperti ADD
+// COLUMN di atas) supaya nilai ENUM baru yang ditambahkan ke depannya juga
+// otomatis ikut, sama seperti pola VALID_SECURITY_CATEGORIES di guestFields.js.
+async function ensureUserRoleEnum() {
+  await pool.query("ALTER TABLE users MODIFY COLUMN role ENUM('admin','verifikator','pos_depan','pimpinan') NOT NULL DEFAULT 'pos_depan'");
+}
+
+module.exports = { ensureUserAvatarColumn, ensureUserLockoutColumns, ensureUserRoleEnum };

@@ -28,6 +28,28 @@ const SECURITY_COLOR = {
   belum_dianalisa: '#98a2b3',
 };
 
+// Status absensi mentah dikelompokkan jadi 5 kondisi ringkas untuk pie chart
+// dashboard (urutan & warna tetap, tidak diacak) -- rincian per status (9
+// pilihan) tetap bisa dilihat lengkap di halaman Absensi Personel.
+const ATTENDANCE_BUCKETS = [
+  { key: 'hadir', label: 'Hadir', color: 'var(--success)', statuses: ['hadir'] },
+  { key: 'bertugas', label: 'Bertugas', color: '#175cd3', statuses: ['dinas_dalam', 'dinas_luar', 'bko'], title: 'Dinas Dalam, Dinas Luar, atau BKO' },
+  { key: 'berhalangan', label: 'Berhalangan', color: '#6b21a8', statuses: ['sakit', 'ijin', 'cuti', 'pendidikan'], title: 'Sakit, Ijin, Cuti, atau Pendidikan' },
+  { key: 'tanpa_keterangan', label: 'Tanpa Keterangan', color: 'var(--danger)', statuses: ['tanpa_keterangan'] },
+  { key: 'belum_diisi', label: 'Belum Diisi', color: '#98a2b3', statuses: [null] },
+];
+
+function attendanceBucketSegments(attendanceStats) {
+  const countByStatus = {};
+  attendanceStats.forEach((r) => { countByStatus[r.status === null ? 'null' : r.status] = r.count; });
+  return ATTENDANCE_BUCKETS.map((b) => ({
+    label: b.label,
+    color: b.color,
+    title: b.title,
+    count: b.statuses.reduce((sum, s) => sum + (countByStatus[s === null ? 'null' : s] || 0), 0),
+  }));
+}
+
 const ACTION_ICON = {
   login: 'login', logout: 'logout', account_locked: 'shield', create_guest: 'pendaftaran', schedule_guest: 'pendaftaran',
   complete_guest_schedule: 'checkCircle', update_guest: 'pencil', verify_guest: 'checkCircle',
@@ -112,7 +134,7 @@ function renderDonut(segments, centerValue, centerLabel) {
     .map((s) => {
       const pct = total > 0 ? (s.count / total) * 100 : 0;
       return `
-        <div class="donut-legend-row">
+        <div class="donut-legend-row"${s.title ? ` title="${escapeHtml(s.title)}"` : ''}>
           <span class="donut-legend-dot" style="background:${s.color}"></span>
           <span class="donut-legend-label">${escapeHtml(s.label)}</span>
           <span class="donut-legend-count">${s.count}</span>
@@ -191,7 +213,7 @@ async function load() {
 
   try {
     const res = await api('/reports/dashboard');
-    const { total, totalGuests, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats } = res.data;
+    const { total, totalGuests, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats, attendanceStats } = res.data;
 
     document.getElementById('statGrid').innerHTML = [
       statCardHtml({ bubbleClass: 'icon-bubble-accent', iconName: 'people', label: 'Total Tamu', value: totalGuests, caption: 'Total individu tamu tercatat' }),
@@ -228,6 +250,20 @@ async function load() {
         </div>
       </div>
     `);
+    if (attendanceStats) {
+      const segments = attendanceBucketSegments(attendanceStats);
+      const totalPersonnel = segments.reduce((sum, s) => sum + s.count, 0);
+      const canManageAttendance = ['admin', 'verifikator'].includes(user.role);
+      midCards.push(`
+        <div class="form-card">
+          <div class="section">
+            <h2 class="section-title">Kondisi Absensi Hari Ini</h2>
+            ${renderDonut(segments, totalPersonnel, 'Personel')}
+            ${canManageAttendance ? '<a class="link dashboard-card-link" href="absensi">Lihat detail &rarr;</a>' : ''}
+          </div>
+        </div>
+      `);
+    }
     if (securityStats) {
       const rows = securityStats
         .map(
@@ -253,6 +289,7 @@ async function load() {
     const midRow = document.getElementById('dashboardMidRow');
     midRow.innerHTML = midCards.join('');
     midRow.classList.toggle('dashboard-row-2col', midCards.length === 2);
+    midRow.classList.toggle('dashboard-row-4col', midCards.length === 4);
   } catch (err) {
     document.querySelector('.content').insertAdjacentHTML(
       'beforeend',

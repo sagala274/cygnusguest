@@ -24,7 +24,7 @@ const { ensureAiSettingsTable } = require('./utils/aiSettings');
 const { ensureTelegramSettingsTable } = require('./utils/telegram');
 const { startTelegramPolling } = require('./utils/telegramBot');
 const { ensureGuestExtraColumns, ensureGuestMemberExtraColumns, ensureVisitExtraColumns } = require('./utils/guestFields');
-const { ensureUserAvatarColumn, ensureUserLockoutColumns } = require('./utils/userAvatar');
+const { ensureUserAvatarColumn, ensureUserLockoutColumns, ensureUserRoleEnum } = require('./utils/userAvatar');
 const { ensureNotificationsTable } = require('./utils/notifications');
 const { ensureTraineesTable } = require('./utils/trainees');
 const { ensureCompanyProfilesTable } = require('./utils/companyProfiles');
@@ -118,6 +118,7 @@ async function start() {
   await ensureVisitExtraColumns();
   await ensureUserAvatarColumn();
   await ensureUserLockoutColumns();
+  await ensureUserRoleEnum();
   await ensureNotificationsTable();
   await ensureTraineesTable();
   await ensureCompanyProfilesTable();

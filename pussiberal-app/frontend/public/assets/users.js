@@ -22,7 +22,7 @@ const passwordLabel = document.getElementById('passwordLabel');
 const formRole = document.getElementById('formRole');
 const modalSubmitBtn = document.getElementById('modalSubmitBtn');
 
-const ROLE_ICON = { admin: 'crown', verifikator: 'checkCircle', pos_depan: 'shield' };
+const ROLE_ICON = { admin: 'crown', verifikator: 'checkCircle', pos_depan: 'shield', pimpinan: 'star' };
 
 let allUsers = [];
 let editingId = null;

@@ -9,7 +9,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const router = express.Router();
 router.use(authenticate);
 
-router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator'), asyncHandler(async (req, res) => {
+router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpinan'), asyncHandler(async (req, res) => {
   const [[{ total }]] = await pool.query('SELECT COUNT(*) AS total FROM guests');
   // "total" di atas menghitung PENDAFTARAN (satu pendaftaran bisa berisi lebih
   // dari satu orang), dipakai untuk donut Status Pendaftaran agar konsisten
@@ -36,7 +36,21 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator'), async
     );
   }
 
-  res.json({ data: { total, totalGuests, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats } });
+  // Kondisi absensi personel HARI INI (bukan tamu) -- dipakai kartu pie chart
+  // di dashboard untuk Admin, Verifikator, dan Pimpinan. status = NULL berarti
+  // personel aktif yang belum diisi absensinya hari ini.
+  let attendanceStats = null;
+  if (['admin', 'verifikator', 'pimpinan'].includes(req.user.role)) {
+    [attendanceStats] = await pool.query(`
+      SELECT ar.status, COUNT(*) AS count
+      FROM personnel p
+      LEFT JOIN attendance_records ar ON ar.personnel_id = p.id AND ar.attendance_date = CURDATE()
+      WHERE p.is_active = 1
+      GROUP BY ar.status
+    `);
+  }
+
+  res.json({ data: { total, totalGuests, today, yesterday, active, pendingCheckout, byStatus, deviceStats, securityStats, attendanceStats } });
 }));
 
 function buildPeriods(period, count) {
