@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Absensi Personel - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/absensi.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <img class="brand-mark" src="assets/logo.png" alt="PUSSIBERAL">
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav"></nav>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">Absensi Personel</div>
+      <div class="top-right">
+        <div class="profile-menu" id="profileMenu">
+          <button type="button" class="profile" id="profileTrigger">
+            <div class="profile-text">
+              <div class="profile-name" id="profileName"></div>
+              <div class="profile-role" id="profileRole"></div>
+            </div>
+            <div class="avatar"></div>
+          </button>
+          <div class="profile-dropdown" id="profileDropdown">
+            <a href="#" id="logoutBtn" class="profile-dropdown-item"><span class="nav-icon">⎋</span><span>Logout</span></a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content" style="max-width: 1160px;">
+      <div class="page-header-row">
+        <div class="page-header-text">
+          <h1 class="page-title">Absensi Personel</h1>
+          <p class="page-description">Isi keterangan kehadiran seluruh personel PUSSIBERAL untuk tanggal yang dipilih. Setiap perubahan tersimpan otomatis.</p>
+        </div>
+        <a class="btn" href="personnel-list">Kelola Data Personel</a>
+      </div>
+
+      <div class="attendance-date-bar">
+        <button type="button" class="btn btn-small" id="prevDayBtn">&larr; Sebelumnya</button>
+        <input type="date" id="dateInput">
+        <button type="button" class="btn btn-small" id="nextDayBtn">Berikutnya &rarr;</button>
+        <button type="button" class="btn btn-small" id="todayBtn">Hari Ini</button>
+        <span class="attendance-save-status" id="saveStatus"></span>
+      </div>
+
+      <div id="resultBox" class="result-box" style="display:none;"></div>
+
+      <div class="form-card" id="summaryCard" style="margin-bottom:20px;">
+        <div class="section" style="padding:20px 24px;">
+          <div class="attendance-summary" id="summaryRow"></div>
+        </div>
+      </div>
+
+      <div id="groupsContainer"></div>
+    </section>
+  </main>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/absensi.js"></script>
+</body>
+</html>

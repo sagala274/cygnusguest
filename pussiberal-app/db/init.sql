@@ -197,3 +197,43 @@ CREATE TABLE IF NOT EXISTS network_diagrams (
   FOREIGN KEY (created_by) REFERENCES users(id),
   FOREIGN KEY (updated_by) REFERENCES users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Daftar personel PUSSIBERAL yang dapat diabsen setiap hari, dikelompokkan
+-- per satuan/kelompok (PIMPINAN, SET, BAGKU, SATMA, dst.). Data awal
+-- (56 personel) diisi lewat ensurePersonnelTables() saat backend pertama
+-- kali berjalan, bukan lewat file ini, supaya deployment yang sudah
+-- berjalan (bukan instalasi baru) juga otomatis terisi.
+CREATE TABLE IF NOT EXISTS personnel (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  full_name VARCHAR(150) NOT NULL,
+  rank_info VARCHAR(150) NULL,
+  position VARCHAR(200) NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  notes VARCHAR(255) NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_by INT NULL,
+  updated_by INT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES users(id),
+  FOREIGN KEY (updated_by) REFERENCES users(id),
+  KEY idx_category (category),
+  KEY idx_full_name (full_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Absensi harian per personel: satu baris per (personel, tanggal).
+CREATE TABLE IF NOT EXISTS attendance_records (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  personnel_id INT NOT NULL,
+  attendance_date DATE NOT NULL,
+  status ENUM('hadir','dinas_dalam','dinas_luar','sakit','ijin','cuti','pendidikan','bko','tanpa_keterangan') NOT NULL,
+  notes VARCHAR(255) NULL,
+  recorded_by INT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_personnel_date (personnel_id, attendance_date),
+  FOREIGN KEY (personnel_id) REFERENCES personnel(id) ON DELETE CASCADE,
+  FOREIGN KEY (recorded_by) REFERENCES users(id),
+  KEY idx_date (attendance_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

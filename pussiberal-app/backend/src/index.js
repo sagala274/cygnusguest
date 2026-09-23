@@ -17,6 +17,8 @@ const telegramSettingsRoutes = require('./routes/telegramSettings');
 const notificationRoutes = require('./routes/notifications');
 const traineeRoutes = require('./routes/trainees');
 const networkDiagramRoutes = require('./routes/networkDiagrams');
+const personnelRoutes = require('./routes/personnel');
+const attendanceRoutes = require('./routes/attendance');
 const { startBackupScheduler } = require('./utils/backupScheduler');
 const { ensureAiSettingsTable } = require('./utils/aiSettings');
 const { ensureTelegramSettingsTable } = require('./utils/telegram');
@@ -28,6 +30,7 @@ const { ensureTraineesTable } = require('./utils/trainees');
 const { ensureCompanyProfilesTable } = require('./utils/companyProfiles');
 const { ensureUserLoginIpsTable } = require('./utils/userLoginIps');
 const { ensureNetworkDiagramsTable } = require('./utils/networkDiagrams');
+const { ensurePersonnelTables } = require('./utils/attendance');
 
 const app = express();
 
@@ -60,6 +63,8 @@ app.use('/api/telegram-settings', telegramSettingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/trainees', traineeRoutes);
 app.use('/api/network-diagrams', networkDiagramRoutes);
+app.use('/api/personnel', personnelRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint tidak ditemukan' });
@@ -118,6 +123,7 @@ async function start() {
   await ensureCompanyProfilesTable();
   await ensureUserLoginIpsTable();
   await ensureNetworkDiagramsTable();
+  await ensurePersonnelTables();
   startBackupScheduler();
   startTelegramPolling();
   app.listen(port, () => console.log(`Backend berjalan di port ${port}`));

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelola Personel - PUSSIBERAL Guest Management</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <img class="brand-mark" src="assets/logo.png" alt="PUSSIBERAL">
+      <div>
+        <div class="brand-name">PUSSIBERAL</div>
+        <div class="brand-subtitle">GUEST MANAGEMENT</div>
+      </div>
+    </div>
+    <nav class="nav" id="mainNav"></nav>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-title">Kelola Personel</div>
+      <div class="top-right">
+        <div class="profile-menu" id="profileMenu">
+          <button type="button" class="profile" id="profileTrigger">
+            <div class="profile-text">
+              <div class="profile-name" id="profileName"></div>
+              <div class="profile-role" id="profileRole"></div>
+            </div>
+            <div class="avatar"></div>
+          </button>
+          <div class="profile-dropdown" id="profileDropdown">
+            <a href="#" id="logoutBtn" class="profile-dropdown-item"><span class="nav-icon">⎋</span><span>Logout</span></a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="content" style="max-width: 1160px;">
+      <div class="page-header-row">
+        <div class="page-header-text">
+          <h1 class="page-title">Kelola Personel</h1>
+          <p class="page-description">Daftar personel PUSSIBERAL yang dapat diabsen setiap hari. <a class="link" href="absensi">&larr; Kembali ke Absensi</a></p>
+        </div>
+        <button type="button" class="btn btn-accent" id="addPersonnelBtn">+ Tambah Personel</button>
+      </div>
+
+      <div id="resultBox" class="result-box" style="display:none;"></div>
+
+      <div class="table-toolbar">
+        <div class="search-input-wrap">
+          <span class="icon-slot" id="searchIconSlot"></span>
+          <input type="text" id="searchInput" placeholder="Cari nama, jabatan, atau kategori...">
+        </div>
+        <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; white-space:nowrap;">
+          <input type="checkbox" id="showInactiveCheck" style="width:auto;height:auto;">
+          Tampilkan yang nonaktif
+        </label>
+      </div>
+
+      <div class="form-card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>Pangkat/Korps/NRP/NIP</th>
+                <th>Jabatan</th>
+                <th>Kategori/Satuan</th>
+                <th>Keterangan</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="personnelTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-overlay" id="personnelModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="modalTitle">Tambah Personel</h2>
+      <button type="button" class="modal-close" id="modalCloseBtn"><span class="icon-slot" id="closeIconSlot"></span></button>
+    </div>
+    <div class="modal-body">
+      <form id="personnelForm" class="grid">
+        <div class="field">
+          <label for="formFullName">NAMA <span class="required">*</span></label>
+          <input id="formFullName" maxlength="150" required>
+        </div>
+        <div class="field">
+          <label for="formRankInfo">PANGKAT/KORPS/NRP/NIP <span class="label-note">Opsional</span></label>
+          <input id="formRankInfo" maxlength="150">
+        </div>
+        <div class="field">
+          <label for="formPosition">JABATAN <span class="required">*</span></label>
+          <input id="formPosition" maxlength="200" required>
+        </div>
+        <div class="field">
+          <label for="formCategory">KATEGORI/SATUAN <span class="required">*</span></label>
+          <input id="formCategory" maxlength="50" required list="categoryList">
+          <datalist id="categoryList"></datalist>
+        </div>
+        <div class="field full">
+          <label for="formNotes">KETERANGAN <span class="label-note">Opsional, mis. status pendidikan</span></label>
+          <input id="formNotes" maxlength="255">
+        </div>
+        <div class="field full" id="activeFieldWrap" style="display:none;">
+          <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-weight:600;">
+            <input type="checkbox" id="formActive" style="width:auto;height:auto;">
+            Personel aktif (nonaktifkan jika pindah/keluar)
+          </label>
+        </div>
+
+        <div class="full modal-actions">
+          <button type="button" class="btn" id="modalCancelBtn">Batal</button>
+          <button type="submit" class="btn btn-accent" id="modalSubmitBtn">Tambah Personel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/personnel-list.js"></script>
+</body>
+</html>
