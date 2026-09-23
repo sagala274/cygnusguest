@@ -51,17 +51,30 @@
         </button>
       </div>
 
-      <div class="stat-grid" id="statGrid"></div>
-
-      <div class="section-header-row" id="personnelStatHeader" style="display:none; margin-top:24px;">
-        <h2 class="section-title" style="margin:0;">Ringkasan Personel</h2>
-        <a class="link" href="absensi" id="personnelStatLink">Lihat Detail &rarr;</a>
+      <!-- Baris 1: Ringkasan Tamu berdampingan dengan Ringkasan Personel -->
+      <div class="dashboard-row">
+        <div class="form-card">
+          <div class="section">
+            <div class="section-header-row">
+              <h2 class="section-title">Ringkasan Tamu</h2>
+              <a class="link" href="daftar-tamu">Lihat Detail &rarr;</a>
+            </div>
+            <div class="stat-grid" id="statGrid"></div>
+          </div>
+        </div>
+        <div class="form-card" id="personnelSummaryCard" style="display:none;">
+          <div class="section">
+            <div class="section-header-row">
+              <h2 class="section-title">Ringkasan Personel</h2>
+              <a class="link" href="absensi" id="personnelStatLink">Lihat Detail &rarr;</a>
+            </div>
+            <div class="stat-grid" id="personnelStatGrid"></div>
+          </div>
+        </div>
       </div>
-      <div class="stat-grid" id="personnelStatGrid" style="display:none;"></div>
 
-      <div class="dashboard-row" id="dashboardMidRow"></div>
-
-      <div class="dashboard-row dashboard-row-bottom" id="dashboardBottomRow">
+      <!-- Baris 2: Grafik Kunjungan Tamu berdampingan dengan Tren Kehadiran Personel -->
+      <div class="dashboard-row" id="chartsRow">
         <div class="form-card" style="display:none;" id="visitChartCard">
           <div class="section">
             <h2 class="section-title">Grafik Kunjungan Tamu ke Pussiberal</h2>
@@ -80,24 +93,20 @@
           </div>
         </div>
 
-        <div class="form-card" style="display:none;" id="activityCard">
-          <div class="section">
-            <h2 class="section-title">Aktivitas Terbaru</h2>
-            <div id="activityList"></div>
-            <a class="link dashboard-card-link" href="audit-log">Lihat semua aktivitas &rarr;</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="dashboard-row dashboard-row-bottom" id="personnelBottomRow" style="display:none;">
-        <div class="form-card">
+        <div class="form-card" style="display:none;" id="attendanceTrendCard">
           <div class="section">
             <h2 class="section-title">Tren Kehadiran Personel (4 Minggu Terakhir)</h2>
             <p class="page-description" style="margin-bottom:16px;">Persentase kehadiran (status Hadir) personel per minggu.</p>
             <div class="bar-chart-wrap" id="attendanceTrendChart"></div>
           </div>
         </div>
+      </div>
 
+      <!-- Baris 3: Status Pendaftaran, Perangkat Elektronik, Kondisi Absensi, Perlu Perhatian, Keamanan Personel -->
+      <div class="dashboard-row" id="dashboardMidRow"></div>
+
+      <!-- Baris 4: Personel Belum Absensi Hari Ini berdampingan dengan Aktivitas Terbaru -->
+      <div class="dashboard-row" id="personnelBottomRow" style="display:none;">
         <div class="form-card">
           <div class="section">
             <h2 class="section-title">Personel Belum Absensi Hari Ini</h2>
@@ -106,6 +115,14 @@
               <tbody id="attendanceAttentionTableBody"></tbody>
             </table></div>
             <a class="link dashboard-card-link" href="absensi" id="attendanceAttentionLink">Lihat Semua &rarr;</a>
+          </div>
+        </div>
+
+        <div class="form-card" style="display:none;" id="activityCard">
+          <div class="section">
+            <h2 class="section-title">Aktivitas Terbaru</h2>
+            <div id="activityList"></div>
+            <a class="link dashboard-card-link" href="audit-log">Lihat semua aktivitas &rarr;</a>
           </div>
         </div>
       </div>

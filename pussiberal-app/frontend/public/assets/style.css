@@ -334,8 +334,6 @@ input:focus, select:focus, textarea:focus {
    ditambahkan. */
 .dashboard-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 24px; align-items: stretch; }
 .dashboard-row .form-card { margin: 0; }
-.dashboard-row-bottom { grid-template-columns: 2fr 1fr; }
-.dashboard-row-single { grid-template-columns: 1fr; }
 
 /* Kartu "Perlu Perhatian" -- state siaga (merah) kalau ada yang perlu
    ditindaklanjuti, atau state aman (hijau) kalau semua sudah lengkap. */
@@ -753,7 +751,7 @@ a.link:hover { text-decoration: underline; }
   .sidebar { width: 210px; }
   .content { margin-top: 28px; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
-  .dashboard-row, .dashboard-row-bottom { grid-template-columns: 1fr; }
+  .dashboard-row { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 700px) {

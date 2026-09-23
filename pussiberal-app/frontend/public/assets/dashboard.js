@@ -234,8 +234,7 @@ async function load() {
       const totalPersonnel = segs.reduce((sum, s) => sum + s.count, 0);
       const pct = (count) => (totalPersonnel > 0 ? `${((count / totalPersonnel) * 100).toFixed(1)}% dari total` : '-');
 
-      document.getElementById('personnelStatHeader').style.display = 'flex';
-      document.getElementById('personnelStatGrid').style.display = 'grid';
+      document.getElementById('personnelSummaryCard').style.display = 'block';
       document.getElementById('personnelStatGrid').innerHTML = [
         statCardHtml({ bubbleClass: 'icon-bubble-accent', iconName: 'people', label: 'Total Personel', value: totalPersonnel, caption: 'Seluruh personel aktif' }),
         statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Hadir', value: byKey.hadir.count, caption: pct(byKey.hadir.count) }),
@@ -243,7 +242,13 @@ async function load() {
         statCardHtml({ bubbleClass: 'icon-bubble-amber', iconName: 'calendar', label: 'Berhalangan', value: byKey.berhalangan.count, caption: pct(byKey.berhalangan.count) }),
         statCardHtml({ bubbleClass: 'icon-bubble-danger', iconName: 'close', label: 'Tanpa Keterangan', value: byKey.tanpa_keterangan.count, caption: pct(byKey.tanpa_keterangan.count) }),
       ].join('');
+
+      document.getElementById('attendanceTrendCard').style.display = 'block';
+      loadAttendanceTrend();
     }
+
+    const chartsRow = document.getElementById('chartsRow');
+    chartsRow.style.display = (canSeeVisitChart || attendanceStats) ? 'grid' : 'none';
 
     const midCards = [];
     midCards.push(`
@@ -349,7 +354,6 @@ async function load() {
             )
             .join('')
         : '<tr><td colspan="2">Semua personel sudah tercatat kehadirannya hari ini.</td></tr>';
-      loadAttendanceTrend();
     }
   } catch (err) {
     document.querySelector('.content').insertAdjacentHTML(
@@ -441,13 +445,12 @@ async function loadAttendanceTrend() {
 load();
 
 // ---- Grafik Kunjungan Tamu (Administrator & Verifikator) ----
+// Visibilitas baris #chartsRow (yang juga memuat Tren Kehadiran Personel)
+// diatur di dalam load(), setelah attendanceStats diketahui -- supaya baris
+// tidak disembunyikan keliru sebelum data personel selesai dimuat.
 
-const dashboardBottomRow = document.getElementById('dashboardBottomRow');
 if (canSeeVisitChart) {
   document.getElementById('visitChartCard').style.display = 'block';
-  if (!isAdmin) dashboardBottomRow.classList.add('dashboard-row-single');
-} else {
-  dashboardBottomRow.style.display = 'none';
 }
 
 if (canSeeVisitChart) {
