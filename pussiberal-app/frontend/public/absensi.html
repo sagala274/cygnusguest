@@ -69,6 +69,51 @@
   </main>
 </div>
 
+<div class="modal-overlay" id="personnelModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="modalTitle">Tambah Personel</h2>
+      <button type="button" class="modal-close" id="modalCloseBtn"><span class="icon-slot" id="closeIconSlot"></span></button>
+    </div>
+    <div class="modal-body">
+      <form id="personnelForm" class="grid">
+        <div class="field">
+          <label for="formFullName">NAMA <span class="required">*</span></label>
+          <input id="formFullName" maxlength="150" required>
+        </div>
+        <div class="field">
+          <label for="formRankInfo">PANGKAT/KORPS/NRP/NIP <span class="label-note">Opsional</span></label>
+          <input id="formRankInfo" maxlength="150">
+        </div>
+        <div class="field">
+          <label for="formPosition">JABATAN <span class="required">*</span></label>
+          <input id="formPosition" maxlength="200" required>
+        </div>
+        <div class="field">
+          <label for="formCategory">KATEGORI/SATUAN <span class="required">*</span></label>
+          <input id="formCategory" maxlength="50" required list="categoryList">
+          <datalist id="categoryList"></datalist>
+        </div>
+        <div class="field full">
+          <label for="formNotes">KETERANGAN <span class="label-note">Opsional, mis. status pendidikan</span></label>
+          <input id="formNotes" maxlength="255">
+        </div>
+        <div class="field full" id="activeFieldWrap" style="display:none;">
+          <label style="display:flex; align-items:center; gap:8px; text-transform:none; font-weight:600;">
+            <input type="checkbox" id="formActive" style="width:auto;height:auto;">
+            Personel aktif (nonaktifkan jika pindah/keluar)
+          </label>
+        </div>
+
+        <div class="full modal-actions">
+          <button type="button" class="btn" id="modalCancelBtn">Batal</button>
+          <button type="submit" class="btn btn-accent" id="modalSubmitBtn">Tambah Personel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script src="assets/app.js"></script>
 <script src="assets/absensi.js"></script>
 </body>

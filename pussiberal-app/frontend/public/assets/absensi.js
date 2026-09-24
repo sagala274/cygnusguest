@@ -69,6 +69,10 @@ function personnelRowHtml(r, no) {
         <span class="attendance-row-flash" data-flash-for="${r.personnel_id}"></span>
       </td>
       <td><input type="text" class="attendance-notes-input" data-personnel-id="${r.personnel_id}" maxlength="255" placeholder="Keterangan (opsional)" value="${escapeHtml(r.attendance_notes || '')}"></td>
+      <td style="white-space:nowrap;">
+        <button type="button" class="btn btn-small edit-personnel-btn" data-id="${r.personnel_id}">Edit</button>
+        <button type="button" class="btn btn-small btn-danger delete-personnel-btn" data-id="${r.personnel_id}" data-name="${escapeHtml(r.full_name)}" style="margin-left:6px;">Hapus</button>
+      </td>
     </tr>
   `;
 }
@@ -80,6 +84,7 @@ function categoryCardHtml(category, members, startNo) {
       <div class="section">
         <div class="section-header-row">
           <h2 class="section-title">${escapeHtml(category)} <span class="optional-badge">${members.length} personel</span></h2>
+          <button type="button" class="btn btn-small add-personnel-btn" data-category="${escapeHtml(category)}">+ Tambah Personel</button>
         </div>
         <div class="table-wrap">
           <table>
@@ -91,6 +96,7 @@ function categoryCardHtml(category, members, startNo) {
                 <th>Jabatan</th>
                 <th style="width:220px;">Status Absensi</th>
                 <th>Keterangan</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
@@ -131,6 +137,15 @@ function wireRowEvents() {
   groupsContainer.querySelectorAll('.attendance-notes-input').forEach((input) => {
     input.addEventListener('blur', () => saveEntry(Number(input.dataset.personnelId)));
   });
+  groupsContainer.querySelectorAll('.add-personnel-btn').forEach((btn) => {
+    btn.addEventListener('click', () => openCreateModal(btn.dataset.category));
+  });
+  groupsContainer.querySelectorAll('.edit-personnel-btn').forEach((btn) => {
+    btn.addEventListener('click', () => openEditModal(Number(btn.dataset.id)));
+  });
+  groupsContainer.querySelectorAll('.delete-personnel-btn').forEach((btn) => {
+    btn.addEventListener('click', () => deletePersonnel(Number(btn.dataset.id), btn.dataset.name));
+  });
 }
 
 async function load() {
@@ -140,10 +155,16 @@ async function load() {
     rows = res.data;
     renderGroups();
     renderSummary();
+    populateCategoryList();
   } catch (err) {
     groupsContainer.innerHTML = '';
     showMessage(err.message, true);
   }
+}
+
+function populateCategoryList() {
+  const categories = [...new Set(rows.map((r) => r.category))].sort();
+  document.getElementById('categoryList').innerHTML = categories.map((c) => `<option value="${escapeHtml(c)}"></option>`).join('');
 }
 
 async function saveEntry(personnelId) {
@@ -200,6 +221,132 @@ document.getElementById('prevDayBtn').addEventListener('click', () => shiftDate(
 document.getElementById('nextDayBtn').addEventListener('click', () => shiftDate(1));
 document.getElementById('todayBtn').addEventListener('click', () => { dateInput.value = todayDateString(); load(); });
 dateInput.addEventListener('change', load);
+
+// ---- Kelola Personel langsung dari sini (tambah/edit/hapus per kelompok) --
+// supaya tidak perlu menyiapkan seluruh data personel lebih dulu di menu
+// terpisah; personel baru bisa langsung ditambahkan saat dibutuhkan, per
+// kelompok/satuan yang sedang dilihat.
+
+document.getElementById('closeIconSlot').innerHTML = icon('close');
+
+let editingPersonnelId = null;
+const personnelModal = document.getElementById('personnelModal');
+const personnelModalTitle = document.getElementById('modalTitle');
+const personnelForm = document.getElementById('personnelForm');
+const personnelModalSubmitBtn = document.getElementById('modalSubmitBtn');
+const activeFieldWrap = document.getElementById('activeFieldWrap');
+
+function openCreateModal(presetCategory) {
+  resultBox.style.display = 'none';
+  editingPersonnelId = null;
+  personnelForm.reset();
+  personnelModalTitle.textContent = 'Tambah Personel';
+  personnelModalSubmitBtn.textContent = 'Tambah Personel';
+  activeFieldWrap.style.display = 'none';
+  if (presetCategory) document.getElementById('formCategory').value = presetCategory;
+  personnelModal.classList.add('open');
+}
+
+function openEditModal(personnelId) {
+  resultBox.style.display = 'none';
+  const p = rows.find((r) => r.personnel_id === personnelId);
+  if (!p) return;
+  editingPersonnelId = personnelId;
+  personnelForm.reset();
+  personnelModalTitle.textContent = `Edit: ${p.full_name}`;
+  personnelModalSubmitBtn.textContent = 'Simpan Perubahan';
+
+  document.getElementById('formFullName').value = p.full_name || '';
+  document.getElementById('formRankInfo').value = p.rank_info || '';
+  document.getElementById('formPosition').value = p.position || '';
+  document.getElementById('formCategory').value = p.category || '';
+  document.getElementById('formNotes').value = p.personnel_notes || '';
+  document.getElementById('formActive').checked = true;
+  activeFieldWrap.style.display = '';
+
+  personnelModal.classList.add('open');
+}
+
+function closeModal() {
+  personnelModal.classList.remove('open');
+  editingPersonnelId = null;
+  personnelForm.reset();
+}
+
+document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
+personnelModal.addEventListener('click', (e) => { if (e.target === personnelModal) closeModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && personnelModal.classList.contains('open')) closeModal(); });
+
+function clearFieldErrors() {
+  personnelForm.querySelectorAll('.field').forEach((f) => f.classList.remove('error'));
+  personnelForm.querySelectorAll('.error-message').forEach((e) => e.remove());
+}
+
+function showFieldError(field, message) {
+  const MAP = {
+    full_name: 'formFullName', rank_info: 'formRankInfo', position: 'formPosition',
+    category: 'formCategory', notes: 'formNotes',
+  };
+  const input = document.getElementById(MAP[field]);
+  if (!input) return;
+  const fieldEl = input.closest('.field');
+  fieldEl.classList.add('error');
+  const msg = document.createElement('div');
+  msg.className = 'error-message';
+  msg.textContent = message;
+  fieldEl.appendChild(msg);
+}
+
+personnelForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  resultBox.style.display = 'none';
+  clearFieldErrors();
+
+  const payload = {
+    full_name: document.getElementById('formFullName').value.trim(),
+    rank_info: document.getElementById('formRankInfo').value.trim() || null,
+    position: document.getElementById('formPosition').value.trim(),
+    category: document.getElementById('formCategory').value.trim(),
+    notes: document.getElementById('formNotes').value.trim() || null,
+  };
+  if (editingPersonnelId !== null) {
+    payload.is_active = document.getElementById('formActive').checked;
+  }
+
+  try {
+    if (editingPersonnelId === null) {
+      await api('/personnel', { method: 'POST', body: JSON.stringify(payload) });
+      showMessage('Personel berhasil ditambahkan.', false);
+    } else {
+      await api(`/personnel/${editingPersonnelId}`, { method: 'PUT', body: JSON.stringify(payload) });
+      showMessage('Perubahan berhasil disimpan.', false);
+    }
+    closeModal();
+    load();
+  } catch (err) {
+    showMessage(err.message, true);
+    if (err.fields) {
+      Object.entries(err.fields).forEach(([field, message]) => showFieldError(field, message));
+    }
+  }
+});
+
+async function deletePersonnel(id, name) {
+  resultBox.style.display = 'none';
+  if (!confirm(`Hapus data personel "${name}"? Jika personel ini sudah punya riwayat absensi, datanya akan dinonaktifkan (bukan dihapus permanen) agar riwayat absensi lama tetap tersimpan.`)) return;
+  try {
+    const res = await api(`/personnel/${id}`, { method: 'DELETE' });
+    if (res && res.data && res.data.deactivated) {
+      showMessage(`Personel "${name}" dinonaktifkan (sudah punya riwayat absensi).`, false);
+    } else {
+      showMessage(`Personel "${name}" berhasil dihapus permanen.`, false);
+    }
+    load();
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
 
 dateInput.value = todayDateString();
 load();
