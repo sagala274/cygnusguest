@@ -10,6 +10,15 @@ if (!canManageAttendance) {
   document.getElementById('personnelStatLink').style.display = 'none';
   document.getElementById('attendanceAttentionLink').style.display = 'none';
 }
+// Kolom kanan (urusan personel internal) & garis pemisahnya hanya tampil
+// untuk role yang punya akses data absensi (Admin/Verifikator/Pimpinan) --
+// Pos Depan hanya melihat kolom kiri (urusan tamu) selebar penuh.
+if (canSeeAttendanceTrend) {
+  document.getElementById('personnelColumn').style.display = 'flex';
+  document.getElementById('dashboardDivider').style.display = 'block';
+} else {
+  document.getElementById('dashboardColumns').style.gridTemplateColumns = '1fr';
+}
 
 const STATUS_COLOR = {
   Draft: '#98a2b3',
@@ -243,8 +252,6 @@ async function load() {
       const totalPersonnel = segs.reduce((sum, s) => sum + s.count, 0);
       const pct = (count) => (totalPersonnel > 0 ? `${((count / totalPersonnel) * 100).toFixed(1)}% dari total` : '-');
 
-      document.getElementById('personnelSummaryCard').style.display = 'block';
-      document.getElementById('summaryDivider').style.display = 'block';
       document.getElementById('personnelStatGrid').innerHTML = [
         statCardHtml({ bubbleClass: 'icon-bubble-accent', iconName: 'people', label: 'Total Personel', value: totalPersonnel, caption: 'Seluruh personel aktif' }),
         statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Hadir', value: byKey.hadir.count, caption: pct(byKey.hadir.count), bucketKey: 'hadir' }),
@@ -256,9 +263,6 @@ async function load() {
         card.addEventListener('click', () => openAttendanceBucketModal(card.dataset.bucketKey));
       });
     }
-
-    const chartsRow = document.getElementById('chartsRow');
-    chartsRow.style.display = (canSeeVisitChart || canSeeAttendanceTrend) ? 'grid' : 'none';
 
     // Baris prioritas: pie chart "Kondisi Absensi Hari Ini" + "Perlu
     // Perhatian" -- ditaruh di baris tersendiri di ATAS grafik, terpisah
@@ -361,7 +365,7 @@ async function load() {
     }
 
     if (attendanceAttention) {
-      document.getElementById('personnelBottomRow').style.display = 'grid';
+      document.getElementById('attendanceAttentionCard').style.display = 'block';
       const STATUS_BADGE = {
         tanpa_keterangan: '<span class="badge badge-red">Tanpa Keterangan</span>',
         null: '<span class="badge badge-amber">Belum Absensi</span>',
@@ -540,9 +544,6 @@ document.addEventListener('keydown', (e) => {
 load();
 
 // ---- Grafik Kunjungan Tamu (Administrator & Verifikator) ----
-// Visibilitas baris #chartsRow (yang juga memuat Tren Kehadiran Personel)
-// diatur di dalam load(), setelah attendanceStats diketahui -- supaya baris
-// tidak disembunyikan keliru sebelum data personel selesai dimuat.
 
 if (canSeeVisitChart) {
   document.getElementById('visitChartCard').style.display = 'block';

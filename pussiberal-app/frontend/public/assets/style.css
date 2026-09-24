@@ -313,9 +313,11 @@ input:focus, select:focus, textarea:focus {
 /* Baris Ringkasan Tamu / Ringkasan Personel -- selalu tepat 2 kartu (atau 1
    kalau role tidak punya akses data personel), jadi cukup flex + garis
    pemisah vertikal di antaranya, bukan grid auto-fit seperti baris lain. */
-.dashboard-row-summary { display: flex; align-items: stretch; gap: 20px; margin-top: 24px; }
-.dashboard-row-summary > .form-card { flex: 1; min-width: 0; margin: 0; }
-.dashboard-row-summary .row-divider { width: 1px; background: var(--line); flex-shrink: 0; }
+.dashboard-columns { display: grid; grid-template-columns: 1fr 1px 1fr; gap: 28px; margin-top: 24px; align-items: stretch; }
+.dashboard-col { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+.dashboard-col > .dashboard-row { margin-top: 0; }
+.dashboard-col > .form-card { margin: 0; }
+.dashboard-columns .row-divider { background: var(--line); }
 
 /* Bubble ikon berwarna (stat card, activity feed) */
 .icon-bubble { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -763,8 +765,8 @@ a.link:hover { text-decoration: underline; }
   .content { margin-top: 28px; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
   .dashboard-row { grid-template-columns: 1fr; }
-  .dashboard-row-summary { flex-direction: column; }
-  .dashboard-row-summary .row-divider { display: none !important; }
+  .dashboard-columns { grid-template-columns: 1fr; }
+  .dashboard-columns .row-divider { display: none !important; }
 }
 
 @media (max-width: 700px) {

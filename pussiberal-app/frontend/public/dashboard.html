@@ -51,89 +51,89 @@
         </button>
       </div>
 
-      <!-- Baris 1: Ringkasan Tamu berdampingan dengan Ringkasan Personel -->
-      <div class="dashboard-row-summary">
-        <div class="form-card">
-          <div class="section">
-            <div class="section-header-row">
-              <h2 class="section-title">Ringkasan Tamu</h2>
-              <a class="link" href="daftar-tamu">Lihat Detail &rarr;</a>
-            </div>
-            <div class="stat-grid" id="statGrid"></div>
-          </div>
-        </div>
-        <div class="row-divider" id="summaryDivider" style="display:none;"></div>
-        <div class="form-card" id="personnelSummaryCard" style="display:none;">
-          <div class="section">
-            <div class="section-header-row">
-              <h2 class="section-title">Ringkasan Personel</h2>
-              <a class="link" href="absensi" id="personnelStatLink">Lihat Detail &rarr;</a>
-            </div>
-            <div class="stat-grid" id="personnelStatGrid"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Baris 2: Kondisi Absensi Hari Ini (pie chart) berdampingan dengan Perlu Perhatian -->
-      <div class="dashboard-row" id="attendancePriorityRow"></div>
-
-      <!-- Baris 3: Grafik Kunjungan Tamu berdampingan dengan Tren Kehadiran Personel -->
-      <div class="dashboard-row" id="chartsRow">
-        <div class="form-card" style="display:none;" id="visitChartCard">
-          <div class="section">
-            <h2 class="section-title">Grafik Kunjungan Tamu ke Pussiberal</h2>
-            <div class="chart-controls-row">
-              <div class="chart-period-toggle">
-                <button type="button" class="btn btn-small chart-period-btn" data-period="day">Per Hari</button>
-                <button type="button" class="btn btn-small chart-period-btn is-active" data-period="week">Per Minggu</button>
-                <button type="button" class="btn btn-small chart-period-btn" data-period="month">Per Bulan</button>
+      <!-- Dua kolom penuh: KIRI = urusan tamu yang datang, KANAN = urusan
+           personel internal PUSSIBERAL (absensi), dipisah garis vertikal
+           yang menerus dari atas sampai bawah. -->
+      <div class="dashboard-columns" id="dashboardColumns">
+        <div class="dashboard-col" id="guestColumn">
+          <div class="form-card">
+            <div class="section">
+              <div class="section-header-row">
+                <h2 class="section-title">Ringkasan Tamu</h2>
+                <a class="link" href="daftar-tamu">Lihat Detail &rarr;</a>
               </div>
-              <button type="button" class="btn btn-small" id="toggleChartView">Lihat sebagai Tabel</button>
+              <div class="stat-grid" id="statGrid"></div>
             </div>
-            <p class="page-description" id="visitChartDesc" style="margin-bottom:16px;">Jumlah tamu yang terdaftar per periode.</p>
-
-            <div class="bar-chart-wrap" id="visitChart"></div>
-            <div id="visitChartTable" style="display:none;"></div>
           </div>
-        </div>
 
-        <div class="form-card" style="display:none;" id="attendanceTrendCard">
-          <div class="section">
-            <h2 class="section-title">Tren Kehadiran Personel</h2>
-            <div class="chart-controls-row">
-              <div class="chart-period-toggle">
-                <button type="button" class="btn btn-small attendance-period-btn" data-period="day">Per Hari</button>
-                <button type="button" class="btn btn-small attendance-period-btn is-active" data-period="week">Per Minggu</button>
-                <button type="button" class="btn btn-small attendance-period-btn" data-period="month">Per Bulan</button>
+          <div class="form-card" style="display:none;" id="visitChartCard">
+            <div class="section">
+              <h2 class="section-title">Grafik Kunjungan Tamu ke Pussiberal</h2>
+              <div class="chart-controls-row">
+                <div class="chart-period-toggle">
+                  <button type="button" class="btn btn-small chart-period-btn" data-period="day">Per Hari</button>
+                  <button type="button" class="btn btn-small chart-period-btn is-active" data-period="week">Per Minggu</button>
+                  <button type="button" class="btn btn-small chart-period-btn" data-period="month">Per Bulan</button>
+                </div>
+                <button type="button" class="btn btn-small" id="toggleChartView">Lihat sebagai Tabel</button>
               </div>
+              <p class="page-description" id="visitChartDesc" style="margin-bottom:16px;">Jumlah tamu yang terdaftar per periode.</p>
+
+              <div class="bar-chart-wrap" id="visitChart"></div>
+              <div id="visitChartTable" style="display:none;"></div>
             </div>
-            <p class="page-description" id="attendanceTrendDesc" style="margin-bottom:16px;">Persentase kehadiran (status Hadir) personel per periode.</p>
-            <div class="bar-chart-wrap" id="attendanceTrendChart"></div>
           </div>
-        </div>
-      </div>
 
-      <!-- Baris 4: Status Pendaftaran, Perangkat Elektronik, Keamanan Personel -->
-      <div class="dashboard-row" id="dashboardMidRow"></div>
-
-      <!-- Baris 5: Personel Belum Absensi Hari Ini berdampingan dengan Aktivitas Terbaru -->
-      <div class="dashboard-row" id="personnelBottomRow" style="display:none;">
-        <div class="form-card">
-          <div class="section">
-            <h2 class="section-title">Personel Belum Absensi Hari Ini</h2>
-            <div class="table-wrap"><table>
-              <thead><tr><th>Nama</th><th>Status</th></tr></thead>
-              <tbody id="attendanceAttentionTableBody"></tbody>
-            </table></div>
-            <a class="link dashboard-card-link" href="absensi" id="attendanceAttentionLink">Lihat Semua &rarr;</a>
+          <div class="form-card" style="display:none;" id="activityCard">
+            <div class="section">
+              <h2 class="section-title">Aktivitas Terbaru</h2>
+              <div id="activityList"></div>
+              <a class="link dashboard-card-link" href="audit-log">Lihat semua aktivitas &rarr;</a>
+            </div>
           </div>
+
+          <div class="dashboard-row" id="dashboardMidRow"></div>
         </div>
 
-        <div class="form-card" style="display:none;" id="activityCard">
-          <div class="section">
-            <h2 class="section-title">Aktivitas Terbaru</h2>
-            <div id="activityList"></div>
-            <a class="link dashboard-card-link" href="audit-log">Lihat semua aktivitas &rarr;</a>
+        <div class="row-divider" id="dashboardDivider" style="display:none;"></div>
+
+        <div class="dashboard-col" id="personnelColumn" style="display:none;">
+          <div class="form-card">
+            <div class="section">
+              <div class="section-header-row">
+                <h2 class="section-title">Ringkasan Personel</h2>
+                <a class="link" href="absensi" id="personnelStatLink">Lihat Detail &rarr;</a>
+              </div>
+              <div class="stat-grid" id="personnelStatGrid"></div>
+            </div>
+          </div>
+
+          <div class="dashboard-row" id="attendancePriorityRow"></div>
+
+          <div class="form-card" style="display:none;" id="attendanceTrendCard">
+            <div class="section">
+              <h2 class="section-title">Tren Kehadiran Personel</h2>
+              <div class="chart-controls-row">
+                <div class="chart-period-toggle">
+                  <button type="button" class="btn btn-small attendance-period-btn" data-period="day">Per Hari</button>
+                  <button type="button" class="btn btn-small attendance-period-btn is-active" data-period="week">Per Minggu</button>
+                  <button type="button" class="btn btn-small attendance-period-btn" data-period="month">Per Bulan</button>
+                </div>
+              </div>
+              <p class="page-description" id="attendanceTrendDesc" style="margin-bottom:16px;">Persentase kehadiran (status Hadir) personel per periode.</p>
+              <div class="bar-chart-wrap" id="attendanceTrendChart"></div>
+            </div>
+          </div>
+
+          <div class="form-card" style="display:none;" id="attendanceAttentionCard">
+            <div class="section">
+              <h2 class="section-title">Personel Belum Absensi Hari Ini</h2>
+              <div class="table-wrap"><table>
+                <thead><tr><th>Nama</th><th>Status</th></tr></thead>
+                <tbody id="attendanceAttentionTableBody"></tbody>
+              </table></div>
+              <a class="link dashboard-card-link" href="absensi" id="attendanceAttentionLink">Lihat Semua &rarr;</a>
+            </div>
           </div>
         </div>
       </div>
