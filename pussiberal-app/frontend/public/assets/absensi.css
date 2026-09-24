@@ -19,6 +19,13 @@ td.attendance-status-cell { white-space: nowrap; }
 .attendance-row-flash { color: var(--success); font-size: 11px; font-weight: 700; margin-left: 8px; }
 .attendance-row-flash.is-error { color: var(--danger); }
 
+/* Geser-urutkan personel per kelompok (drag-and-drop) */
+.drag-handle-cell { width: 28px; text-align: center; }
+.drag-handle { display: inline-flex; cursor: grab; color: #98a2b3; }
+.drag-handle:active { cursor: grabbing; }
+.drag-handle .icon { width: 16px; height: 16px; }
+tr.is-dragging { opacity: .4; }
+
 @media (max-width: 700px) {
   .attendance-date-bar { flex-direction: column; align-items: stretch; }
   .attendance-save-status { margin-left: 0; }

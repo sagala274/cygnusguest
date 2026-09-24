@@ -40,6 +40,7 @@ const ICONS = {
   graduation: '<polygon points="12,4 21,8.5 12,13 3,8.5"/><path d="M7,10.5 V15.5 C7,17 9.2,18.5 12,18.5 C14.8,18.5 17,17 17,15.5 V10.5"/><line x1="21" y1="8.5" x2="21" y2="14"/>',
   network: '<circle cx="5.5" cy="6" r="2.5"/><circle cx="18.5" cy="6" r="2.5"/><circle cx="12" cy="19" r="2.5"/><line x1="7.7" y1="7.2" x2="10.1" y2="17"/><line x1="16.3" y1="7.2" x2="13.9" y2="17"/><line x1="8" y1="6" x2="16" y2="6"/>',
   star: '<polygon points="12,2.5 15,9 22,9.8 17,14.6 18.3,21.5 12,18 5.7,21.5 7,14.6 2,9.8 9,9"/>',
+  grip: '<circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/>',
 };
 
 function icon(name, extraClass) {

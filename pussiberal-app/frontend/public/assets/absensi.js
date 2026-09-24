@@ -60,6 +60,7 @@ function statusOptionsHtml(currentStatus) {
 function personnelRowHtml(r, no) {
   return `
     <tr data-personnel-id="${r.personnel_id}">
+      <td class="drag-handle-cell"><span class="drag-handle" draggable="true" title="Geser untuk urutkan">${icon('grip')}</span></td>
       <td>${no}</td>
       <td>${escapeHtml(r.full_name)}</td>
       <td>${escapeHtml(r.rank_info || '-')}</td>
@@ -86,10 +87,12 @@ function categoryCardHtml(category, members, startNo) {
           <h2 class="section-title">${escapeHtml(category)} <span class="optional-badge">${members.length} personel</span></h2>
           <button type="button" class="btn btn-small add-personnel-btn" data-category="${escapeHtml(category)}">+ Tambah Personel</button>
         </div>
+        <p class="page-description" style="margin:-6px 0 14px;">Geser ikon <span style="display:inline-flex;vertical-align:middle;">${icon('grip')}</span> untuk mengurutkan personel (mis. berdasarkan senioritas pangkat/NRP).</p>
         <div class="table-wrap">
-          <table>
+          <table data-category="${escapeHtml(category)}">
             <thead>
               <tr>
+                <th style="width:28px;"></th>
                 <th style="width:40px;">No</th>
                 <th>Nama</th>
                 <th>Pangkat/Korps/NRP/NIP</th>
@@ -146,6 +149,67 @@ function wireRowEvents() {
   groupsContainer.querySelectorAll('.delete-personnel-btn').forEach((btn) => {
     btn.addEventListener('click', () => deletePersonnel(Number(btn.dataset.id), btn.dataset.name));
   });
+  groupsContainer.querySelectorAll('table[data-category]').forEach((table) => {
+    wireDragReorder(table.querySelector('tbody'), table.dataset.category);
+  });
+}
+
+// ---- Geser-urutkan (drag-and-drop) personel per kelompok -- supaya bisa
+// diurutkan manual mengikuti senioritas pangkat/NRP, bukan cuma urutan saat
+// data dimasukkan. Hanya bisa digeser DI DALAM kelompok/kategori yang sama
+// (tidak memindahkan personel ke kategori lain lewat geser).
+let draggedRow = null;
+
+function wireDragReorder(tbody, category) {
+  Array.from(tbody.rows).forEach((tr) => {
+    const handle = tr.querySelector('.drag-handle');
+    if (!handle) return;
+
+    handle.addEventListener('dragstart', (e) => {
+      draggedRow = tr;
+      tr.classList.add('is-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', tr.dataset.personnelId);
+    });
+    handle.addEventListener('dragend', () => {
+      tr.classList.remove('is-dragging');
+      if (draggedRow === tr) {
+        saveReorder(tbody, category);
+        draggedRow = null;
+      }
+    });
+
+    tr.addEventListener('dragover', (e) => {
+      if (!draggedRow || draggedRow === tr || draggedRow.parentElement !== tbody) return;
+      e.preventDefault();
+      const rect = tr.getBoundingClientRect();
+      const before = (e.clientY - rect.top) / rect.height < 0.5;
+      tbody.insertBefore(draggedRow, before ? tr : tr.nextSibling);
+    });
+  });
+}
+
+async function saveReorder(tbody, category) {
+  const personnelIds = Array.from(tbody.rows).map((tr) => Number(tr.dataset.personnelId));
+
+  // Perbarui angka "No" langsung di tampilan tanpa menunggu server, supaya
+  // terasa responsif selagi tersimpan di belakang layar. Diambil dari nilai
+  // TERKECIL yang sudah ada (bukan cuma baris pertama) karena baris yang
+  // tadinya di posisi pertama bisa saja ikut tergeser oleh drag ini.
+  const existingNumbers = Array.from(tbody.rows).map((tr) => Number(tr.cells[1].textContent));
+  const firstNo = Math.min(...existingNumbers);
+  Array.from(tbody.rows).forEach((tr, i) => { tr.cells[1].textContent = firstNo + i; });
+
+  try {
+    await api('/personnel/reorder', { method: 'PUT', body: JSON.stringify({ category, personnel_ids: personnelIds }) });
+    // Muat ulang dari server supaya array `rows` di memori (sumber data
+    // saat renderGroups() dipanggil ulang, mis. setelah ganti status/
+    // tanggal) ikut mengikuti urutan baru -- bukan cuma tampilannya saja.
+    load();
+  } catch (err) {
+    showMessage(`Gagal menyimpan urutan: ${err.message}`, true);
+    load();
+  }
 }
 
 async function load() {

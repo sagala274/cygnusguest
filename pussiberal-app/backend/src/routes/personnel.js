@@ -73,6 +73,43 @@ router.post('/', asyncHandler(async (req, res) => {
   res.status(201).json({ data: { id: result.insertId } });
 }));
 
+// PUT /api/personnel/reorder  { category, personnel_ids: [...] }
+// Menulis ulang sort_order sesuai urutan array yang dikirim -- dipakai fitur
+// geser-urutkan (drag-and-drop) personel per kelompok/satuan di halaman
+// Absensi Personel (mis. supaya bisa diurutkan manual berdasarkan
+// senioritas pangkat/NRP). Didaftarkan SEBELUM "PUT /:id" di bawah supaya
+// "reorder" tidak keliru ditangkap sebagai :id.
+router.put('/reorder', asyncHandler(async (req, res) => {
+  const { category, personnel_ids } = req.body || {};
+  if (!category || !String(category).trim()) {
+    return res.status(400).json({ error: 'Kategori wajib diisi' });
+  }
+  if (!Array.isArray(personnel_ids) || !personnel_ids.length || personnel_ids.some((id) => !Number.isInteger(id))) {
+    return res.status(400).json({ error: 'Daftar ID personel tidak valid' });
+  }
+  if (personnel_ids.length > 200) {
+    return res.status(400).json({ error: 'Jumlah personel terlalu banyak dalam satu permintaan' });
+  }
+
+  const categoryTrimmed = String(category).trim().toUpperCase();
+  const [existingRows] = await pool.query(
+    'SELECT id FROM personnel WHERE category = :category AND is_active = 1',
+    { category: categoryTrimmed }
+  );
+  const validIds = new Set(existingRows.map((r) => r.id));
+  const sameSet = personnel_ids.length === validIds.size && personnel_ids.every((id) => validIds.has(id));
+  if (!sameSet) {
+    return res.status(400).json({ error: 'Daftar personel tidak cocok dengan data terbaru kategori ini -- muat ulang halaman lalu coba lagi' });
+  }
+
+  for (let i = 0; i < personnel_ids.length; i += 1) {
+    await pool.execute('UPDATE personnel SET sort_order = :sortOrder WHERE id = :id', { sortOrder: i + 1, id: personnel_ids[i] });
+  }
+
+  await logAudit(req.user.sub, 'update_personnel', 'personnel', null, { category: categoryTrimmed, action: 'reorder', count: personnel_ids.length });
+  res.json({ data: { category: categoryTrimmed, count: personnel_ids.length } });
+}));
+
 // PUT /api/personnel/:id
 router.put('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
