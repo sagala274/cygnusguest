@@ -48,6 +48,7 @@ function attendanceBucketSegments(attendanceStats) {
   const countByStatus = {};
   attendanceStats.forEach((r) => { countByStatus[r.status === null ? 'null' : r.status] = r.count; });
   return ATTENDANCE_BUCKETS.map((b) => ({
+    key: b.key,
     label: b.label,
     color: b.color,
     title: b.title,
@@ -135,11 +136,14 @@ function renderDonut(segments, centerValue, centerLabel) {
     })
     .join('');
 
+  // s.key (opsional) -- kalau diisi, baris legenda ini bisa diklik untuk
+  // buka daftar detail per kelompok (dipakai donut "Kondisi Absensi Hari
+  // Ini"); donut lain yang tidak mengisi s.key tetap tidak bisa diklik.
   const legend = segments
     .map((s) => {
       const pct = total > 0 ? (s.count / total) * 100 : 0;
       return `
-        <div class="donut-legend-row"${s.title ? ` title="${escapeHtml(s.title)}"` : ''}>
+        <div class="donut-legend-row${s.key ? ' is-clickable' : ''}"${s.title ? ` title="${escapeHtml(s.title)}"` : ''}${s.key ? ` data-bucket-key="${s.key}"` : ''}>
           <span class="donut-legend-dot" style="background:${s.color}"></span>
           <span class="donut-legend-label">${escapeHtml(s.label)}</span>
           <span class="donut-legend-count">${s.count}</span>
@@ -283,10 +287,11 @@ async function load() {
       attendanceSegments = attendanceBucketSegments(attendanceStats);
       const totalPersonnel = attendanceSegments.reduce((sum, s) => sum + s.count, 0);
       midCards.push(`
-        <div class="form-card">
+        <div class="form-card" id="attendanceDonutCard">
           <div class="section">
             <h2 class="section-title">Kondisi Absensi Hari Ini</h2>
             ${renderDonut(attendanceSegments, totalPersonnel, 'Personel')}
+            <p class="page-description" style="margin:10px 0 0;">Klik salah satu kelompok untuk lihat daftar personelnya.</p>
             ${canManageAttendance ? '<a class="link dashboard-card-link" href="absensi">Lihat detail &rarr;</a>' : ''}
           </div>
         </div>
@@ -335,6 +340,13 @@ async function load() {
     }
     const midRow = document.getElementById('dashboardMidRow');
     midRow.innerHTML = midCards.join('');
+
+    const attendanceDonutCard = document.getElementById('attendanceDonutCard');
+    if (attendanceDonutCard) {
+      attendanceDonutCard.querySelectorAll('.donut-legend-row.is-clickable').forEach((row) => {
+        row.addEventListener('click', () => openAttendanceBucketModal(row.dataset.bucketKey));
+      });
+    }
 
     if (attendanceAttention) {
       document.getElementById('personnelBottomRow').style.display = 'grid';
@@ -441,6 +453,86 @@ async function loadAttendanceTrend() {
     container.innerHTML = `<p class="page-description" style="margin:0; color: var(--danger);">${escapeHtml(err.message)}</p>`;
   }
 }
+
+// ---- Klik-tembus dari pie chart "Kondisi Absensi Hari Ini" ----
+// Supaya bisa langsung lihat siapa saja di satu kelompok (mis. "Bertugas")
+// tanpa harus membuka Absensi Personel dan mengurutkan satu per satu --
+// juga dipakai Pimpinan yang tidak punya akses ke halaman Absensi Personel.
+
+function todayDateString() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const ATTENDANCE_STATUS_LABEL = {
+  hadir: 'Hadir', dinas_dalam: 'Dinas Dalam', dinas_luar: 'Dinas Luar', sakit: 'Sakit', ijin: 'Ijin',
+  cuti: 'Cuti', pendidikan: 'Pendidikan', bko: 'BKO', tanpa_keterangan: 'Tanpa Keterangan',
+};
+const ATTENDANCE_STATUS_BADGE_CLASS = {
+  hadir: 'badge-green', dinas_dalam: 'badge-blue', dinas_luar: 'badge-blue', sakit: 'badge-red', ijin: 'badge-amber',
+  cuti: 'badge-amber', pendidikan: 'badge-purple', bko: 'badge-gray', tanpa_keterangan: 'badge-red',
+};
+
+function attendanceStatusBadgeHtml(status) {
+  if (status === null) return '<span class="badge badge-gray">Belum Diisi</span>';
+  return `<span class="badge ${ATTENDANCE_STATUS_BADGE_CLASS[status] || 'badge-gray'}">${escapeHtml(ATTENDANCE_STATUS_LABEL[status] || status)}</span>`;
+}
+
+// Cache sederhana per tanggal -- klik beberapa kelompok berturut-turut di
+// hari yang sama cukup satu kali ambil data ke server.
+let attendanceModalCache = null;
+
+async function openAttendanceBucketModal(bucketKey) {
+  const bucket = ATTENDANCE_BUCKETS.find((b) => b.key === bucketKey);
+  if (!bucket) return;
+
+  const modal = document.getElementById('attendanceBucketModal');
+  const titleEl = document.getElementById('attendanceBucketModalTitle');
+  const bodyEl = document.getElementById('attendanceBucketModalBody');
+  titleEl.textContent = `Personel -- ${bucket.label}`;
+  bodyEl.innerHTML = '<tr><td colspan="5">Memuat data...</td></tr>';
+  modal.classList.add('open');
+
+  try {
+    const today = todayDateString();
+    if (!attendanceModalCache || attendanceModalCache.date !== today) {
+      const res = await api(`/attendance?date=${today}`);
+      attendanceModalCache = { date: today, rows: res.data };
+    }
+    const filtered = attendanceModalCache.rows.filter((r) => bucket.statuses.includes(r.status));
+    titleEl.textContent = `Personel -- ${bucket.label} (${filtered.length})`;
+    bodyEl.innerHTML = filtered.length
+      ? filtered
+          .map(
+            (r) => `
+        <tr>
+          <td>${escapeHtml(r.full_name)}</td>
+          <td>${escapeHtml(r.rank_info || '-')}</td>
+          <td>${escapeHtml(r.position)}</td>
+          <td>${attendanceStatusBadgeHtml(r.status)}</td>
+          <td>${escapeHtml(r.attendance_notes || '-')}</td>
+        </tr>
+      `
+          )
+          .join('')
+      : '<tr><td colspan="5">Tidak ada personel pada kelompok ini.</td></tr>';
+  } catch (err) {
+    bodyEl.innerHTML = `<tr><td colspan="5" style="color:var(--danger);">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function closeAttendanceBucketModal() {
+  document.getElementById('attendanceBucketModal').classList.remove('open');
+}
+
+document.getElementById('attendanceBucketCloseIconSlot').innerHTML = icon('close');
+document.getElementById('attendanceBucketModalCloseBtn').addEventListener('click', closeAttendanceBucketModal);
+document.getElementById('attendanceBucketModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('attendanceBucketModal')) closeAttendanceBucketModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('attendanceBucketModal').classList.contains('open')) closeAttendanceBucketModal();
+});
 
 load();
 

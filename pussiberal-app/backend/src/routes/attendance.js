@@ -6,7 +6,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { categoryOrderSql, ATTENDANCE_STATUSES } = require('../utils/attendance');
 
 const router = express.Router();
-router.use(authenticate, requireRole('admin', 'verifikator'));
+router.use(authenticate);
 
 function isValidDate(value) {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(Date.parse(value));
@@ -15,7 +15,10 @@ function isValidDate(value) {
 // GET /api/attendance?date=YYYY-MM-DD
 // Daftar seluruh personel aktif untuk satu tanggal, lengkap dengan status
 // absensinya kalau sudah pernah diisi (LEFT JOIN -- null kalau belum diisi).
-router.get('/', asyncHandler(async (req, res) => {
+// Pimpinan ikut diberi akses BACA di sini (bukan di router.use di atas)
+// supaya bisa klik-tembus dari pie chart dashboard untuk lihat detail
+// personel per kelompok status, tanpa diberi akses ubah/simpan absensi.
+router.get('/', requireRole('admin', 'verifikator', 'pimpinan'), asyncHandler(async (req, res) => {
   const { date } = req.query;
   if (!date || !isValidDate(date)) {
     return res.status(400).json({ error: 'Tanggal wajib diisi dengan format YYYY-MM-DD' });
@@ -36,7 +39,7 @@ router.get('/', asyncHandler(async (req, res) => {
 
 // POST /api/attendance/save  { date, entries: [{ personnel_id, status, notes }] }
 // status = null berarti hapus/kosongkan status yang sudah pernah diisi.
-router.post('/save', asyncHandler(async (req, res) => {
+router.post('/save', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
   const { date, entries } = req.body || {};
   if (!date || !isValidDate(date)) {
     return res.status(400).json({ error: 'Tanggal wajib diisi dengan format YYYY-MM-DD' });
