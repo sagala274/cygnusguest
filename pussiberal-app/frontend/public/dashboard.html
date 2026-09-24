@@ -52,7 +52,7 @@
       </div>
 
       <!-- Baris 1: Ringkasan Tamu berdampingan dengan Ringkasan Personel -->
-      <div class="dashboard-row">
+      <div class="dashboard-row-summary">
         <div class="form-card">
           <div class="section">
             <div class="section-header-row">
@@ -62,6 +62,7 @@
             <div class="stat-grid" id="statGrid"></div>
           </div>
         </div>
+        <div class="row-divider" id="summaryDivider" style="display:none;"></div>
         <div class="form-card" id="personnelSummaryCard" style="display:none;">
           <div class="section">
             <div class="section-header-row">
@@ -73,7 +74,10 @@
         </div>
       </div>
 
-      <!-- Baris 2: Grafik Kunjungan Tamu berdampingan dengan Tren Kehadiran Personel -->
+      <!-- Baris 2: Kondisi Absensi Hari Ini (pie chart) berdampingan dengan Perlu Perhatian -->
+      <div class="dashboard-row" id="attendancePriorityRow"></div>
+
+      <!-- Baris 3: Grafik Kunjungan Tamu berdampingan dengan Tren Kehadiran Personel -->
       <div class="dashboard-row" id="chartsRow">
         <div class="form-card" style="display:none;" id="visitChartCard">
           <div class="section">
@@ -95,17 +99,24 @@
 
         <div class="form-card" style="display:none;" id="attendanceTrendCard">
           <div class="section">
-            <h2 class="section-title">Tren Kehadiran Personel (4 Minggu Terakhir)</h2>
-            <p class="page-description" style="margin-bottom:16px;">Persentase kehadiran (status Hadir) personel per minggu.</p>
+            <h2 class="section-title">Tren Kehadiran Personel</h2>
+            <div class="chart-controls-row">
+              <div class="chart-period-toggle">
+                <button type="button" class="btn btn-small attendance-period-btn" data-period="day">Per Hari</button>
+                <button type="button" class="btn btn-small attendance-period-btn is-active" data-period="week">Per Minggu</button>
+                <button type="button" class="btn btn-small attendance-period-btn" data-period="month">Per Bulan</button>
+              </div>
+            </div>
+            <p class="page-description" id="attendanceTrendDesc" style="margin-bottom:16px;">Persentase kehadiran (status Hadir) personel per periode.</p>
             <div class="bar-chart-wrap" id="attendanceTrendChart"></div>
           </div>
         </div>
       </div>
 
-      <!-- Baris 3: Status Pendaftaran, Perangkat Elektronik, Kondisi Absensi, Perlu Perhatian, Keamanan Personel -->
+      <!-- Baris 4: Status Pendaftaran, Perangkat Elektronik, Keamanan Personel -->
       <div class="dashboard-row" id="dashboardMidRow"></div>
 
-      <!-- Baris 4: Personel Belum Absensi Hari Ini berdampingan dengan Aktivitas Terbaru -->
+      <!-- Baris 5: Personel Belum Absensi Hari Ini berdampingan dengan Aktivitas Terbaru -->
       <div class="dashboard-row" id="personnelBottomRow" style="display:none;">
         <div class="form-card">
           <div class="section">

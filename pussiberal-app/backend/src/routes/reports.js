@@ -74,13 +74,16 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
   });
 }));
 
-// GET /reports/attendance-trend?count=4  -- persentase Hadir per minggu,
-// dipakai grafik "Tren Kehadiran Personel" di dashboard. Satu minggu tanpa
-// data sama sekali (belum pernah diisi) dikirim sebagai pct: null supaya
-// frontend bisa membedakan "0% hadir" dari "belum ada data direkam".
+// GET /reports/attendance-trend?period=day|week|month&count=4  -- persentase
+// Hadir per periode, dipakai grafik "Tren Kehadiran Personel" di dashboard
+// (period/count sama seperti /visit-stats, supaya bisa pakai toggle Per
+// Hari/Per Minggu/Per Bulan yang sama). Satu periode tanpa data sama sekali
+// (belum pernah diisi) dikirim sebagai pct: null supaya frontend bisa
+// membedakan "0% hadir" dari "belum ada data direkam".
 router.get('/attendance-trend', requireRole('admin', 'verifikator', 'pimpinan'), asyncHandler(async (req, res) => {
-  const count = Math.min(Math.max(parseInt(req.query.count, 10) || 4, 2), 12);
-  const periods = buildPeriods('week', count);
+  const period = ['day', 'month'].includes(req.query.period) ? req.query.period : 'week';
+  const count = Math.min(Math.max(parseInt(req.query.count, 10) || 4, 2), 31);
+  const periods = buildPeriods(period, count);
   const since = periods[0].start;
 
   const [rows] = await pool.query(
@@ -104,6 +107,7 @@ router.get('/attendance-trend', requireRole('admin', 'verifikator', 'pimpinan'),
       pct: recorded[i] > 0 ? Math.round((hadir[i] / recorded[i]) * 100) : null,
       recordedCount: recorded[i],
     })),
+    period,
   });
 }));
 
