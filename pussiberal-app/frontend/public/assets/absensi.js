@@ -43,12 +43,18 @@ function renderSummary() {
     else belumDiisi += 1;
   });
 
+  // Setiap kotak status (kecuali Total Personel) bisa diklik untuk lihat
+  // daftar personelnya -- mekanisme sama seperti pie chart di Dashboard.
   const chips = STATUS_ORDER.map(
-    (s) => `<div class="attendance-summary-chip"><span class="chip-count">${counts[s]}</span><span class="chip-label">${escapeHtml(STATUS_LABELS[s])}</span></div>`
+    (s) => `<div class="attendance-summary-chip is-clickable" data-status="${s}"><span class="chip-count">${counts[s]}</span><span class="chip-label">${escapeHtml(STATUS_LABELS[s])}</span></div>`
   );
-  chips.push(`<div class="attendance-summary-chip"><span class="chip-count">${belumDiisi}</span><span class="chip-label">Belum Diisi</span></div>`);
+  chips.push(`<div class="attendance-summary-chip is-clickable" data-status="__belum_diisi__"><span class="chip-count">${belumDiisi}</span><span class="chip-label">Belum Diisi</span></div>`);
   chips.push(`<div class="attendance-summary-chip"><span class="chip-count">${rows.length}</span><span class="chip-label">Total Personel</span></div>`);
   summaryRow.innerHTML = chips.join('');
+
+  summaryRow.querySelectorAll('.attendance-summary-chip.is-clickable').forEach((chip) => {
+    chip.addEventListener('click', () => openStatusListModal(chip.dataset.status));
+  });
 }
 
 function statusOptionsHtml(currentStatus) {
@@ -411,6 +417,57 @@ async function deletePersonnel(id, name) {
     showMessage(err.message, true);
   }
 }
+
+// ---- Klik kotak ringkasan (Hadir, Dinas Dalam, dst.) untuk lihat detail ----
+// Mekanisme sama seperti pie chart "Kondisi Absensi Hari Ini" di Dashboard,
+// tapi datanya cukup difilter dari `rows` yang sudah dimuat di halaman ini
+// (tidak perlu ambil data lagi ke server).
+
+const STATUS_BADGE_CLASS = {
+  hadir: 'badge-green', dinas_dalam: 'badge-blue', dinas_luar: 'badge-blue', sakit: 'badge-red', ijin: 'badge-amber',
+  cuti: 'badge-amber', pendidikan: 'badge-purple', bko: 'badge-gray', tanpa_keterangan: 'badge-red',
+};
+
+function statusBadgeHtml(status) {
+  if (status === null) return '<span class="badge badge-gray">Belum Diisi</span>';
+  return `<span class="badge ${STATUS_BADGE_CLASS[status] || 'badge-gray'}">${escapeHtml(STATUS_LABELS[status] || status)}</span>`;
+}
+
+const statusListModal = document.getElementById('statusListModal');
+
+function openStatusListModal(statusKey) {
+  const status = statusKey === '__belum_diisi__' ? null : statusKey;
+  const label = status === null ? 'Belum Diisi' : STATUS_LABELS[status];
+  const filtered = rows.filter((r) => r.status === status);
+
+  document.getElementById('statusListModalTitle').textContent = `Personel -- ${label} (${filtered.length})`;
+  document.getElementById('statusListModalBody').innerHTML = filtered.length
+    ? filtered
+        .map(
+          (r) => `
+      <tr>
+        <td>${escapeHtml(r.full_name)}</td>
+        <td>${escapeHtml(r.rank_info || '-')}</td>
+        <td>${escapeHtml(r.position)}</td>
+        <td>${escapeHtml(r.category)}</td>
+        <td>${escapeHtml(r.attendance_notes || '-')}</td>
+      </tr>
+    `
+        )
+        .join('')
+    : '<tr><td colspan="5">Tidak ada personel dengan status ini.</td></tr>';
+
+  statusListModal.classList.add('open');
+}
+
+function closeStatusListModal() {
+  statusListModal.classList.remove('open');
+}
+
+document.getElementById('statusListCloseIconSlot').innerHTML = icon('close');
+document.getElementById('statusListModalCloseBtn').addEventListener('click', closeStatusListModal);
+statusListModal.addEventListener('click', (e) => { if (e.target === statusListModal) closeStatusListModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && statusListModal.classList.contains('open')) closeStatusListModal(); });
 
 dateInput.value = todayDateString();
 load();
