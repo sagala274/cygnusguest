@@ -43,13 +43,18 @@ const SECURITY_COLOR = {
   belum_dianalisa: '#98a2b3',
 };
 
-// Status absensi mentah dikelompokkan jadi 5 kondisi ringkas untuk pie chart
-// dashboard (urutan & warna tetap, tidak diacak) -- rincian per status (9
-// pilihan) tetap bisa dilihat lengkap di halaman Absensi Personel.
+// Status absensi mentah dikelompokkan jadi kondisi ringkas untuk pie chart &
+// Ringkasan Personel di dashboard (urutan & warna tetap, tidak diacak) --
+// rincian per status (9 pilihan) tetap bisa dilihat lengkap di halaman
+// Absensi Personel. "Berhalangan" dipecah jadi Sakit/Ijin-Cuti/Pendidikan
+// supaya lebih rinci -- palet warnanya sudah divalidasi lewat validator
+// skill dataviz (aman dari segi keterbacaan warna buta).
 const ATTENDANCE_BUCKETS = [
   { key: 'hadir', label: 'Hadir', color: 'var(--success)', statuses: ['hadir'] },
   { key: 'bertugas', label: 'Bertugas', color: '#175cd3', statuses: ['dinas_dalam', 'dinas_luar', 'bko'], title: 'Dinas Dalam, Dinas Luar, atau BKO' },
-  { key: 'berhalangan', label: 'Berhalangan', color: '#6b21a8', statuses: ['sakit', 'ijin', 'cuti', 'pendidikan'], title: 'Sakit, Ijin, Cuti, atau Pendidikan' },
+  { key: 'sakit', label: 'Sakit', color: '#6b21a8', statuses: ['sakit'] },
+  { key: 'ijin_cuti', label: 'Ijin/Cuti', color: '#be185d', statuses: ['ijin', 'cuti'], title: 'Ijin atau Cuti' },
+  { key: 'pendidikan', label: 'Pendidikan', color: '#0891b2', statuses: ['pendidikan'] },
   { key: 'tanpa_keterangan', label: 'Tanpa Keterangan', color: 'var(--danger)', statuses: ['tanpa_keterangan'] },
   { key: 'belum_diisi', label: 'Belum Diisi', color: '#98a2b3', statuses: [null] },
 ];
@@ -256,7 +261,9 @@ async function load() {
         statCardHtml({ bubbleClass: 'icon-bubble-accent', iconName: 'people', label: 'Total Personel', value: totalPersonnel, caption: 'Seluruh personel aktif' }),
         statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Hadir', value: byKey.hadir.count, caption: pct(byKey.hadir.count), bucketKey: 'hadir' }),
         statCardHtml({ bubbleClass: 'icon-bubble-blue', iconName: 'login', label: 'Bertugas', value: byKey.bertugas.count, caption: pct(byKey.bertugas.count), bucketKey: 'bertugas' }),
-        statCardHtml({ bubbleClass: 'icon-bubble-amber', iconName: 'calendar', label: 'Berhalangan', value: byKey.berhalangan.count, caption: pct(byKey.berhalangan.count), bucketKey: 'berhalangan' }),
+        statCardHtml({ bubbleClass: 'icon-bubble-purple', iconName: 'activity', label: 'Sakit', value: byKey.sakit.count, caption: pct(byKey.sakit.count), bucketKey: 'sakit' }),
+        statCardHtml({ bubbleClass: 'icon-bubble-pink', iconName: 'calendar', label: 'Ijin/Cuti', value: byKey.ijin_cuti.count, caption: pct(byKey.ijin_cuti.count), bucketKey: 'ijin_cuti' }),
+        statCardHtml({ bubbleClass: 'icon-bubble-teal', iconName: 'graduation', label: 'Pendidikan', value: byKey.pendidikan.count, caption: pct(byKey.pendidikan.count), bucketKey: 'pendidikan' }),
         statCardHtml({ bubbleClass: 'icon-bubble-danger', iconName: 'close', label: 'Tanpa Keterangan', value: byKey.tanpa_keterangan.count, caption: pct(byKey.tanpa_keterangan.count), bucketKey: 'tanpa_keterangan' }),
       ].join('');
       document.querySelectorAll('#personnelStatGrid .stat-card.is-clickable').forEach((card) => {

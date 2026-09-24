@@ -328,6 +328,8 @@ input:focus, select:focus, textarea:focus {
 .icon-bubble-amber { background: #fbf1e2; color: var(--amber); }
 .icon-bubble-teal { background: #e2f2f1; color: #0e6b6b; }
 .icon-bubble-danger { background: #fde8e6; color: var(--danger); }
+.icon-bubble-purple { background: #f2e8fb; color: #6b21a8; }
+.icon-bubble-pink { background: #fce7f1; color: #be185d; }
 .icon-bubble-sm { width: 34px; height: 34px; border-radius: 9px; }
 .icon-bubble-sm .icon { width: 16px; height: 16px; }
 
