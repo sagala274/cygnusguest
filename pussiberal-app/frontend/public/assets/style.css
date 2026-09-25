@@ -330,6 +330,7 @@ input:focus, select:focus, textarea:focus {
 .icon-bubble-danger { background: #fde8e6; color: var(--danger); }
 .icon-bubble-purple { background: #f2e8fb; color: #6b21a8; }
 .icon-bubble-pink { background: #fce7f1; color: #be185d; }
+.icon-bubble-teal-dark { background: #ccfbf1; color: #0d9488; }
 .icon-bubble-sm { width: 34px; height: 34px; border-radius: 9px; }
 .icon-bubble-sm .icon { width: 16px; height: 16px; }
 
@@ -407,6 +408,8 @@ input:focus, select:focus, textarea:focus {
 .badge-green { background: #ecfdf3; color: #067647; }
 .badge-red { background: #fef3f2; color: var(--danger); }
 .badge-purple { background: var(--accent-soft); color: #1a3a7a; }
+.badge-teal { background: #ccfbf1; color: #0d9488; }
+.badge-pink { background: #fce7f1; color: #be185d; }
 
 /* Callout / notice box */
 .callout {

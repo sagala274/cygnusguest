@@ -51,8 +51,10 @@ const SECURITY_COLOR = {
 // skill dataviz (aman dari segi keterbacaan warna buta).
 const ATTENDANCE_BUCKETS = [
   { key: 'hadir', label: 'Hadir', color: 'var(--success)', statuses: ['hadir'] },
+  { key: 'wfh', label: 'WFH', color: '#d97706', statuses: ['wfh'] },
   { key: 'bertugas', label: 'Bertugas', color: '#175cd3', statuses: ['dinas_dalam', 'dinas_luar', 'bko'], title: 'Dinas Dalam, Dinas Luar, atau BKO' },
   { key: 'sakit', label: 'Sakit', color: '#6b21a8', statuses: ['sakit'] },
+  { key: 'libur', label: 'Libur', color: '#0d9488', statuses: ['libur'] },
   { key: 'ijin_cuti', label: 'Ijin/Cuti', color: '#be185d', statuses: ['ijin', 'cuti'], title: 'Ijin atau Cuti' },
   { key: 'pendidikan', label: 'Pendidikan', color: '#0891b2', statuses: ['pendidikan'] },
   { key: 'tanpa_keterangan', label: 'Tanpa Keterangan', color: 'var(--danger)', statuses: ['tanpa_keterangan'] },
@@ -260,8 +262,10 @@ async function load() {
       document.getElementById('personnelStatGrid').innerHTML = [
         statCardHtml({ bubbleClass: 'icon-bubble-accent', iconName: 'people', label: 'Total Personel', value: totalPersonnel, caption: 'Seluruh personel aktif' }),
         statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Hadir', value: byKey.hadir.count, caption: pct(byKey.hadir.count), bucketKey: 'hadir' }),
+        statCardHtml({ bubbleClass: 'icon-bubble-amber', iconName: 'backup', label: 'WFH', value: byKey.wfh.count, caption: pct(byKey.wfh.count), bucketKey: 'wfh' }),
         statCardHtml({ bubbleClass: 'icon-bubble-blue', iconName: 'login', label: 'Bertugas', value: byKey.bertugas.count, caption: pct(byKey.bertugas.count), bucketKey: 'bertugas' }),
         statCardHtml({ bubbleClass: 'icon-bubble-purple', iconName: 'activity', label: 'Sakit', value: byKey.sakit.count, caption: pct(byKey.sakit.count), bucketKey: 'sakit' }),
+        statCardHtml({ bubbleClass: 'icon-bubble-teal-dark', iconName: 'sun', label: 'Libur', value: byKey.libur.count, caption: pct(byKey.libur.count), bucketKey: 'libur' }),
         statCardHtml({ bubbleClass: 'icon-bubble-pink', iconName: 'calendar', label: 'Ijin/Cuti', value: byKey.ijin_cuti.count, caption: pct(byKey.ijin_cuti.count), bucketKey: 'ijin_cuti' }),
         statCardHtml({ bubbleClass: 'icon-bubble-teal', iconName: 'graduation', label: 'Pendidikan', value: byKey.pendidikan.count, caption: pct(byKey.pendidikan.count), bucketKey: 'pendidikan' }),
         statCardHtml({ bubbleClass: 'icon-bubble-danger', iconName: 'close', label: 'Tanpa Keterangan', value: byKey.tanpa_keterangan.count, caption: pct(byKey.tanpa_keterangan.count), bucketKey: 'tanpa_keterangan' }),
@@ -479,12 +483,12 @@ function todayDateString() {
 }
 
 const ATTENDANCE_STATUS_LABEL = {
-  hadir: 'Hadir', dinas_dalam: 'Dinas Dalam', dinas_luar: 'Dinas Luar', sakit: 'Sakit', ijin: 'Ijin',
-  cuti: 'Cuti', pendidikan: 'Pendidikan', bko: 'BKO', tanpa_keterangan: 'Tanpa Keterangan',
+  hadir: 'Hadir', wfh: 'WFH', dinas_dalam: 'Dinas Dalam', dinas_luar: 'Dinas Luar', sakit: 'Sakit', ijin: 'Ijin',
+  cuti: 'Cuti', pendidikan: 'Pendidikan', bko: 'BKO', libur: 'Libur', tanpa_keterangan: 'Tanpa Keterangan',
 };
 const ATTENDANCE_STATUS_BADGE_CLASS = {
-  hadir: 'badge-green', dinas_dalam: 'badge-blue', dinas_luar: 'badge-blue', sakit: 'badge-red', ijin: 'badge-amber',
-  cuti: 'badge-amber', pendidikan: 'badge-purple', bko: 'badge-gray', tanpa_keterangan: 'badge-red',
+  hadir: 'badge-green', wfh: 'badge-teal', dinas_dalam: 'badge-blue', dinas_luar: 'badge-blue', sakit: 'badge-red', ijin: 'badge-amber',
+  cuti: 'badge-amber', pendidikan: 'badge-purple', bko: 'badge-gray', libur: 'badge-pink', tanpa_keterangan: 'badge-red',
 };
 
 function attendanceStatusBadgeHtml(status) {

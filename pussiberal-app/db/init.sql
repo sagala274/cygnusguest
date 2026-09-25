@@ -227,7 +227,7 @@ CREATE TABLE IF NOT EXISTS attendance_records (
   id INT AUTO_INCREMENT PRIMARY KEY,
   personnel_id INT NOT NULL,
   attendance_date DATE NOT NULL,
-  status ENUM('hadir','dinas_dalam','dinas_luar','sakit','ijin','cuti','pendidikan','bko','tanpa_keterangan') NOT NULL,
+  status ENUM('hadir','wfh','dinas_dalam','dinas_luar','sakit','ijin','cuti','pendidikan','bko','libur','tanpa_keterangan') NOT NULL,
   notes VARCHAR(255) NULL,
   recorded_by INT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

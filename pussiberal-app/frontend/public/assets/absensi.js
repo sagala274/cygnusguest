@@ -10,6 +10,7 @@ const saveStatus = document.getElementById('saveStatus');
 
 const STATUS_LABELS = {
   hadir: 'Hadir',
+  wfh: 'WFH',
   dinas_dalam: 'Dinas Dalam',
   dinas_luar: 'Dinas Luar',
   sakit: 'Sakit',
@@ -17,6 +18,7 @@ const STATUS_LABELS = {
   cuti: 'Cuti',
   pendidikan: 'Pendidikan',
   bko: 'BKO',
+  libur: 'Libur',
   tanpa_keterangan: 'Tanpa Keterangan',
 };
 const STATUS_ORDER = Object.keys(STATUS_LABELS);
@@ -424,8 +426,8 @@ async function deletePersonnel(id, name) {
 // (tidak perlu ambil data lagi ke server).
 
 const STATUS_BADGE_CLASS = {
-  hadir: 'badge-green', dinas_dalam: 'badge-blue', dinas_luar: 'badge-blue', sakit: 'badge-red', ijin: 'badge-amber',
-  cuti: 'badge-amber', pendidikan: 'badge-purple', bko: 'badge-gray', tanpa_keterangan: 'badge-red',
+  hadir: 'badge-green', wfh: 'badge-teal', dinas_dalam: 'badge-blue', dinas_luar: 'badge-blue', sakit: 'badge-red', ijin: 'badge-amber',
+  cuti: 'badge-amber', pendidikan: 'badge-purple', bko: 'badge-gray', libur: 'badge-pink', tanpa_keterangan: 'badge-red',
 };
 
 function statusBadgeHtml(status) {

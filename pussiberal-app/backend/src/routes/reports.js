@@ -5,6 +5,7 @@ const pool = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { formatJakartaDateTime, formatJakartaDate } = require('../utils/datetime');
 const asyncHandler = require('../utils/asyncHandler');
+const { isWeekend } = require('../utils/attendance');
 
 const router = express.Router();
 router.use(authenticate);
@@ -38,7 +39,13 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
 
   // Kondisi absensi personel HARI INI (bukan tamu) -- dipakai kartu pie chart
   // di dashboard untuk Admin, Verifikator, dan Pimpinan. status = NULL berarti
-  // personel aktif yang belum diisi absensinya hari ini.
+  // personel aktif yang belum diisi absensinya hari ini. Sabtu/Minggu yang
+  // belum diisi dihitung sebagai "libur" (bukan "belum diisi"), sama seperti
+  // logika di GET /api/attendance.
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const todayIsWeekend = isWeekend(todayStr);
+
   let attendanceStats = null;
   if (['admin', 'verifikator', 'pimpinan'].includes(req.user.role)) {
     [attendanceStats] = await pool.query(`
@@ -48,20 +55,32 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
       WHERE p.is_active = 1
       GROUP BY ar.status
     `);
+    if (todayIsWeekend) {
+      const nullRow = attendanceStats.find((r) => r.status === null);
+      if (nullRow) {
+        const liburRow = attendanceStats.find((r) => r.status === 'libur');
+        if (liburRow) liburRow.count += nullRow.count;
+        else attendanceStats.push({ status: 'libur', count: nullRow.count });
+        attendanceStats = attendanceStats.filter((r) => r.status !== null);
+      }
+    }
   }
 
   // Daftar personel yang PERLU PERHATIAN hari ini: belum diisi absensinya
   // sama sekali, atau sudah diisi tapi statusnya "Tanpa Keterangan" --
   // dipakai kartu "Perlu Perhatian" dan tabel di dashboard. "Tanpa
   // Keterangan" ditaruh lebih dulu karena lebih mendesak dari sekadar
-  // belum diisi (yang masih mungkin diisi nanti di hari yang sama).
+  // belum diisi (yang masih mungkin diisi nanti di hari yang sama). Di hari
+  // Sabtu/Minggu, yang belum diisi TIDAK dianggap perlu perhatian (dianggap
+  // libur), kecuali yang memang sudah ditandai "Tanpa Keterangan".
   let attendanceAttention = null;
   if (['admin', 'verifikator', 'pimpinan'].includes(req.user.role)) {
+    const belumDiisiCondition = todayIsWeekend ? '1=0' : 'ar.status IS NULL';
     [attendanceAttention] = await pool.query(`
       SELECT p.id, p.full_name, p.rank_info, p.position, ar.status, ar.notes AS attendance_notes
       FROM personnel p
       LEFT JOIN attendance_records ar ON ar.personnel_id = p.id AND ar.attendance_date = CURDATE()
-      WHERE p.is_active = 1 AND (ar.status IS NULL OR ar.status = 'tanpa_keterangan')
+      WHERE p.is_active = 1 AND (${belumDiisiCondition} OR ar.status = 'tanpa_keterangan')
       ORDER BY (ar.status = 'tanpa_keterangan') DESC, p.category, p.sort_order, p.id
     `);
   }

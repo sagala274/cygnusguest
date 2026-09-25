@@ -30,7 +30,7 @@ const { ensureTraineesTable } = require('./utils/trainees');
 const { ensureCompanyProfilesTable } = require('./utils/companyProfiles');
 const { ensureUserLoginIpsTable } = require('./utils/userLoginIps');
 const { ensureNetworkDiagramsTable } = require('./utils/networkDiagrams');
-const { ensurePersonnelTables } = require('./utils/attendance');
+const { ensurePersonnelTables, ensureAttendanceStatusEnum } = require('./utils/attendance');
 
 const app = express();
 
@@ -125,6 +125,7 @@ async function start() {
   await ensureUserLoginIpsTable();
   await ensureNetworkDiagramsTable();
   await ensurePersonnelTables();
+  await ensureAttendanceStatusEnum();
   startBackupScheduler();
   startTelegramPolling();
   app.listen(port, () => console.log(`Backend berjalan di port ${port}`));

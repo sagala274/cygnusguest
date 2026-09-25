@@ -6,8 +6,18 @@ const pool = require('../db');
 const CATEGORY_ORDER = ['PIMPINAN', 'SET', 'BAGKU', 'SATMA', 'DITBINKAM', 'DITBINMINLOGPERS', 'SATINASI', 'SATHAN', 'SATDAK'];
 
 const ATTENDANCE_STATUSES = [
-  'hadir', 'dinas_dalam', 'dinas_luar', 'sakit', 'ijin', 'cuti', 'pendidikan', 'bko', 'tanpa_keterangan',
+  'hadir', 'wfh', 'dinas_dalam', 'dinas_luar', 'sakit', 'ijin', 'cuti', 'pendidikan', 'bko', 'libur', 'tanpa_keterangan',
 ];
+
+// Hari Sabtu (6) & Minggu (0) otomatis dianggap "libur" untuk personel yang
+// belum diisi absensinya -- dihitung dari komponen tanggal lokal (bukan
+// `new Date(dateString)` langsung) supaya tidak bergeser sehari akibat
+// parsing UTC, sama seperti pola tanggal-saja di tempat lain pada aplikasi ini.
+function isWeekend(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const day = new Date(y, m - 1, d).getDay();
+  return day === 0 || day === 6;
+}
 
 // Data awal dari "DAFTAR NAMA PERSONEL PUSSIBERAL 2026" -- hanya dimasukkan
 // sekali saat tabel personnel masih kosong (lihat ensurePersonnelTables).
@@ -146,4 +156,16 @@ function categoryOrderSql(column = 'category') {
   return `CASE WHEN FIELD(${column}, ${list}) = 0 THEN 999 ELSE FIELD(${column}, ${list}) END`;
 }
 
-module.exports = { ensurePersonnelTables, CATEGORY_ORDER, ATTENDANCE_STATUSES, categoryOrderSql };
+// MySQL tidak punya "ALTER TYPE ADD VALUE" -- MODIFY COLUMN dijalankan tiap
+// start backend (bukan dikondisikan seperti ADD COLUMN) supaya nilai ENUM
+// baru (mis. "wfh", "libur") ikut ditambahkan ke database yang sudah lebih
+// dulu berjalan, sama seperti pola ensureUserRoleEnum() di utils/userAvatar.js.
+async function ensureAttendanceStatusEnum() {
+  await pool.query(
+    `ALTER TABLE attendance_records MODIFY COLUMN status ENUM(${ATTENDANCE_STATUSES.map((s) => `'${s}'`).join(',')}) NOT NULL`
+  );
+}
+
+module.exports = {
+  ensurePersonnelTables, ensureAttendanceStatusEnum, CATEGORY_ORDER, ATTENDANCE_STATUSES, categoryOrderSql, isWeekend,
+};

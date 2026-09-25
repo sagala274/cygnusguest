@@ -3,7 +3,7 @@ const pool = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { logAudit } = require('../utils/audit');
 const asyncHandler = require('../utils/asyncHandler');
-const { categoryOrderSql, ATTENDANCE_STATUSES } = require('../utils/attendance');
+const { categoryOrderSql, ATTENDANCE_STATUSES, isWeekend } = require('../utils/attendance');
 
 const router = express.Router();
 router.use(authenticate);
@@ -33,6 +33,14 @@ router.get('/', requireRole('admin', 'verifikator', 'pimpinan'), asyncHandler(as
      ORDER BY ${categoryOrderSql('p.category')}, p.category, p.sort_order, p.id`,
     { date }
   );
+
+  // Sabtu/Minggu otomatis dianggap "libur" untuk yang belum diisi -- bukan
+  // ditulis ke database, cukup dihitung saat dibaca, supaya tetap bisa
+  // ditimpa manual (mis. ada yang piket) dan tidak memenuhi tabel dengan
+  // baris "libur" untuk tanggal yang mungkin tidak pernah dibuka siapa pun.
+  if (isWeekend(date)) {
+    rows.forEach((r) => { if (r.status === null) r.status = 'libur'; });
+  }
 
   res.json({ data: rows, date });
 }));
