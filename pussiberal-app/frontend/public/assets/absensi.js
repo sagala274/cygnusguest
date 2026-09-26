@@ -23,6 +23,26 @@ const STATUS_LABELS = {
 };
 const STATUS_ORDER = Object.keys(STATUS_LABELS);
 
+// Warna kategorikal untuk grafik batang -- dipilih & divalidasi (kontras,
+// keterbacaan buta warna) supaya tiap kategori tetap bisa dibedakan
+// meski berdampingan. "Belum Diisi" memakai abu-abu netral (pengecualian
+// yang sudah dipakai konsisten di seluruh aplikasi untuk kondisi "tidak
+// ada data").
+const STATUS_COLORS = {
+  hadir: '#067647',
+  wfh: '#d97706',
+  dinas_dalam: '#175cd3',
+  dinas_luar: '#ea580c',
+  sakit: '#6b21a8',
+  ijin: '#be185d',
+  cuti: '#86198f',
+  pendidikan: '#0891b2',
+  bko: '#92400e',
+  libur: '#0d9488',
+  tanpa_keterangan: '#c62828',
+};
+const BELUM_DIISI_COLOR = '#98a2b3';
+
 let rows = [];
 
 function showMessage(message, isError) {
@@ -56,6 +76,142 @@ function renderSummary() {
 
   summaryRow.querySelectorAll('.attendance-summary-chip.is-clickable').forEach((chip) => {
     chip.addEventListener('click', () => openStatusListModal(chip.dataset.status));
+  });
+
+  renderStatusBarChart(counts, belumDiisi);
+}
+
+function niceMax(value) {
+  if (value <= 0) return 5;
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  const residual = value / magnitude;
+  let niceResidual;
+  if (residual <= 1) niceResidual = 1;
+  else if (residual <= 2) niceResidual = 2;
+  else if (residual <= 5) niceResidual = 5;
+  else niceResidual = 10;
+  return niceResidual * magnitude;
+}
+
+// Grafik batang jumlah personel per kategori keterangan (tanggal yang
+// dipilih) -- sama seperti kotak ringkasan di atasnya tapi dalam bentuk
+// visual. Setiap batang bisa diklik untuk lihat daftar personelnya, sama
+// seperti kotak ringkasan.
+function renderStatusBarChart(counts, belumDiisi) {
+  const container = document.getElementById('statusBarChart');
+  const categories = STATUS_ORDER.map((s) => ({ key: s, label: STATUS_LABELS[s], count: counts[s], color: STATUS_COLORS[s] }));
+  categories.push({ key: '__belum_diisi__', label: 'Belum Diisi', count: belumDiisi, color: BELUM_DIISI_COLOR });
+
+  const width = 760;
+  const height = 260;
+  const marginLeft = 36;
+  const marginBottom = 70;
+  const marginTop = 16;
+  const marginRight = 8;
+  const plotWidth = width - marginLeft - marginRight;
+  const plotHeight = height - marginTop - marginBottom;
+
+  const maxCount = Math.max(...categories.map((c) => c.count), 1);
+  const axisMax = niceMax(maxCount);
+  const gridSteps = 4;
+  const bandWidth = plotWidth / categories.length;
+  const barWidth = Math.min(bandWidth * 0.56, 40);
+
+  let gridlines = '';
+  let yLabels = '';
+  for (let i = 0; i <= gridSteps; i += 1) {
+    const value = Math.round((axisMax / gridSteps) * i);
+    const y = marginTop + plotHeight - (plotHeight * i) / gridSteps;
+    gridlines += `<line x1="${marginLeft}" y1="${y}" x2="${width - marginRight}" y2="${y}" class="chart-gridline" />`;
+    yLabels += `<text x="${marginLeft - 8}" y="${y + 3}" class="chart-axis-label" text-anchor="end">${value}</text>`;
+  }
+
+  let bars = '';
+  let xLabels = '';
+  let valueLabels = '';
+  categories.forEach((c, i) => {
+    const cx = marginLeft + bandWidth * i + bandWidth / 2;
+    const barHeight = axisMax > 0 ? (c.count / axisMax) * plotHeight : 0;
+    const y = marginTop + plotHeight - barHeight;
+    const x = cx - barWidth / 2;
+    const labelY = marginTop + plotHeight + 16;
+    bars += `
+      <g class="chart-bar-group" tabindex="0" data-index="${i}">
+        <rect x="${x.toFixed(1)}" y="${marginTop.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${plotHeight.toFixed(1)}" class="chart-bar-hit" fill="transparent" />
+        <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${Math.max(barHeight, 1).toFixed(1)}" rx="4" fill="${c.color}" />
+      </g>
+    `;
+    if (c.count > 0) {
+      valueLabels += `<text x="${cx.toFixed(1)}" y="${(y - 8).toFixed(1)}" class="chart-axis-label" text-anchor="middle" font-weight="800">${c.count}</text>`;
+    }
+    xLabels += `<text x="${cx.toFixed(1)}" y="${labelY.toFixed(1)}" class="chart-axis-label" text-anchor="end" transform="rotate(-40 ${cx.toFixed(1)} ${labelY.toFixed(1)})">${escapeHtml(c.label)}</text>`;
+  });
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" class="bar-chart-svg" role="img" aria-label="Grafik batang absensi personel per kategori">
+      ${gridlines}
+      ${yLabels}
+      ${bars}
+      ${valueLabels}
+      ${xLabels}
+    </svg>
+    <div class="chart-tooltip" id="statusBarChartTooltip" style="display:none;"></div>
+  `;
+
+  wireStatusBarChartTooltip(categories);
+}
+
+function wireStatusBarChartTooltip(categories) {
+  const wrap = document.getElementById('statusBarChart');
+  const tooltip = document.getElementById('statusBarChartTooltip');
+  const groups = wrap.querySelectorAll('.chart-bar-group');
+
+  function showTooltip(group) {
+    const idx = Number(group.dataset.index);
+    const c = categories[idx];
+    if (!c) return;
+
+    tooltip.innerHTML = '';
+    const valueEl = document.createElement('div');
+    valueEl.className = 'chart-tooltip-value';
+    valueEl.textContent = `${c.count} personel`;
+    const labelEl = document.createElement('div');
+    labelEl.className = 'chart-tooltip-label';
+    labelEl.textContent = `${c.label} -- klik untuk lihat detail`;
+    tooltip.appendChild(valueEl);
+    tooltip.appendChild(labelEl);
+    tooltip.style.display = 'block';
+
+    const hitRect = group.querySelector('.chart-bar-hit').getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    tooltip.style.left = `${hitRect.left - wrapRect.left + hitRect.width / 2}px`;
+    tooltip.style.top = `${hitRect.top - wrapRect.top}px`;
+
+    group.classList.add('is-hovered');
+  }
+
+  function hideTooltip(group) {
+    tooltip.style.display = 'none';
+    group.classList.remove('is-hovered');
+  }
+
+  function activate(group) {
+    const idx = Number(group.dataset.index);
+    const c = categories[idx];
+    if (c) openStatusListModal(c.key);
+  }
+
+  groups.forEach((group) => {
+    group.addEventListener('pointerenter', () => showTooltip(group));
+    group.addEventListener('pointerleave', () => hideTooltip(group));
+    group.addEventListener('focus', () => showTooltip(group));
+    group.addEventListener('blur', () => hideTooltip(group));
+    group.addEventListener('click', () => activate(group));
+    group.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      activate(group);
+    });
   });
 }
 

@@ -476,6 +476,9 @@ input:focus, select:focus, textarea:focus {
 .chart-bar-group:hover .chart-point,
 .chart-bar-group.is-hovered .chart-point,
 .chart-bar-group:focus .chart-point { r: 6; fill: var(--accent); }
+.chart-bar-group:hover rect[rx],
+.chart-bar-group.is-hovered rect[rx],
+.chart-bar-group:focus rect[rx] { opacity: .78; transition: opacity .1s; }
 
 .chart-tooltip {
   position: absolute;
