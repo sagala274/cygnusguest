@@ -52,7 +52,7 @@ function render() {
     .map(
       (p, i) => `
     <tr>
-      <td>${i + 1}${securityCategoryWarningIconHtml(p.security_category)}</td>
+      <td><span class="no-with-warning">${i + 1}${securityCategoryWarningIconHtml(p.security_category)}</span></td>
       <td>${canEditPersonnel ? `<a href="#" class="link analysis-trigger" data-id="${p.id}">${escapeHtml(p.full_name)}</a>` : escapeHtml(p.full_name)}</td>
       <td>${escapeHtml(p.rank_info || '-')}</td>
       <td>${escapeHtml(p.position)}</td>

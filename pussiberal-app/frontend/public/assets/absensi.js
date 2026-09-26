@@ -246,7 +246,7 @@ function personnelRowHtml(r, no) {
   if (!canEditAttendance) {
     return `
       <tr data-personnel-id="${r.personnel_id}">
-        <td>${no}${securityCategoryWarningIconHtml(r.security_category)}</td>
+        <td><span class="no-with-warning">${no}${securityCategoryWarningIconHtml(r.security_category)}</span></td>
         <td>${personnelNameHtml(r)}</td>
         <td>${escapeHtml(r.rank_info || '-')}</td>
         <td>${escapeHtml(r.position)}${r.personnel_notes ? ` <span class="label-note">(${escapeHtml(r.personnel_notes)})</span>` : ''}</td>
@@ -258,7 +258,7 @@ function personnelRowHtml(r, no) {
   return `
     <tr data-personnel-id="${r.personnel_id}">
       <td class="drag-handle-cell"><span class="drag-handle" draggable="true" title="Geser untuk urutkan">${icon('grip')}</span></td>
-      <td>${no}${securityCategoryWarningIconHtml(r.security_category)}</td>
+      <td><span class="no-with-warning">${no}${securityCategoryWarningIconHtml(r.security_category)}</span></td>
       <td>${personnelNameHtml(r)}</td>
       <td>${escapeHtml(r.rank_info || '-')}</td>
       <td>${escapeHtml(r.position)}${r.personnel_notes ? ` <span class="label-note">(${escapeHtml(r.personnel_notes)})</span>` : ''}</td>
