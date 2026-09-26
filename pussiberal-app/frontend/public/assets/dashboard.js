@@ -574,7 +574,7 @@ if (canSeeAttendanceTrend) {
       b.classList.toggle('is-active', b.dataset.period === period);
     });
     document.getElementById('attendanceTrendDesc').textContent =
-      `Persentase kehadiran (status Hadir) personel ${ATTENDANCE_PERIOD_LABEL[period]}.`;
+      `Persentase kehadiran (status Hadir atau Dinas Dalam) personel ${ATTENDANCE_PERIOD_LABEL[period]}.`;
 
     const container = document.getElementById('attendanceTrendChart');
     container.innerHTML = '<p class="page-description" style="margin:0;">Memuat grafik...</p>';
