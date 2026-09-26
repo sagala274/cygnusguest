@@ -200,7 +200,7 @@ async function handleCallbackQuery(callbackQuery, token) {
     [
       status === 'Disetujui' ? '✅ *Verifikasi via Telegram*' : '❌ *Verifikasi via Telegram*',
       '',
-      `Pendaftaran ${escapeMarkdown(result.guest.company)} \\(${escapeMarkdownCode(result.guest.registration_number)}\\) telah *${escapeMarkdown(status)}*`,
+      `Pendaftaran ${escapeMarkdown(result.guest.company)} \\(\`${escapeMarkdownCode(result.guest.registration_number)}\`\\) telah *${escapeMarkdown(status)}*`,
       `oleh: ${escapeMarkdown(account.full_name)}`,
       `Waktu: ${escapeMarkdown(formatJakartaDateTime(new Date()))}`,
     ].join('\n')
