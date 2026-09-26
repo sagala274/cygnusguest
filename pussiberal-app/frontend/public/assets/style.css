@@ -137,6 +137,15 @@ button, input, select, textarea { font: inherit; }
 .nav-chevron { width: 14px; display: flex; align-items: center; justify-content: center; margin-left: auto; flex-shrink: 0; }
 .nav-chevron .icon { width: 14px; height: 14px; }
 
+/* Kredit di bagian bawah sidebar -- didorong ke bawah lewat margin-top:auto
+   (sidebar sudah flex column), muncul di semua halaman lewat renderNav(). */
+.sidebar-footer {
+  position: relative; z-index: 1;
+  margin-top: auto; padding: 14px 6px 2px;
+  border-top: 1px solid rgba(125, 226, 255, .12);
+  color: #4d6088; font-size: 9.5px; text-align: center; letter-spacing: .2px;
+}
+
 .icon { width: 18px; height: 18px; flex-shrink: 0; }
 
 /* Main -- latar "cyber" (sama seperti sidebar & banner Dashboard) mengisi
@@ -934,7 +943,7 @@ a.link:hover { text-decoration: underline; }
 
 @media (max-width: 700px) {
   .sidebar { width: 68px; padding: 20px 8px; }
-  .brand-name, .brand-subtitle, .nav-item span:not(.nav-icon), .nav-chevron, .nav-group-label { display: none; }
+  .brand-name, .brand-subtitle, .nav-item span:not(.nav-icon), .nav-chevron, .nav-group-label, .sidebar-footer { display: none; }
   .brand { justify-content: center; }
   .nav-item { justify-content: center; padding: 0; }
   .topbar { padding: 0 16px; }

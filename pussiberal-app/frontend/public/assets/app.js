@@ -667,6 +667,17 @@ function renderNav(active) {
     initNotifications();
   }
 
+  // Kredit di bagian bawah sidebar -- disuntik lewat JS (bukan ditulis
+  // ulang di tiap file HTML) sama seperti elemen bersama lainnya di atas.
+  const sidebarEl = document.querySelector('.sidebar');
+  if (sidebarEl && !document.getElementById('sidebarFooter')) {
+    const footer = document.createElement('div');
+    footer.id = 'sidebarFooter';
+    footer.className = 'sidebar-footer';
+    footer.textContent = '© 2026 Kapten Laut (P) Tetuko Sagala, CTIA.';
+    sidebarEl.appendChild(footer);
+  }
+
   /* Ikon bubble di sebelah judul halaman, mengikuti ikon menu aktifnya --
      sama seperti di atas, dicocokkan juga dengan query string supaya
      halaman "Verifikasi Tamu" tidak ikut memakai ikon "Daftar Tamu". */
