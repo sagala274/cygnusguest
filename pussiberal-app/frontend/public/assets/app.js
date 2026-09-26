@@ -637,7 +637,8 @@ function renderNav(active) {
   }
 
   /* Ikon bubble di sebelah judul halaman, mengikuti ikon menu aktifnya. */
-  const activeLink = links.find((l) => (l.matchHref || l.href) === active);
+  const allLinks = groups.flatMap((g) => g.items);
+  const activeLink = allLinks.find((l) => (l.matchHref || l.href) === active);
   const titleEl = document.querySelector('.page-title');
   if (titleEl && activeLink && !titleEl.querySelector('.page-title-icon')) {
     titleEl.insertAdjacentHTML('afterbegin', `<span class="page-title-icon">${icon(activeLink.icon)}</span>`);
