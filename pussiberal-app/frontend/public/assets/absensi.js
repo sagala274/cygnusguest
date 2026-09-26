@@ -471,5 +471,8 @@ document.getElementById('statusListModalCloseBtn').addEventListener('click', clo
 statusListModal.addEventListener('click', (e) => { if (e.target === statusListModal) closeStatusListModal(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && statusListModal.classList.contains('open')) closeStatusListModal(); });
 
-dateInput.value = todayDateString();
+// Dukung "?date=YYYY-MM-DD" di URL supaya bisa klik-tembus langsung ke
+// tanggal tertentu (dipakai dari grafik Tren Kehadiran Personel di dashboard).
+const presetDate = new URLSearchParams(window.location.search).get('date');
+dateInput.value = /^\d{4}-\d{2}-\d{2}$/.test(presetDate || '') ? presetDate : todayDateString();
 load();

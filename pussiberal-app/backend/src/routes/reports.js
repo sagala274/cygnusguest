@@ -133,6 +133,10 @@ router.get('/attendance-trend', requireRole('admin', 'verifikator', 'pimpinan'),
       const slots = daysElapsed * activeCount;
       return {
         label: p.label,
+        // Tanggal awal periode (ISO, lokal) -- dipakai frontend untuk
+        // klik-tembus ke Absensi Personel pada mode "Per Hari" (di mode
+        // itu satu periode = satu hari, jadi tanggal ini tepat hari itu).
+        date: `${p.start.getFullYear()}-${String(p.start.getMonth() + 1).padStart(2, '0')}-${String(p.start.getDate()).padStart(2, '0')}`,
         pct: slots > 0 ? Math.round((hadir[i] / slots) * 100) : null,
       };
     }),

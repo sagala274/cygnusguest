@@ -426,6 +426,7 @@ function renderAttendanceTrendChart(data, period) {
   }
 
   const stepX = data.length > 1 ? plotWidth / (data.length - 1) : 0;
+  const bandWidth = data.length > 1 ? stepX : plotWidth;
 
   let gridlines = '';
   let yLabels = '';
@@ -440,6 +441,7 @@ function renderAttendanceTrendChart(data, period) {
     y: d.pct === null ? null : marginTop + plotHeight - (d.pct / 100) * plotHeight,
     pct: d.pct,
     label: d.label,
+    date: d.date,
   }));
 
   const validPoints = points.filter((p) => p.y !== null);
@@ -448,6 +450,9 @@ function renderAttendanceTrendChart(data, period) {
     ? `${linePath} L${validPoints[validPoints.length - 1].x.toFixed(1)},${(marginTop + plotHeight).toFixed(1)} L${validPoints[0].x.toFixed(1)},${(marginTop + plotHeight).toFixed(1)} Z`
     : '';
 
+  // Setiap titik dibungkus grup dengan area klik yang lebih lebar (chart-bar-hit),
+  // sama seperti grafik Kunjungan Tamu -- supaya hover/tooltip dan klik lebih
+  // mudah dijangkau daripada cuma titik kecilnya saja.
   let xLabels = '';
   let markers = '';
   let valueLabels = '';
@@ -455,7 +460,12 @@ function renderAttendanceTrendChart(data, period) {
     xLabels += `<text x="${p.x}" y="${height - marginBottom + 18}" class="chart-axis-label" text-anchor="middle">${escapeHtml(p.label)}</text>`;
     if (p.y === null) return;
     const isLast = i === points.length - 1;
-    markers += `<circle cx="${p.x}" cy="${p.y}" r="${isLast ? 5 : 4}" class="chart-point${isLast ? ' chart-point-last' : ''}" />`;
+    markers += `
+      <g class="chart-bar-group" tabindex="0" data-index="${i}">
+        <rect x="${(p.x - bandWidth / 2).toFixed(1)}" y="${marginTop}" width="${bandWidth.toFixed(1)}" height="${plotHeight}" class="chart-bar-hit" fill="transparent" />
+        <circle cx="${p.x}" cy="${p.y}" r="${isLast ? 5 : 4}" class="chart-point${isLast ? ' chart-point-last' : ''}" />
+      </g>
+    `;
     valueLabels += `<text x="${p.x}" y="${p.y - 12}" class="chart-axis-label" text-anchor="middle" font-weight="800">${p.pct}%</text>`;
   });
 
@@ -469,7 +479,116 @@ function renderAttendanceTrendChart(data, period) {
       ${valueLabels}
       ${xLabels}
     </svg>
+    <div class="chart-tooltip" id="attendanceTrendTooltip" style="display:none;"></div>
   `;
+
+  wireAttendanceTrendTooltip(points, period);
+}
+
+// Hover: tampilkan tooltip persentase + tanggal (sama seperti grafik Kunjungan
+// Tamu). Klik pada mode "Per Hari": langsung ke Absensi Personel hari itu
+// (Admin/Verifikator) atau modal ringkas (Pimpinan, karena tidak punya akses
+// ke halaman Absensi Personel). Mode Per Minggu/Per Bulan tidak bisa
+// diklik-tembus karena satu periode mencakup lebih dari satu hari.
+function wireAttendanceTrendTooltip(points, period) {
+  const wrap = document.getElementById('attendanceTrendChart');
+  const tooltip = document.getElementById('attendanceTrendTooltip');
+  const groups = wrap.querySelectorAll('.chart-bar-group');
+  const clickable = period === 'day';
+
+  function showTooltip(group) {
+    const idx = Number(group.dataset.index);
+    const point = points[idx];
+    if (!point || point.pct === null) return;
+
+    tooltip.innerHTML = '';
+    const valueEl = document.createElement('div');
+    valueEl.className = 'chart-tooltip-value';
+    valueEl.textContent = `${point.pct}% hadir`;
+    const labelEl = document.createElement('div');
+    labelEl.className = 'chart-tooltip-label';
+    labelEl.textContent = clickable ? `${point.label} -- klik untuk lihat detail` : point.label;
+    tooltip.appendChild(valueEl);
+    tooltip.appendChild(labelEl);
+    tooltip.style.display = 'block';
+
+    const hitRect = group.querySelector('.chart-bar-hit').getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    tooltip.style.left = `${hitRect.left - wrapRect.left + hitRect.width / 2}px`;
+    tooltip.style.top = `${hitRect.top - wrapRect.top}px`;
+
+    group.classList.add('is-hovered');
+  }
+
+  function hideTooltip(group) {
+    tooltip.style.display = 'none';
+    group.classList.remove('is-hovered');
+  }
+
+  function activate(group) {
+    const idx = Number(group.dataset.index);
+    const point = points[idx];
+    if (point && point.date) goToAttendanceDate(point.date);
+  }
+
+  groups.forEach((group) => {
+    group.addEventListener('pointerenter', () => showTooltip(group));
+    group.addEventListener('pointerleave', () => hideTooltip(group));
+    group.addEventListener('focus', () => showTooltip(group));
+    group.addEventListener('blur', () => hideTooltip(group));
+    if (clickable) {
+      group.addEventListener('click', () => activate(group));
+      group.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        activate(group);
+      });
+    }
+  });
+}
+
+function goToAttendanceDate(dateStr) {
+  if (canManageAttendance) {
+    window.location.href = `absensi?date=${dateStr}`;
+  } else {
+    openAttendanceDayModal(dateStr);
+  }
+}
+
+// Modal ringkas untuk Pimpinan (tidak punya akses ke halaman Absensi
+// Personel) -- menampilkan seluruh personel pada tanggal yang diklik,
+// memakai modal yang sama dengan klik-tembus pie chart "Kondisi Absensi
+// Hari Ini" tapi tanpa filter kelompok (semua status ditampilkan).
+async function openAttendanceDayModal(dateStr) {
+  const modal = document.getElementById('attendanceBucketModal');
+  const titleEl = document.getElementById('attendanceBucketModalTitle');
+  const bodyEl = document.getElementById('attendanceBucketModalBody');
+  titleEl.textContent = `Absensi Personel -- ${dateStr}`;
+  bodyEl.innerHTML = '<tr><td colspan="5">Memuat data...</td></tr>';
+  modal.classList.add('open');
+
+  try {
+    const res = await api(`/attendance?date=${dateStr}`);
+    const list = res.data;
+    titleEl.textContent = `Absensi Personel -- ${dateStr} (${list.length})`;
+    bodyEl.innerHTML = list.length
+      ? list
+          .map(
+            (r) => `
+        <tr>
+          <td>${escapeHtml(r.full_name)}</td>
+          <td>${escapeHtml(r.rank_info || '-')}</td>
+          <td>${escapeHtml(r.position)}</td>
+          <td>${attendanceStatusBadgeHtml(r.status)}</td>
+          <td>${escapeHtml(r.attendance_notes || '-')}</td>
+        </tr>
+      `
+          )
+          .join('')
+      : '<tr><td colspan="5">Tidak ada data.</td></tr>';
+  } catch (err) {
+    bodyEl.innerHTML = `<tr><td colspan="5" style="color:var(--danger);">${escapeHtml(err.message)}</td></tr>`;
+  }
 }
 
 // ---- Klik-tembus dari pie chart "Kondisi Absensi Hari Ini" ----
