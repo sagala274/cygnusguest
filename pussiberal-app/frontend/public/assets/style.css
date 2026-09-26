@@ -174,7 +174,11 @@ button, input, select, textarea { font: inherit; }
 }
 
 .topbar {
-  position: relative; z-index: 1;
+  /* z-index HARUS lebih tinggi dari .content (juga di-set relative/z-index
+     di bawah) -- topbar punya dropdown (notifikasi, profil) yang meluas
+     secara visual ke bawah, ke area .content; kalau z-index-nya sama,
+     .content (belakangan di urutan DOM) menutupi dropdown itu. */
+  position: relative; z-index: 5;
   height: 57px; background: rgba(6, 14, 30, .68); backdrop-filter: blur(8px);
   border-bottom: 1px solid rgba(125, 226, 255, .14);
   display: flex; align-items: center; justify-content: space-between;
@@ -258,15 +262,20 @@ button, input, select, textarea { font: inherit; }
   min-width: 170px; padding: 6px; z-index: 60;
 }
 .profile-dropdown.open { display: block; }
+/* Netral secara default (dipakai juga oleh menu non-destruktif seperti
+   "Tautkan Telegram") -- merah/danger dikhususkan untuk Logout lewat id
+   #logoutBtn, bukan class ini, supaya tidak semua item ikut merah. */
 .profile-dropdown-item {
   display: flex; align-items: center; gap: 10px;
   height: 40px; padding: 0 12px; border-radius: 4px;
-  color: var(--danger); text-decoration: none;
+  color: var(--text); text-decoration: none;
   font-size: 12.5px; font-weight: 700;
 }
-.profile-dropdown-item:hover { background: #fef3f2; }
+.profile-dropdown-item:hover { background: #f5f6f9; }
 .profile-dropdown-item .nav-icon { width: 18px; }
 .profile-dropdown-item .nav-icon .icon { width: 16px; height: 16px; }
+#logoutBtn { color: var(--danger); }
+#logoutBtn:hover { background: #fef3f2; }
 
 /* Panel konten terang, melayang di atas latar cyber gelap milik .main --
    supaya SEMUA teks/kartu yang sudah ada di tiap halaman tetap punya
