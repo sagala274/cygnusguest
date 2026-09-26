@@ -96,9 +96,11 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
 // GET /reports/attendance-trend?period=day|week|month&count=4  -- persentase
 // Hadir per periode, dipakai grafik "Tren Kehadiran Personel" di dashboard
 // (period/count sama seperti /visit-stats, supaya bisa pakai toggle Per
-// Hari/Per Minggu/Per Bulan yang sama). Satu periode tanpa data sama sekali
-// (belum pernah diisi) dikirim sebagai pct: null supaya frontend bisa
-// membedakan "0% hadir" dari "belum ada data direkam".
+// Hari/Per Minggu/Per Bulan yang sama). Persentase dihitung terhadap TOTAL
+// personel aktif (sama seperti kartu "Kondisi Absensi Hari Ini"), bukan
+// hanya yang sudah diisi absensinya -- supaya konsisten dan tidak bias saat
+// data belum lengkap diisi. Periode yang seluruhnya di masa depan (belum
+// terjadi) dikirim sebagai pct: null.
 router.get('/attendance-trend', requireRole('admin', 'verifikator', 'pimpinan'), asyncHandler(async (req, res) => {
   const period = ['day', 'month'].includes(req.query.period) ? req.query.period : 'week';
   const count = Math.min(Math.max(parseInt(req.query.count, 10) || 4, 2), 31);
@@ -109,23 +111,30 @@ router.get('/attendance-trend', requireRole('admin', 'verifikator', 'pimpinan'),
     'SELECT attendance_date, status FROM attendance_records WHERE attendance_date >= :since',
     { since }
   );
+  const [activeRows] = await pool.query('SELECT COUNT(*) AS activeCount FROM personnel WHERE is_active = 1');
+  const activeCount = activeRows[0].activeCount;
 
-  const recorded = periods.map(() => 0);
   const hadir = periods.map(() => 0);
   rows.forEach((row) => {
     const t = new Date(row.attendance_date).getTime();
     const idx = periods.findIndex((p) => t >= p.start.getTime() && t < p.end.getTime());
     if (idx === -1) return;
-    recorded[idx] += 1;
     if (row.status === 'hadir') hadir[idx] += 1;
   });
 
+  const now = new Date();
+  const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
   res.json({
-    data: periods.map((p, i) => ({
-      label: p.label,
-      pct: recorded[i] > 0 ? Math.round((hadir[i] / recorded[i]) * 100) : null,
-      recordedCount: recorded[i],
-    })),
+    data: periods.map((p, i) => {
+      const effectiveEnd = p.end.getTime() < tomorrowStart.getTime() ? p.end : tomorrowStart;
+      const daysElapsed = Math.max(0, Math.round((effectiveEnd.getTime() - p.start.getTime()) / 86400000));
+      const slots = daysElapsed * activeCount;
+      return {
+        label: p.label,
+        pct: slots > 0 ? Math.round((hadir[i] / slots) * 100) : null,
+      };
+    }),
     period,
   });
 }));
