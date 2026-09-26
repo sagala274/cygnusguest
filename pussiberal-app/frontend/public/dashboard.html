@@ -39,16 +39,18 @@
     </header>
 
     <section class="content" style="max-width: 1180px;">
-      <div class="page-header-row">
-        <div class="page-header-text">
-          <h1 class="page-title"><span id="welcomeTitle">Selamat datang!</span></h1>
-          <p class="page-description" id="welcomeDesc">Berikut ringkasan aktivitas pendaftaran dan kunjungan tamu PUSSIBERAL.</p>
+      <div class="dash-hero">
+        <div class="dash-hero-row page-header-row">
+          <div class="page-header-text">
+            <h1 class="page-title"><span id="welcomeTitle">Selamat datang!</span></h1>
+            <p class="page-description" id="welcomeDesc">Berikut ringkasan aktivitas pendaftaran dan kunjungan tamu PUSSIBERAL.</p>
+          </div>
+          <button type="button" class="btn date-badge-btn" id="dateBadgeBtn" title="Filter tanggal (segera hadir)">
+            <span class="icon-slot" id="calendarIconSlot"></span>
+            <span id="todayLabel"></span>
+            <span class="icon-slot" id="dateChevronSlot"></span>
+          </button>
         </div>
-        <button type="button" class="btn date-badge-btn" id="dateBadgeBtn" title="Filter tanggal (segera hadir)">
-          <span class="icon-slot" id="calendarIconSlot"></span>
-          <span id="todayLabel"></span>
-          <span class="icon-slot" id="dateChevronSlot"></span>
-        </button>
       </div>
 
       <!-- Dua kolom penuh: KIRI = urusan tamu yang datang, KANAN = urusan

@@ -372,6 +372,82 @@ input:focus, select:focus, textarea:focus {
 .alert-card.is-warning .dashboard-card-link { color: var(--danger); }
 .dashboard-card-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; font-size: 12.5px; }
 
+/* ============================================================
+   Dashboard -- banner "cyber" (gradasi + garis grid, murni CSS,
+   tanpa gambar dari luar) & tampilan lebih padat. Semua dilingkupi
+   ".dash-hero"/"#dashboardColumns" supaya HANYA berlaku di halaman
+   Dashboard, tidak mengubah tampilan halaman lain yang memakai
+   class bersama seperti .page-title / .icon-bubble / .stat-card.
+   ============================================================ */
+.dash-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 12px;
+  padding: 26px 30px;
+  margin-bottom: 22px;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(56, 217, 255, .28), transparent 55%),
+    linear-gradient(135deg, #050b1c 0%, #0b1f4d 45%, #0a3f72 78%, #062334 100%);
+  box-shadow: 0 14px 34px rgba(4, 12, 30, .28);
+}
+/* Garis grid tipis a la "cyber" -- dua linear-gradient tegak lurus
+   membentuk kotak-kotak, memudar ke bawah lewat mask supaya tidak
+   mengganggu keterbacaan teks di bagian bawah banner. */
+.dash-hero::before {
+  content: '';
+  position: absolute; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(125, 226, 255, .10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 226, 255, .10) 1px, transparent 1px);
+  background-size: 32px 32px;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .95), transparent 90%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .95), transparent 90%);
+}
+/* Aksen "scan line" diagonal tipis di pojok kanan atas. */
+.dash-hero::after {
+  content: '';
+  position: absolute; z-index: 0;
+  top: -60%; right: -8%; width: 55%; height: 220%;
+  background: linear-gradient(115deg, transparent 42%, rgba(125, 226, 255, .12) 50%, transparent 58%);
+}
+.dash-hero .dash-hero-row { position: relative; z-index: 1; margin-bottom: 0; }
+.dash-hero .page-title { color: #fff; font-size: 23px; }
+.dash-hero .page-description { color: #aec3e8; font-size: 13px; }
+.dash-hero .date-badge-btn {
+  background: rgba(255, 255, 255, .08); border-color: rgba(148, 201, 255, .35); color: #eaf3ff;
+}
+.dash-hero .date-badge-btn .icon { color: #7dd8ff; }
+.dash-hero .date-badge-btn:hover { background: rgba(255, 255, 255, .14); }
+
+/* Bubble ikon bergradasi khusus Dashboard -- versi lebih hidup dari
+   .icon-bubble-* biasa (yang tetap dipakai flat di halaman lain). */
+#dashboardColumns .icon-bubble { color: #fff; }
+#dashboardColumns .icon-bubble-accent { background: linear-gradient(135deg, #1e3a8a, #38bdf8); }
+#dashboardColumns .icon-bubble-success { background: linear-gradient(135deg, #15803d, #4ade80); }
+#dashboardColumns .icon-bubble-blue { background: linear-gradient(135deg, #1d4ed8, #38bdf8); }
+#dashboardColumns .icon-bubble-amber { background: linear-gradient(135deg, #b45309, #fbbf24); }
+#dashboardColumns .icon-bubble-purple { background: linear-gradient(135deg, #6b21a8, #c084fc); }
+#dashboardColumns .icon-bubble-danger { background: linear-gradient(135deg, #b91c1c, #f87171); }
+#dashboardColumns .icon-bubble-teal-dark { background: linear-gradient(135deg, #0f766e, #2dd4bf); }
+#dashboardColumns .icon-bubble-pink { background: linear-gradient(135deg, #9d174d, #f472b6); }
+#dashboardColumns .icon-bubble-teal { background: linear-gradient(135deg, #0e6b6b, #5eead4); }
+
+/* Kepadatan: jarak & bantalan sedikit dirapatkan supaya lebih banyak
+   informasi terlihat tanpa scroll, khusus di dalam kolom Dashboard. */
+#dashboardColumns { gap: 22px; margin-top: 0; }
+#dashboardColumns .dashboard-col { gap: 18px; }
+#dashboardColumns .section { padding: 20px 22px; }
+#dashboardColumns .section-title { margin-bottom: 16px; font-size: 15.5px; }
+#dashboardColumns .stat-grid { gap: 12px; }
+#dashboardColumns .stat-card { padding: 16px; gap: 10px; transition: transform .15s, box-shadow .15s, border-color .15s; }
+#dashboardColumns .stat-card.is-clickable:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16, 24, 40, .10); }
+#dashboardColumns .stat-value { font-size: 21px; }
+#dashboardColumns .icon-bubble { width: 40px; height: 40px; border-radius: 10px; }
+#dashboardColumns .icon-bubble .icon { width: 19px; height: 19px; }
+#dashboardColumns .dashboard-row { gap: 14px; margin-top: 16px; }
+#dashboardColumns .alert-card { padding: 18px; }
+
 /* Donut chart */
 .donut-wrap { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 .donut-svg { flex-shrink: 0; }

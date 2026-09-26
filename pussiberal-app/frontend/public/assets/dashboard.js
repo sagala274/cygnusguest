@@ -469,7 +469,7 @@ function renderAttendanceTrendChart(data, period) {
     markers += `
       <g class="chart-bar-group" tabindex="0" data-index="${i}">
         <rect x="${(p.x - bandWidth / 2).toFixed(1)}" y="${marginTop}" width="${bandWidth.toFixed(1)}" height="${plotHeight}" class="chart-bar-hit" fill="transparent" />
-        <circle cx="${p.x}" cy="${p.y}" r="${isLast ? 5 : 4}" class="chart-point${isLast ? ' chart-point-last' : ''}" />
+        <circle cx="${p.x}" cy="${p.y}" r="${isLast ? 5 : 4}" class="chart-point${isLast ? ' chart-point-last' : ''}" style="stroke:#15803d;${isLast ? 'fill:#15803d;' : ''}" />
       </g>
     `;
     valueLabels += `<text x="${p.x}" y="${p.y - 12}" class="chart-axis-label" text-anchor="middle" font-weight="800">${p.pct}%</text>`;
@@ -477,10 +477,16 @@ function renderAttendanceTrendChart(data, period) {
 
   container.innerHTML = `
     <svg viewBox="0 0 ${width} ${height}" class="bar-chart-svg" role="img" aria-label="Grafik tren kehadiran personel ${ATTENDANCE_PERIOD_LABEL[period] || 'per minggu'}">
+      <defs>
+        <linearGradient id="attendanceAreaGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#4ade80" stop-opacity="0.5" />
+          <stop offset="100%" stop-color="#15803d" stop-opacity="0.02" />
+        </linearGradient>
+      </defs>
       ${gridlines}
       ${yLabels}
-      <path d="${areaPath}" class="chart-area-fill" />
-      <path d="${linePath}" class="chart-area-line" />
+      <path d="${areaPath}" class="chart-area-fill" style="fill:url(#attendanceAreaGradient);" />
+      <path d="${linePath}" class="chart-area-line" style="stroke:#15803d;" />
       ${markers}
       ${valueLabels}
       ${xLabels}
@@ -762,9 +768,15 @@ if (canSeeVisitChart) {
 
     container.innerHTML = `
       <svg viewBox="0 0 ${width} ${height}" class="bar-chart-svg" role="img" aria-label="Grafik jumlah tamu ${PERIOD_LABEL[currentPeriod]}">
+        <defs>
+          <linearGradient id="visitAreaGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.5" />
+            <stop offset="100%" stop-color="#1e3a8a" stop-opacity="0.02" />
+          </linearGradient>
+        </defs>
         ${gridlines}
         ${yLabels}
-        <path d="${areaPath}" class="chart-area-fill" />
+        <path d="${areaPath}" class="chart-area-fill" style="fill:url(#visitAreaGradient);" />
         <path d="${linePath}" class="chart-area-line" />
         ${markers}
         ${xLabels}
