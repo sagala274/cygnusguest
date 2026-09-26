@@ -4,6 +4,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { logAudit } = require('../utils/audit');
 const asyncHandler = require('../utils/asyncHandler');
 const { VALID_SECURITY_CATEGORIES } = require('../utils/validators');
+const { todayJakarta } = require('../utils/datetime');
 
 const router = express.Router();
 // "pimpinan" boleh MELIHAT (GET) tapi tidak boleh menulis -- PUT /:id di
@@ -13,10 +14,15 @@ router.use(authenticate, requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
 
 // Status dihitung dari tanggal, bukan disimpan -- supaya selalu akurat tanpa
 // perlu job terjadwal untuk memperbarui status saat tanggalnya lewat.
+// Memakai parameter :today (dihitung dari WIB, lihat todayJakarta()) --
+// BUKAN CURDATE() MySQL, yang ikut jam server (UTC) dan bisa selisih
+// sehari dari WIB selama jendela 00:00-07:00 WIB. Setiap query yang
+// memakai STATUS_CASE WAJIB menyertakan `today: todayJakarta()` di
+// parameternya.
 const STATUS_CASE = `
   CASE
-    WHEN CURDATE() < start_date THEN 'Akan Datang'
-    WHEN CURDATE() > end_date THEN 'Selesai'
+    WHEN :today < start_date THEN 'Akan Datang'
+    WHEN :today > end_date THEN 'Selesai'
     ELSE 'Aktif'
   END
 `;
@@ -28,7 +34,7 @@ router.get('/', asyncHandler(async (req, res) => {
   const offset = (Math.max(parseInt(page, 10) || 1, 1) - 1) * limit;
 
   const where = [];
-  const params = {};
+  const params = { today: todayJakarta() };
   if (q) {
     where.push('(full_name LIKE :q OR institution LIKE :q OR position LIKE :q OR rank_title LIKE :q)');
     params.q = `%${q}%`;
@@ -56,7 +62,7 @@ router.get('/', asyncHandler(async (req, res) => {
 router.get('/:id', asyncHandler(async (req, res) => {
   const [rows] = await pool.execute(
     `SELECT *, (${STATUS_CASE}) AS status FROM trainees WHERE id = :id`,
-    { id: req.params.id }
+    { id: req.params.id, today: todayJakarta() }
   );
   if (!rows[0]) return res.status(404).json({ error: 'Data tidak ditemukan' });
   res.json({ data: rows[0] });

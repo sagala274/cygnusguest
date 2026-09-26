@@ -9,7 +9,7 @@ const {
   escapeMarkdownCode,
 } = require('./telegram');
 const { consumeLinkCode, findUserByTelegramId } = require('./telegramLink');
-const { formatJakartaDateTime } = require('./datetime');
+const { formatJakartaDateTime, todayJakarta } = require('./datetime');
 
 const POLL_TIMEOUT_SECONDS = 25;
 const IDLE_RETRY_MS = 15000;
@@ -60,12 +60,13 @@ async function clearMessageButtons(chatId, messageId, token) {
 }
 
 async function handleStatus() {
-  const [[guestTotals]] = await pool.query(`
-    SELECT COUNT(*) AS total,
-           SUM(DATE(created_at) = CURDATE()) AS today,
-           SUM(status = 'Sedang Berkunjung') AS active
-    FROM guests
-  `);
+  const [[guestTotals]] = await pool.query(
+    `SELECT COUNT(*) AS total,
+            SUM(DATE(created_at) = :today) AS today,
+            SUM(status = 'Sedang Berkunjung') AS active
+     FROM guests`,
+    { today: todayJakarta() }
+  );
   const [byStatus] = await pool.query('SELECT status, COUNT(*) AS count FROM guests GROUP BY status');
 
   const lines = [

@@ -4,7 +4,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const asyncHandler = require('../utils/asyncHandler');
 const { logAudit } = require('../utils/audit');
 const { getAiSettings, getDecryptedApiKey } = require('../utils/aiSettings');
-const { formatJakartaDate } = require('../utils/datetime');
+const { formatJakartaDate, todayJakarta } = require('../utils/datetime');
 
 const router = express.Router();
 router.use(authenticate, requireRole('admin'));
@@ -13,12 +13,14 @@ const MAX_MESSAGE_LENGTH = 4000;
 const MAX_HISTORY_TURNS = 20;
 
 async function buildPlatformContext() {
-  const [[guestTotals]] = await pool.query(`
-    SELECT COUNT(*) AS total,
-           SUM(DATE(created_at) = CURDATE()) AS today,
-           SUM(status = 'Sedang Berkunjung') AS active
-    FROM guests
-  `);
+  const todayStr = todayJakarta();
+  const [[guestTotals]] = await pool.query(
+    `SELECT COUNT(*) AS total,
+            SUM(DATE(created_at) = :today) AS today,
+            SUM(status = 'Sedang Berkunjung') AS active
+     FROM guests`,
+    { today: todayStr }
+  );
   const [byStatus] = await pool.query('SELECT status, COUNT(*) AS count FROM guests GROUP BY status');
   const [bySecurityCategory] = await pool.query(
     "SELECT COALESCE(security_category, 'belum_dianalisa') AS category, COUNT(*) AS count FROM guest_members GROUP BY category"
@@ -39,12 +41,13 @@ async function buildPlatformContext() {
   const [usersByRole] = await pool.query(
     "SELECT role, COUNT(*) AS count FROM users WHERE is_active = 1 GROUP BY role"
   );
-  const [recentDaily] = await pool.query(`
-    SELECT DATE(created_at) AS day, COUNT(*) AS count
-    FROM guests
-    WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-    GROUP BY day ORDER BY day
-  `);
+  const [recentDaily] = await pool.query(
+    `SELECT DATE(created_at) AS day, COUNT(*) AS count
+     FROM guests
+     WHERE created_at >= DATE_SUB(:today, INTERVAL 7 DAY)
+     GROUP BY day ORDER BY day`,
+    { today: todayStr }
+  );
 
   const lines = [];
   lines.push('=== RINGKASAN DATA PLATFORM PUSSIBERAL (real-time) ===');

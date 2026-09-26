@@ -14,6 +14,7 @@ const { logAudit } = require('../utils/audit');
 const { notifyNewRegistration } = require('../utils/telegram');
 const { notifyVerifiers, notifyGuestCreator } = require('../utils/notifications');
 const { PURPOSE_CATEGORIES, isValidTargetOfficials } = require('../utils/guestFields');
+const { todayJakarta } = require('../utils/datetime');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
@@ -260,13 +261,14 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
   // yang sama -- dilewati untuk tamu yang tidak mengisi NIK, karena NIK
   // kosong bukan identitas yang valid untuk dibandingkan (bukan berarti
   // "orang yang sama").
+  const todayStr = todayJakarta();
   for (const member of members) {
     if (!member.nik) continue;
     const [dupRows] = await pool.execute(
       `SELECT gm.id FROM guest_members gm
        JOIN guests g ON g.id = gm.guest_id
-       WHERE gm.nik = :nik AND g.status NOT IN ('Selesai', 'Ditolak') AND DATE(g.created_at) = CURDATE()`,
-      { nik: member.nik }
+       WHERE gm.nik = :nik AND g.status NOT IN ('Selesai', 'Ditolak') AND DATE(g.created_at) = :today`,
+      { nik: member.nik, today: todayStr }
     );
     if (dupRows.length) {
       return res.status(409).json({ error: `Tamu dengan NIK ${member.nik} sudah memiliki pendaftaran aktif hari ini` });
@@ -293,7 +295,10 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
     );
 
     const guestId = result.insertId;
-    const regNumber = `REG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(guestId).padStart(6, '0')}`;
+    // Tanggal pada nomor registrasi memakai WIB (bukan new Date().toISOString(),
+    // yang mengikuti UTC) supaya nomornya mencerminkan hari pendaftaran yang
+    // sebenarnya menurut petugas, bukan tanggal UTC server.
+    const regNumber = `REG-${todayJakarta().replace(/-/g, '')}-${String(guestId).padStart(6, '0')}`;
 
     await conn.execute('UPDATE guests SET registration_number = :reg WHERE id = :id', { reg: regNumber, id: guestId });
 

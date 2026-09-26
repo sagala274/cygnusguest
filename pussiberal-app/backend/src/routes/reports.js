@@ -3,7 +3,7 @@ const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const pool = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { formatJakartaDateTime, formatJakartaDate } = require('../utils/datetime');
+const { formatJakartaDateTime, formatJakartaDate, todayJakarta, nowJakartaLocal } = require('../utils/datetime');
 const asyncHandler = require('../utils/asyncHandler');
 const { isWeekend } = require('../utils/attendance');
 
@@ -19,9 +19,13 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
   // Statistik Perangkat Elektronik (yang juga menghitung per individu),
   // bukan malah lebih kecil dan terlihat seperti salah hitung.
   const [[{ totalGuests }]] = await pool.query('SELECT COUNT(*) AS totalGuests FROM guest_members');
-  const [[{ today }]] = await pool.query('SELECT COUNT(*) AS today FROM guests WHERE DATE(created_at) = CURDATE()');
-  const [[{ yesterday }]] = await pool.query(
-    "SELECT COUNT(*) AS yesterday FROM guests WHERE DATE(created_at) = CURDATE() - INTERVAL 1 DAY"
+  // "Hari ini"/"kemarin" dihitung dari tanggal WIB (bukan CURDATE() MySQL,
+  // yang ikut jam server/UTC) -- lihat todayJakarta() untuk alasannya.
+  const todayStr = todayJakarta();
+  const [[{ today }]] = await pool.execute('SELECT COUNT(*) AS today FROM guests WHERE DATE(created_at) = :today', { today: todayStr });
+  const [[{ yesterday }]] = await pool.execute(
+    'SELECT COUNT(*) AS yesterday FROM guests WHERE DATE(created_at) = :today - INTERVAL 1 DAY',
+    { today: todayStr }
   );
   const [[{ active }]] = await pool.query("SELECT COUNT(*) AS active FROM guests WHERE status = 'Sedang Berkunjung'");
   const [[{ pendingCheckout }]] = await pool.query(
@@ -41,9 +45,8 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
   // di dashboard untuk Admin, Verifikator, dan Pimpinan. status = NULL berarti
   // personel aktif yang belum diisi absensinya hari ini. Sabtu/Minggu yang
   // belum diisi dihitung sebagai "libur" (bukan "belum diisi"), sama seperti
-  // logika di GET /api/attendance.
-  const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  // logika di GET /api/attendance. Memakai todayStr (WIB) yang sudah
+  // dihitung di atas, BUKAN CURDATE() MySQL -- lihat todayJakarta().
   const todayIsWeekend = isWeekend(todayStr);
 
   let attendanceStats = null;
@@ -51,10 +54,10 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
     [attendanceStats] = await pool.query(`
       SELECT ar.status, COUNT(*) AS count
       FROM personnel p
-      LEFT JOIN attendance_records ar ON ar.personnel_id = p.id AND ar.attendance_date = CURDATE()
+      LEFT JOIN attendance_records ar ON ar.personnel_id = p.id AND ar.attendance_date = :today
       WHERE p.is_active = 1
       GROUP BY ar.status
-    `);
+    `, { today: todayStr });
     if (todayIsWeekend) {
       const nullRow = attendanceStats.find((r) => r.status === null);
       if (nullRow) {
@@ -79,10 +82,10 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
     [attendanceAttention] = await pool.query(`
       SELECT p.id, p.full_name, p.rank_info, p.position, p.security_category, ar.status, ar.notes AS attendance_notes
       FROM personnel p
-      LEFT JOIN attendance_records ar ON ar.personnel_id = p.id AND ar.attendance_date = CURDATE()
+      LEFT JOIN attendance_records ar ON ar.personnel_id = p.id AND ar.attendance_date = :today
       WHERE p.is_active = 1 AND (${belumDiisiCondition} OR ar.status = 'tanpa_keterangan')
       ORDER BY (ar.status = 'tanpa_keterangan') DESC, p.category, p.sort_order, p.id
-    `);
+    `, { today: todayStr });
   }
 
   res.json({
@@ -123,7 +126,7 @@ router.get('/attendance-trend', requireRole('admin', 'verifikator', 'pimpinan'),
     if (row.status === 'hadir' || row.status === 'dinas_dalam') hadir[idx] += 1;
   });
 
-  const now = new Date();
+  const now = nowJakartaLocal();
   const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
   res.json({
@@ -146,7 +149,7 @@ router.get('/attendance-trend', requireRole('admin', 'verifikator', 'pimpinan'),
 
 function buildPeriods(period, count) {
   const periods = [];
-  const now = new Date();
+  const now = nowJakartaLocal();
 
   if (period === 'month') {
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
