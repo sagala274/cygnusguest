@@ -89,6 +89,14 @@ button, input, select, textarea { font: inherit; }
 
 .nav { display: grid; gap: 8px; }
 
+/* Label judul kelompok menu (mis. "TAMU & KUNJUNGAN") -- bukan tautan,
+   cuma pemisah visual supaya sidebar lebih rapi & mudah dipindai. */
+.nav-group-label {
+  padding: 0 14px; margin-top: 14px; font-size: 10px; font-weight: 800;
+  letter-spacing: .8px; color: #5b6685; text-transform: uppercase;
+}
+.nav-group-label:first-child { margin-top: 0; }
+
 .nav-item {
   height: 39px; display: flex; align-items: center; gap: 14px;
   padding: 0 14px; border-radius: 3px; color: #8792b2;
@@ -776,7 +784,7 @@ a.link:hover { text-decoration: underline; }
 
 @media (max-width: 700px) {
   .sidebar { width: 68px; padding: 20px 8px; }
-  .brand-name, .brand-subtitle, .nav-item span:not(.nav-icon), .nav-chevron { display: none; }
+  .brand-name, .brand-subtitle, .nav-item span:not(.nav-icon), .nav-chevron, .nav-group-label { display: none; }
   .brand { justify-content: center; }
   .nav-item { justify-content: center; padding: 0; }
   .topbar { padding: 0 16px; }

@@ -1,6 +1,6 @@
 requireAuth();
 requireRole('admin', 'verifikator');
-renderNav('absensi');
+renderNav('personnel-list');
 
 const searchInput = document.getElementById('searchInput');
 const showInactiveCheck = document.getElementById('showInactiveCheck');

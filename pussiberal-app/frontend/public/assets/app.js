@@ -538,36 +538,70 @@ function renderNav(active) {
   const user = getUser();
   if (!user) return;
 
-  const links = [
-    { href: 'dashboard', label: 'Dashboard', icon: 'dashboard', roles: ['admin', 'pos_depan', 'verifikator', 'pimpinan'] },
-    { href: 'pendaftaran', label: 'Pendaftaran Tamu', icon: 'pendaftaran', roles: ['admin', 'pos_depan'] },
-    { href: 'daftar-tamu', label: 'Daftar Tamu', icon: 'daftar-tamu', roles: ['admin', 'pos_depan', 'verifikator'] },
-    { href: 'daftar-tamu?status=Menunggu%20Verifikasi', label: 'Verifikasi Tamu', icon: 'verifikasi', roles: ['admin', 'verifikator'], matchHref: 'daftar-tamu' },
-    { href: 'laporan', label: 'Laporan', icon: 'laporan', roles: ['admin', 'verifikator'] },
-    { href: 'bank-data', label: 'Bank Data', icon: 'bank-data', roles: ['admin', 'verifikator'] },
-    { href: 'network-map', label: 'Pemetaan Hubungan', icon: 'network', roles: ['admin', 'verifikator'] },
-    { href: 'personel-pembelajaran', label: 'Personel Pembelajaran', icon: 'graduation', roles: ['admin', 'pos_depan', 'verifikator'] },
-    { href: 'absensi', label: 'Absensi Personel', icon: 'clipboard', roles: ['admin', 'verifikator'] },
-    { href: 'ai-chat', label: 'AI Chat', icon: 'ai-chat', roles: ['admin'] },
-    { href: 'users', label: 'Manajemen Pengguna', icon: 'users', roles: ['admin'] },
-    { href: 'audit-log', label: 'Log Aktivitas', icon: 'audit-log', roles: ['admin'] },
-    { href: 'telegram-settings', label: 'Notifikasi Telegram', icon: 'telegram', roles: ['admin'] },
-    { href: 'backup', label: 'Backup Database', icon: 'backup', roles: ['admin'] },
-    { href: 'ai-config', label: 'Konfigurasi AI', icon: 'ai-config', roles: ['admin'] },
+  // Dashboard berdiri sendiri (tanpa judul kelompok); menu lainnya
+  // dikelompokkan per area kerja supaya sidebar lebih mudah dipindai.
+  const groups = [
+    {
+      title: null,
+      items: [
+        { href: 'dashboard', label: 'Dashboard', icon: 'dashboard', roles: ['admin', 'pos_depan', 'verifikator', 'pimpinan'] },
+      ],
+    },
+    {
+      title: 'Tamu & Kunjungan',
+      items: [
+        { href: 'pendaftaran', label: 'Pendaftaran Tamu', icon: 'pendaftaran', roles: ['admin', 'pos_depan'] },
+        { href: 'daftar-tamu', label: 'Daftar Tamu', icon: 'daftar-tamu', roles: ['admin', 'pos_depan', 'verifikator'] },
+        { href: 'daftar-tamu?status=Menunggu%20Verifikasi', label: 'Verifikasi Tamu', icon: 'verifikasi', roles: ['admin', 'verifikator'], matchHref: 'daftar-tamu' },
+        { href: 'laporan', label: 'Rekap Kunjungan', icon: 'laporan', roles: ['admin', 'verifikator'] },
+      ],
+    },
+    {
+      title: 'Personel Internal',
+      items: [
+        { href: 'personnel-list', label: 'Data Personel', icon: 'people', roles: ['admin', 'verifikator'] },
+        { href: 'absensi', label: 'Absensi Personel', icon: 'clipboard', roles: ['admin', 'verifikator'] },
+        { href: 'personel-pembelajaran', label: 'Pembelajaran', icon: 'graduation', roles: ['admin', 'pos_depan', 'verifikator'] },
+      ],
+    },
+    {
+      title: 'Bank Data & Intelijen',
+      items: [
+        { href: 'bank-data', label: 'Bank Data', icon: 'bank-data', roles: ['admin', 'verifikator'] },
+        { href: 'network-map', label: 'Pemetaan Hubungan', icon: 'network', roles: ['admin', 'verifikator'] },
+      ],
+    },
+    {
+      title: 'Sistem & Administrasi',
+      items: [
+        { href: 'ai-chat', label: 'AI Chat', icon: 'ai-chat', roles: ['admin'] },
+        { href: 'users', label: 'Manajemen Pengguna', icon: 'users', roles: ['admin'] },
+        { href: 'audit-log', label: 'Log Aktivitas', icon: 'audit-log', roles: ['admin'] },
+        { href: 'telegram-settings', label: 'Notifikasi Telegram', icon: 'telegram', roles: ['admin'] },
+        { href: 'backup', label: 'Backup Database', icon: 'backup', roles: ['admin'] },
+        { href: 'ai-config', label: 'Konfigurasi AI', icon: 'ai-config', roles: ['admin'] },
+      ],
+    },
   ];
 
   const nav = document.getElementById('mainNav');
   if (nav) {
-    nav.innerHTML = links
-      .filter((l) => l.roles.includes(user.role))
-      .map((l) => {
-        const isActive = (l.matchHref || l.href) === active;
-        return `
-        <a class="nav-item ${isActive ? 'active' : ''}" href="${l.href}">
-          <span class="nav-icon">${icon(l.icon)}</span><span>${l.label}</span>
-          ${isActive ? `<span class="nav-chevron">${icon('chevronRight')}</span>` : ''}
-        </a>
-      `;
+    nav.innerHTML = groups
+      .map((g) => {
+        const visibleItems = g.items.filter((l) => l.roles.includes(user.role));
+        if (!visibleItems.length) return '';
+        const itemsHtml = visibleItems
+          .map((l) => {
+            const isActive = (l.matchHref || l.href) === active;
+            return `
+            <a class="nav-item ${isActive ? 'active' : ''}" href="${l.href}">
+              <span class="nav-icon">${icon(l.icon)}</span><span>${l.label}</span>
+              ${isActive ? `<span class="nav-chevron">${icon('chevronRight')}</span>` : ''}
+            </a>
+          `;
+          })
+          .join('');
+        return (g.title ? `<div class="nav-group-label">${g.title}</div>` : '') + itemsHtml;
       })
       .join('');
   }
