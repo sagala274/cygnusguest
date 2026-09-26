@@ -265,16 +265,14 @@ async function load() {
       const totalPersonnel = segs.reduce((sum, s) => sum + s.count, 0);
       const pct = (count) => (totalPersonnel > 0 ? `${((count / totalPersonnel) * 100).toFixed(1)}% dari total` : '-');
 
+      // Sengaja cuma 2 kartu inti (Total & Hadir) -- rincian per kategori
+      // (WFH/Bertugas/Sakit/Libur/Ijin-Cuti/Pendidikan/Tanpa Keterangan)
+      // sudah lengkap ditampilkan di legenda pie chart "Kondisi Absensi
+      // Hari Ini" di sebelahnya, supaya tidak menampilkan data yang sama
+      // dua kali dalam bentuk berbeda.
       document.getElementById('personnelStatGrid').innerHTML = [
         statCardHtml({ bubbleClass: 'icon-bubble-accent', iconName: 'people', label: 'Total Personel', value: totalPersonnel, caption: 'Seluruh personel aktif' }),
-        statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Hadir', value: byKey.hadir.count, caption: pct(byKey.hadir.count), bucketKey: 'hadir' }),
-        statCardHtml({ bubbleClass: 'icon-bubble-amber', iconName: 'backup', label: 'WFH', value: byKey.wfh.count, caption: pct(byKey.wfh.count), bucketKey: 'wfh' }),
-        statCardHtml({ bubbleClass: 'icon-bubble-blue', iconName: 'login', label: 'Bertugas', value: byKey.bertugas.count, caption: pct(byKey.bertugas.count), bucketKey: 'bertugas' }),
-        statCardHtml({ bubbleClass: 'icon-bubble-purple', iconName: 'activity', label: 'Sakit', value: byKey.sakit.count, caption: pct(byKey.sakit.count), bucketKey: 'sakit' }),
-        statCardHtml({ bubbleClass: 'icon-bubble-teal-dark', iconName: 'sun', label: 'Libur', value: byKey.libur.count, caption: pct(byKey.libur.count), bucketKey: 'libur' }),
-        statCardHtml({ bubbleClass: 'icon-bubble-pink', iconName: 'calendar', label: 'Ijin/Cuti', value: byKey.ijin_cuti.count, caption: pct(byKey.ijin_cuti.count), bucketKey: 'ijin_cuti' }),
-        statCardHtml({ bubbleClass: 'icon-bubble-teal', iconName: 'graduation', label: 'Pendidikan', value: byKey.pendidikan.count, caption: pct(byKey.pendidikan.count), bucketKey: 'pendidikan' }),
-        statCardHtml({ bubbleClass: 'icon-bubble-danger', iconName: 'close', label: 'Tanpa Keterangan', value: byKey.tanpa_keterangan.count, caption: pct(byKey.tanpa_keterangan.count), bucketKey: 'tanpa_keterangan' }),
+        statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Hadir Hari Ini', value: byKey.hadir.count, caption: pct(byKey.hadir.count), bucketKey: 'hadir' }),
       ].join('');
       document.querySelectorAll('#personnelStatGrid .stat-card.is-clickable').forEach((card) => {
         card.addEventListener('click', () => openAttendanceBucketModal(card.dataset.bucketKey));
