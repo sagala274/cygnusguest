@@ -538,6 +538,15 @@ function renderNav(active) {
   const user = getUser();
   if (!user) return;
 
+  // Pos Depan tetap melihat "Guest Management" (fokus kerjanya memang
+  // pendaftaran/kunjungan tamu) -- role lain (Admin/Verifikator/Pimpinan)
+  // melihat "Security Management" karena cakupannya sudah lebih luas dari
+  // sekadar tamu (personel, absensi, Bank Data, Pemetaan Hubungan, dst.).
+  const brandSubtitleEl = document.querySelector('.brand-subtitle');
+  if (brandSubtitleEl) {
+    brandSubtitleEl.textContent = user.role === 'pos_depan' ? 'GUEST MANAGEMENT' : 'SECURITY MANAGEMENT';
+  }
+
   // Dashboard berdiri sendiri (tanpa judul kelompok); menu lainnya
   // dikelompokkan per area kerja supaya sidebar lebih mudah dipindai.
   const groups = [
