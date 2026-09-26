@@ -230,12 +230,24 @@ function statusOptionsHtml(currentStatus) {
   return options.join('');
 }
 
+// Tanda kecil di sebelah nama untuk personel yang sudah punya indikasi
+// hasil analisa intelijen (lihat "Analisa Intelijen" di Kelola Personel) --
+// warna & label sama seperti lencana Bank Data, supaya konsisten.
+// Personel yang belum dianalisa (security_category kosong) tidak diberi
+// tanda apa pun di sini, supaya tabel absensi harian tidak penuh lencana.
+function personnelNameHtml(r) {
+  const mark = r.security_category
+    ? ` <span class="badge ${securityCategoryBadgeClass(r.security_category)}" style="margin-left:6px;">${escapeHtml(securityCategoryLabel(r.security_category))}</span>`
+    : '';
+  return `${escapeHtml(r.full_name)}${mark}`;
+}
+
 function personnelRowHtml(r, no) {
   if (!canEditAttendance) {
     return `
       <tr data-personnel-id="${r.personnel_id}">
         <td>${no}</td>
-        <td>${escapeHtml(r.full_name)}</td>
+        <td>${personnelNameHtml(r)}</td>
         <td>${escapeHtml(r.rank_info || '-')}</td>
         <td>${escapeHtml(r.position)}${r.personnel_notes ? ` <span class="label-note">(${escapeHtml(r.personnel_notes)})</span>` : ''}</td>
         <td class="attendance-status-cell">${statusBadgeHtml(r.status)}</td>
@@ -247,7 +259,7 @@ function personnelRowHtml(r, no) {
     <tr data-personnel-id="${r.personnel_id}">
       <td class="drag-handle-cell"><span class="drag-handle" draggable="true" title="Geser untuk urutkan">${icon('grip')}</span></td>
       <td>${no}</td>
-      <td>${escapeHtml(r.full_name)}</td>
+      <td>${personnelNameHtml(r)}</td>
       <td>${escapeHtml(r.rank_info || '-')}</td>
       <td>${escapeHtml(r.position)}${r.personnel_notes ? ` <span class="label-note">(${escapeHtml(r.personnel_notes)})</span>` : ''}</td>
       <td class="attendance-status-cell">
@@ -625,7 +637,7 @@ function openStatusListModal(statusKey) {
         .map(
           (r) => `
       <tr>
-        <td>${escapeHtml(r.full_name)}</td>
+        <td>${personnelNameHtml(r)}</td>
         <td>${escapeHtml(r.rank_info || '-')}</td>
         <td>${escapeHtml(r.position)}</td>
         <td>${escapeHtml(r.category)}</td>

@@ -77,7 +77,7 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
   if (['admin', 'verifikator', 'pimpinan'].includes(req.user.role)) {
     const belumDiisiCondition = todayIsWeekend ? '1=0' : 'ar.status IS NULL';
     [attendanceAttention] = await pool.query(`
-      SELECT p.id, p.full_name, p.rank_info, p.position, ar.status, ar.notes AS attendance_notes
+      SELECT p.id, p.full_name, p.rank_info, p.position, p.security_category, ar.status, ar.notes AS attendance_notes
       FROM personnel p
       LEFT JOIN attendance_records ar ON ar.personnel_id = p.id AND ar.attendance_date = CURDATE()
       WHERE p.is_active = 1 AND (${belumDiisiCondition} OR ar.status = 'tanpa_keterangan')

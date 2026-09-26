@@ -26,7 +26,7 @@ router.get('/', requireRole('admin', 'verifikator', 'pimpinan'), asyncHandler(as
 
   const [rows] = await pool.execute(
     `SELECT p.id AS personnel_id, p.full_name, p.rank_info, p.position, p.category, p.notes AS personnel_notes,
-            ar.status, ar.notes AS attendance_notes
+            p.security_category, ar.status, ar.notes AS attendance_notes
      FROM personnel p
      LEFT JOIN attendance_records ar ON ar.personnel_id = p.id AND ar.attendance_date = :date
      WHERE p.is_active = 1

@@ -385,7 +385,7 @@ async function load() {
             .map(
               (p) => `
         <tr>
-          <td>${escapeHtml(p.full_name)}${p.position ? ` <span class="label-note">(${escapeHtml(p.position)})</span>` : ''}</td>
+          <td>${personnelNameHtml(p)}${p.position ? ` <span class="label-note">(${escapeHtml(p.position)})</span>` : ''}</td>
           <td>${STATUS_BADGE[p.status === null ? 'null' : p.status]}</td>
         </tr>
       `
@@ -577,6 +577,17 @@ function attendanceStatusBadgeHtml(status) {
   return `<span class="badge ${ATTENDANCE_STATUS_BADGE_CLASS[status] || 'badge-gray'}">${escapeHtml(ATTENDANCE_STATUS_LABEL[status] || status)}</span>`;
 }
 
+// Tanda kecil di sebelah nama untuk personel yang sudah punya indikasi hasil
+// analisa intelijen (lihat "Analisa Intelijen" di Kelola Personel) -- warna &
+// label sama seperti lencana Bank Data. Personel yang belum dianalisa tidak
+// diberi tanda apa pun supaya tabelnya tidak penuh lencana.
+function personnelNameHtml(r) {
+  const mark = r.security_category
+    ? ` <span class="badge ${securityCategoryBadgeClass(r.security_category)}" style="margin-left:6px;">${escapeHtml(securityCategoryLabel(r.security_category))}</span>`
+    : '';
+  return `${escapeHtml(r.full_name)}${mark}`;
+}
+
 // Cache sederhana per tanggal -- klik beberapa kelompok berturut-turut di
 // hari yang sama cukup satu kali ambil data ke server.
 let attendanceModalCache = null;
@@ -605,7 +616,7 @@ async function openAttendanceBucketModal(bucketKey) {
           .map(
             (r) => `
         <tr>
-          <td>${escapeHtml(r.full_name)}</td>
+          <td>${personnelNameHtml(r)}</td>
           <td>${escapeHtml(r.rank_info || '-')}</td>
           <td>${escapeHtml(r.position)}</td>
           <td>${attendanceStatusBadgeHtml(r.status)}</td>
