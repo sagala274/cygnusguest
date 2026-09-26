@@ -4,9 +4,11 @@ const {
   getDecryptedBotToken,
   setLastUpdateId,
   setDetectedChat,
+  sendTelegramMessage,
   escapeMarkdown,
   escapeMarkdownCode,
 } = require('./telegram');
+const { consumeLinkCode, findUserByTelegramId } = require('./telegramLink');
 const { formatJakartaDateTime } = require('./datetime');
 
 const POLL_TIMEOUT_SECONDS = 25;
@@ -21,6 +23,39 @@ async function replyTo(chatId, token, text) {
     });
   } catch (err) {
     console.error('Gagal membalas pesan Telegram:', err.message);
+  }
+}
+
+// Menutup notifikasi loading "..." di sisi pengguna Telegram setelah tombol
+// ditekan. `alert=true` menampilkan popup kecil (dipakai untuk pesan
+// error/penolakan supaya jelas terlihat, bukan cuma toast sekilas).
+async function answerCallback(callbackQueryId, token, text, alert) {
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ callback_query_id: callbackQueryId, text, show_alert: !!alert }),
+    });
+  } catch (err) {
+    console.error('Gagal membalas callback Telegram:', err.message);
+  }
+}
+
+// Menghapus tombol Setuju/Tolak dari pesan supaya tidak bisa ditekan dua
+// kali (mis. dua verifikator menekan tombol berbeda hampir bersamaan) --
+// teks pesan aslinya (berformat MarkdownV2) dibiarkan apa adanya, hasil
+// verifikasinya dikirim sebagai pesan BARU (lebih aman daripada mengedit
+// ulang teks MarkdownV2 yang sudah terkirim, yang berisiko gagal parse
+// kalau di-escape ulang tidak tepat).
+async function clearMessageButtons(chatId, messageId, token) {
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } }),
+    });
+  } catch (err) {
+    console.error('Gagal menghapus tombol pesan Telegram:', err.message);
   }
 }
 
@@ -89,10 +124,94 @@ const HELP_TEXT = [
   '/status \\- ringkasan jumlah tamu',
   '/tamu \\- 5 pendaftaran terbaru',
   '/log \\- 5 aktivitas terbaru',
+  '/link \\- tautkan akun Telegram pribadi ke akun aplikasi',
   '/help \\- daftar perintah ini',
 ].join('\n');
 
+// /link bisa dikirim dari chat MANAPUN (biasanya DM pribadi ke bot, beda
+// dengan chat_id bersama yang dipakai notifikasi) -- makanya ditangani
+// SEBELUM gerbang "chat harus chat_id resmi" di bawah, sama seperti /start.
+async function handleLinkCommand(message, token) {
+  const chatId = String(message.chat.id);
+  const parts = message.text.trim().split(/\s+/);
+  const code = parts[1];
+  if (!code) {
+    await replyTo(chatId, token, 'Kirim kode tautan dengan format:\n`/link kode_anda`\n\nKode didapat dari aplikasi PUSSIBERAL, lewat menu profil \\> Tautkan Telegram\\.');
+    return;
+  }
+  const telegramUserId = message.from && message.from.id;
+  if (!telegramUserId) return;
+  const telegramUsername = (message.from && message.from.username) || null;
+
+  const result = await consumeLinkCode(code, telegramUserId, telegramUsername);
+  if (result.error) {
+    await replyTo(chatId, token, `⛔ ${escapeMarkdown(result.error)}`);
+    return;
+  }
+  await replyTo(
+    chatId,
+    token,
+    `✅ Akun Telegram Anda berhasil ditautkan ke akun aplikasi *${escapeMarkdown(result.user.full_name)}*\\. Anda sekarang bisa menekan tombol Setuju/Tolak pada notifikasi verifikasi tamu\\.`
+  );
+}
+
+// Tombol Setuju/Tolak pada notifikasi "Pendaftaran Tamu Baru" -- lihat
+// notifyNewRegistration() di telegram.js untuk pembuatan tombolnya, dan
+// routes/guests.js (applyGuestVerification) untuk logika inti yang dipakai
+// bersama dengan halaman web.
+async function handleCallbackQuery(callbackQuery, token) {
+  const data = callbackQuery.data || '';
+  const [prefix, action, guestIdStr] = data.split(':');
+  const guestId = Number(guestIdStr);
+  if (prefix !== 'verify' || !['approve', 'reject'].includes(action) || !guestId) {
+    await answerCallback(callbackQuery.id, token, 'Aksi tidak dikenali.', true);
+    return;
+  }
+
+  const chatId = callbackQuery.message.chat.id;
+  const messageId = callbackQuery.message.message_id;
+  const telegramUserId = callbackQuery.from && callbackQuery.from.id;
+
+  const account = telegramUserId ? await findUserByTelegramId(telegramUserId) : null;
+  if (!account) {
+    await answerCallback(callbackQuery.id, token, 'Akun Telegram Anda belum ditautkan. Kirim /link <kode> ke bot ini dulu (kode dari menu profil aplikasi).', true);
+    return;
+  }
+  if (!account.is_active || !['admin', 'verifikator'].includes(account.role)) {
+    await answerCallback(callbackQuery.id, token, 'Akun Anda tidak memiliki izin untuk memverifikasi tamu.', true);
+    return;
+  }
+
+  // Lazy-require supaya tidak ada circular require di top-level (guests.js
+  // ikut me-require utils lain yang pada akhirnya balik ke sini).
+  const { applyGuestVerification } = require('../routes/guests');
+  const status = action === 'approve' ? 'Disetujui' : 'Ditolak';
+  const result = await applyGuestVerification({ id: guestId, status, actingUserId: account.id });
+
+  if (result.error) {
+    await answerCallback(callbackQuery.id, token, result.error, true);
+    if (result.alreadyResolved) await clearMessageButtons(chatId, messageId, token);
+    return;
+  }
+
+  await clearMessageButtons(chatId, messageId, token);
+  await answerCallback(callbackQuery.id, token, status === 'Disetujui' ? '✅ Disetujui' : '❌ Ditolak');
+  await sendTelegramMessage(
+    [
+      status === 'Disetujui' ? '✅ *Verifikasi via Telegram*' : '❌ *Verifikasi via Telegram*',
+      '',
+      `Pendaftaran ${escapeMarkdown(result.guest.company)} \\(${escapeMarkdownCode(result.guest.registration_number)}\\) telah *${escapeMarkdown(status)}*`,
+      `oleh: ${escapeMarkdown(account.full_name)}`,
+      `Waktu: ${escapeMarkdown(formatJakartaDateTime(new Date()))}`,
+    ].join('\n')
+  );
+}
+
 async function handleUpdate(update, token) {
+  if (update.callback_query) {
+    return handleCallbackQuery(update.callback_query, token);
+  }
+
   const message = update.message;
   if (!message || !message.text) return;
 
@@ -116,9 +235,13 @@ async function handleUpdate(update, token) {
     return;
   }
 
-  // Perintah data (selain /start) hanya dilayani untuk chat yang sudah terdaftar
-  // sebagai chat_id resmi -- mencegah siapapun yang menemukan username bot ini
-  // bisa menanyakan data internal sistem.
+  if (text.startsWith('/link')) {
+    return handleLinkCommand(message, token);
+  }
+
+  // Perintah data (selain /start dan /link) hanya dilayani untuk chat yang
+  // sudah terdaftar sebagai chat_id resmi -- mencegah siapapun yang
+  // menemukan username bot ini bisa menanyakan data internal sistem.
   const settings = await getTelegramSettings();
   if (!settings || !settings.chat_id || settings.chat_id !== chatId) {
     if (text.startsWith('/')) {

@@ -686,6 +686,28 @@ function renderNav(active) {
     profileTriggerEl.insertAdjacentHTML('beforeend', `<span class="profile-chevron">${icon('chevronDown')}</span>`);
   }
 
+  // "Tautkan Telegram" disuntik lewat JS (bukan ditulis ulang di tiap file
+  // HTML) sama seperti ikon topbar di atas -- cuma untuk role yang bisa
+  // memverifikasi tamu (Admin/Verifikator), supaya bisa menyetujui/menolak
+  // pendaftaran langsung dari tombol di Telegram.
+  if (['admin', 'verifikator'].includes(user.role) && !document.getElementById('telegramLinkMenuBtn')) {
+    const dropdown = document.getElementById('profileDropdown');
+    const logoutItem = document.getElementById('logoutBtn');
+    if (dropdown && logoutItem) {
+      const item = document.createElement('a');
+      item.href = '#';
+      item.id = 'telegramLinkMenuBtn';
+      item.className = 'profile-dropdown-item';
+      item.innerHTML = `<span class="nav-icon">${icon('telegram')}</span><span>Tautkan Telegram</span>`;
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        dropdown.classList.remove('open');
+        openTelegramLinkModal();
+      });
+      dropdown.insertBefore(item, logoutItem);
+    }
+  }
+
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     const logoutIcon = logoutBtn.querySelector('.nav-icon');
@@ -730,4 +752,88 @@ function renderNav(active) {
       if (e.key === 'Escape') closeDropdown();
     });
   }
+}
+
+// Modal "Tautkan Telegram" -- dibangun sepenuhnya lewat JS (tidak ada markup
+// bawaan di file HTML manapun) supaya tidak perlu menyalin markup modal ke
+// setiap halaman. Menampilkan status tautan saat ini, atau tombol untuk
+// membuat kode sekali-pakai yang dikirim ke bot lewat "/link <kode>".
+async function openTelegramLinkModal() {
+  document.querySelectorAll('.telegram-link-modal').forEach((el) => el.remove());
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay telegram-link-modal open';
+  overlay.innerHTML = `
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>Tautkan Telegram</h2>
+        <button type="button" class="modal-close" id="telegramLinkCloseBtn"><span class="icon-slot">${icon('close')}</span></button>
+      </div>
+      <div class="modal-body" id="telegramLinkBody">Memuat...</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  function close() {
+    overlay.remove();
+    document.removeEventListener('keydown', onEscKey);
+  }
+  function onEscKey(e) {
+    if (e.key === 'Escape') close();
+  }
+  overlay.querySelector('#telegramLinkCloseBtn').addEventListener('click', close);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  document.addEventListener('keydown', onEscKey);
+
+  const body = overlay.querySelector('#telegramLinkBody');
+
+  async function renderStatus() {
+    body.innerHTML = 'Memuat...';
+    try {
+      const res = await api('/telegram-link');
+      const link = res.data;
+      if (link) {
+        body.innerHTML = `
+          <p>Akun Telegram Anda sudah tertaut${link.telegram_username ? ` sebagai <strong>@${escapeHtml(link.telegram_username)}</strong>` : ''}, sejak ${formatDateTime(link.linked_at)}.</p>
+          <p class="page-description" style="margin:14px 0;">Anda bisa langsung menekan tombol Setuju/Tolak pada notifikasi verifikasi tamu di Telegram.</p>
+          <button type="button" class="btn btn-danger" id="telegramUnlinkBtn">Putuskan Tautan</button>
+        `;
+        body.querySelector('#telegramUnlinkBtn').addEventListener('click', async () => {
+          if (!confirm('Putuskan tautan akun Telegram ini? Anda tidak akan bisa lagi menekan tombol Setuju/Tolak di Telegram sampai menautkan ulang.')) return;
+          await api('/telegram-link', { method: 'DELETE' });
+          renderStatus();
+        });
+      } else {
+        body.innerHTML = `
+          <p class="page-description" style="margin-bottom:14px;">Tautkan akun Telegram pribadi Anda supaya bisa menyetujui/menolak pendaftaran tamu langsung dari tombol di notifikasi Telegram, tanpa perlu membuka aplikasi.</p>
+          <button type="button" class="btn btn-accent" id="telegramGenCodeBtn">Buat Kode Tautan</button>
+          <div id="telegramCodeResult" style="margin-top:16px;"></div>
+        `;
+        body.querySelector('#telegramGenCodeBtn').addEventListener('click', async () => {
+          const btn = body.querySelector('#telegramGenCodeBtn');
+          btn.disabled = true;
+          const resultEl = document.getElementById('telegramCodeResult');
+          try {
+            const codeRes = await api('/telegram-link/code', { method: 'POST' });
+            const { code, expires_at } = codeRes.data;
+            resultEl.innerHTML = `
+              <div class="result-box" style="display:block;">
+                Kirim pesan ini ke bot Telegram PUSSIBERAL (chat pribadi, bukan grup):<br>
+                <code style="font-size:16px; font-weight:800;">/link ${escapeHtml(code)}</code>
+                <p class="page-description" style="margin:10px 0 0;">Kode berlaku sampai ${formatDateTime(expires_at)}.</p>
+              </div>
+            `;
+          } catch (err) {
+            resultEl.innerHTML = `<div class="result-box error-box" style="display:block;">${escapeHtml(err.message)}</div>`;
+          } finally {
+            btn.disabled = false;
+          }
+        });
+      }
+    } catch (err) {
+      body.innerHTML = `<div class="result-box error-box" style="display:block;">${escapeHtml(err.message)}</div>`;
+    }
+  }
+
+  renderStatus();
 }

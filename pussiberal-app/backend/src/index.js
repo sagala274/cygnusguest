@@ -19,10 +19,12 @@ const traineeRoutes = require('./routes/trainees');
 const networkDiagramRoutes = require('./routes/networkDiagrams');
 const personnelRoutes = require('./routes/personnel');
 const attendanceRoutes = require('./routes/attendance');
+const telegramLinkRoutes = require('./routes/telegramLink');
 const { startBackupScheduler } = require('./utils/backupScheduler');
 const { ensureAiSettingsTable } = require('./utils/aiSettings');
 const { ensureTelegramSettingsTable } = require('./utils/telegram');
 const { startTelegramPolling } = require('./utils/telegramBot');
+const { ensureTelegramLinkTables } = require('./utils/telegramLink');
 const { ensureGuestExtraColumns, ensureGuestMemberExtraColumns, ensureVisitExtraColumns } = require('./utils/guestFields');
 const { ensureUserAvatarColumn, ensureUserLockoutColumns, ensureUserRoleEnum } = require('./utils/userAvatar');
 const { ensureNotificationsTable } = require('./utils/notifications');
@@ -65,6 +67,7 @@ app.use('/api/trainees', traineeRoutes);
 app.use('/api/network-diagrams', networkDiagramRoutes);
 app.use('/api/personnel', personnelRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/telegram-link', telegramLinkRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint tidak ditemukan' });
@@ -113,6 +116,7 @@ async function start() {
   await ensureAdminSeed();
   await ensureAiSettingsTable();
   await ensureTelegramSettingsTable();
+  await ensureTelegramLinkTables();
   await ensureGuestExtraColumns();
   await ensureGuestMemberExtraColumns();
   await ensureVisitExtraColumns();

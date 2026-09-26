@@ -338,6 +338,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
     // supaya verifikator tidak diberi tahu untuk sesuatu yang belum siap.
     if (!isScheduled) {
       notifyNewRegistration({
+        guestId,
         registrationNumber: regNumber,
         company,
         targetOfficials: target_officials,
@@ -628,6 +629,7 @@ router.post('/:id/complete', requireRole('admin', 'pos_depan'), asyncHandler(asy
   await logAudit(req.user.sub, 'complete_guest_schedule', 'guest', id, { registration_number: guest.registration_number });
 
   notifyNewRegistration({
+    guestId: Number(id),
     registrationNumber: guest.registration_number,
     company: guest.company,
     targetOfficials: guest.target_officials ? guest.target_officials.split(',') : [],
@@ -646,8 +648,40 @@ router.post('/:id/complete', requireRole('admin', 'pos_depan'), asyncHandler(asy
 }));
 
 // POST /api/guests/:id/verify  (Verifikator menyetujui/menolak seluruh pendaftaran)
+// Inti logika verifikasi (ubah status, catat audit, beri tahu pembuat
+// pendaftaran) -- diekstrak jadi fungsi tersendiri supaya bisa dipanggil
+// dari DUA jalur: route HTTP di bawah (dari halaman web) DAN tombol
+// Setuju/Tolak di Telegram (lihat utils/telegramBot.js), tanpa duplikasi
+// logika. Tombol Telegram sengaja tidak mendukung "Keterangan Pendamping"
+// (accompanied_by) -- itu tetap hanya lewat halaman web.
+async function applyGuestVerification({ id, status, accompaniedBy, actingUserId }) {
+  const [rows] = await pool.execute('SELECT status, company, registration_number, created_by FROM guests WHERE id = :id', { id });
+  if (!rows[0]) return { error: 'Pendaftaran tidak ditemukan', notFound: true };
+  if (rows[0].status !== 'Menunggu Verifikasi') {
+    return { error: 'Pendaftaran ini tidak sedang menunggu verifikasi', alreadyResolved: true, guest: rows[0] };
+  }
+
+  if (accompaniedBy !== undefined) {
+    await pool.execute('UPDATE guests SET status = :status, accompanied_by = :accompanied_by WHERE id = :id', {
+      status,
+      id,
+      accompanied_by: String(accompaniedBy).trim() ? String(accompaniedBy).trim() : null,
+    });
+  } else {
+    await pool.execute('UPDATE guests SET status = :status WHERE id = :id', { status, id });
+  }
+  await logAudit(actingUserId, 'verify_guest', 'guest', id, { status, accompanied_by: accompaniedBy || null });
+  notifyGuestCreator({
+    userId: rows[0].created_by,
+    guestId: Number(id),
+    message: `Pendaftaran ${rows[0].company} (${rows[0].registration_number}) telah ${status.toLowerCase()} oleh Verifikator.`,
+  });
+
+  return { guest: rows[0] };
+}
+
 router.post('/:id/verify', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
-  const { status, note, accompanied_by } = req.body || {};
+  const { status, accompanied_by } = req.body || {};
   const id = req.params.id;
 
   if (!['Disetujui', 'Ditolak'].includes(status)) {
@@ -657,27 +691,10 @@ router.post('/:id/verify', requireRole('admin', 'verifikator'), asyncHandler(asy
     return res.status(400).json({ error: 'Keterangan pendamping maksimal 150 karakter' });
   }
 
-  const [rows] = await pool.execute('SELECT status, company, registration_number, created_by FROM guests WHERE id = :id', { id });
-  if (!rows[0]) return res.status(404).json({ error: 'Pendaftaran tidak ditemukan' });
-  if (rows[0].status !== 'Menunggu Verifikasi') {
-    return res.status(409).json({ error: 'Pendaftaran ini tidak sedang menunggu verifikasi' });
+  const result = await applyGuestVerification({ id, status, accompaniedBy: accompanied_by, actingUserId: req.user.sub });
+  if (result.error) {
+    return res.status(result.notFound ? 404 : 409).json({ error: result.error });
   }
-
-  if (accompanied_by !== undefined) {
-    await pool.execute('UPDATE guests SET status = :status, accompanied_by = :accompanied_by WHERE id = :id', {
-      status,
-      id,
-      accompanied_by: String(accompanied_by).trim() ? String(accompanied_by).trim() : null,
-    });
-  } else {
-    await pool.execute('UPDATE guests SET status = :status WHERE id = :id', { status, id });
-  }
-  await logAudit(req.user.sub, 'verify_guest', 'guest', id, { status, note: note || null, accompanied_by: accompanied_by || null });
-  notifyGuestCreator({
-    userId: rows[0].created_by,
-    guestId: Number(id),
-    message: `Pendaftaran ${rows[0].company} (${rows[0].registration_number}) telah ${status.toLowerCase()} oleh Verifikator.`,
-  });
 
   res.json({ data: { id: Number(id), status } });
 }));
@@ -763,3 +780,6 @@ router.post('/:id/re-check-in', requireRole('admin', 'pos_depan'), asyncHandler(
 }));
 
 module.exports = router;
+// Diekspos terpisah supaya utils/telegramBot.js bisa memanggil logika
+// verifikasi yang sama tanpa lewat HTTP (dipakai tombol Setuju/Tolak Telegram).
+module.exports.applyGuestVerification = applyGuestVerification;

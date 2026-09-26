@@ -75,7 +75,7 @@ function escapeMarkdownCode(text) {
   return String(text).replace(/[`\\]/g, '\\$&');
 }
 
-async function sendTelegramMessage(text) {
+async function sendTelegramMessage(text, replyMarkup) {
   const token = await getDecryptedBotToken();
   const settings = await getTelegramSettings();
   if (!token || !settings.chat_id) return { ok: false, reason: 'not_configured' };
@@ -89,6 +89,7 @@ async function sendTelegramMessage(text) {
         text,
         parse_mode: 'MarkdownV2',
         disable_web_page_preview: true,
+        ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
       }),
     });
     const body = await res.json();
@@ -100,7 +101,11 @@ async function sendTelegramMessage(text) {
   }
 }
 
-async function notifyNewRegistration({ registrationNumber, company, targetOfficials, targetOfficialOther, purpose, memberCount, memberNames, createdByName }) {
+// Tombol Setuju/Tolak ditempelkan langsung di pesan notifikasi ini (bukan
+// pesan terpisah) supaya verifikator bisa langsung menindaklanjuti dari
+// Telegram tanpa membuka aplikasi -- lihat utils/telegramBot.js untuk
+// penanganan saat tombolnya ditekan (callback_query).
+async function notifyNewRegistration({ guestId, registrationNumber, company, targetOfficials, targetOfficialOther, purpose, memberCount, memberNames, createdByName }) {
   const settings = await getTelegramSettings();
   if (!settings || !settings.notify_new_registration) return;
 
@@ -121,7 +126,13 @@ async function notifyNewRegistration({ registrationNumber, company, targetOffici
     `Didaftarkan oleh: ${escapeMarkdown(createdByName)}`,
     `Waktu: ${escapeMarkdown(formatJakartaDateTime(new Date()))}`,
   ];
-  await sendTelegramMessage(lines.join('\n'));
+  const replyMarkup = guestId ? {
+    inline_keyboard: [[
+      { text: '✅ Setuju', callback_data: `verify:approve:${guestId}` },
+      { text: '❌ Tolak', callback_data: `verify:reject:${guestId}` },
+    ]],
+  } : undefined;
+  await sendTelegramMessage(lines.join('\n'), replyMarkup);
 }
 
 async function notifyLogin({ username, fullName, role, ipAddress, isNewIp }) {
