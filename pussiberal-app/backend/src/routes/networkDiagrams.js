@@ -5,7 +5,10 @@ const { logAudit } = require('../utils/audit');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
-router.use(authenticate, requireRole('admin', 'verifikator'));
+// "pimpinan" boleh MELIHAT (GET) tapi tidak boleh menulis -- setiap route
+// tulis (POST/PUT/DELETE) di bawah punya requireRole tersendiri yang
+// sengaja TIDAK menyertakan "pimpinan".
+router.use(authenticate, requireRole('admin', 'verifikator', 'pimpinan'));
 
 const EMPTY_DIAGRAM = JSON.stringify({ nodes: [], edges: [] });
 
@@ -54,7 +57,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // POST /api/network-diagrams  (buat diagram baru, kosong atau dengan data awal)
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
   const { name, data } = req.body || {};
   if (!name || !String(name).trim()) {
     return res.status(400).json({ error: 'Nama pemetaan wajib diisi' });
@@ -78,7 +81,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // PUT /api/network-diagrams/:id  (ubah nama dan/atau isi diagram)
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name, data } = req.body || {};
 
@@ -108,7 +111,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // DELETE /api/network-diagrams/:id
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
   const [rows] = await pool.execute('SELECT name FROM network_diagrams WHERE id = :id', { id: req.params.id });
   if (!rows[0]) return res.status(404).json({ error: 'Pemetaan tidak ditemukan' });
 

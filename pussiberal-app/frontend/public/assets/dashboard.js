@@ -4,9 +4,8 @@ renderNav('dashboard');
 const user = getUser();
 const isAdmin = user && user.role === 'admin';
 const canSeeVisitChart = user && ['admin', 'verifikator'].includes(user.role);
-const canManageAttendance = user && ['admin', 'verifikator'].includes(user.role);
 const canSeeAttendanceTrend = user && ['admin', 'verifikator', 'pimpinan'].includes(user.role);
-if (!canManageAttendance) {
+if (!canSeeAttendanceTrend) {
   document.getElementById('personnelStatLink').style.display = 'none';
   document.getElementById('attendanceAttentionLink').style.display = 'none';
 }
@@ -289,7 +288,7 @@ async function load() {
             <h2 class="section-title">Kondisi Absensi Hari Ini</h2>
             ${renderDonut(attendanceSegments, totalPersonnel, 'Personel')}
             <p class="page-description" style="margin:10px 0 0;">Klik salah satu kelompok untuk lihat daftar personelnya.</p>
-            ${canManageAttendance ? '<a class="link dashboard-card-link" href="absensi">Lihat detail &rarr;</a>' : ''}
+            ${canSeeAttendanceTrend ? '<a class="link dashboard-card-link" href="absensi">Lihat detail &rarr;</a>' : ''}
           </div>
         </div>
       `);
@@ -308,7 +307,7 @@ async function load() {
             <div class="alert-card-list">
               ${hasIssue ? rows.map((r) => `<div class="alert-card-row">${r}</div>`).join('') : '<div class="alert-card-row">Semua personel sudah tercatat kehadirannya hari ini.</div>'}
             </div>
-            ${canManageAttendance ? '<a class="link dashboard-card-link" href="absensi">Lihat Detail &rarr;</a>' : ''}
+            ${canSeeAttendanceTrend ? '<a class="link dashboard-card-link" href="absensi">Lihat Detail &rarr;</a>' : ''}
           </div>
         </div>
       `);
@@ -547,48 +546,11 @@ function wireAttendanceTrendTooltip(points, period) {
   });
 }
 
+// Pimpinan sekarang juga punya akses (read-only) ke halaman Absensi
+// Personel, jadi klik-tembus dari grafik tren selalu langsung ke sana --
+// bukan cuma Admin/Verifikator.
 function goToAttendanceDate(dateStr) {
-  if (canManageAttendance) {
-    window.location.href = `absensi?date=${dateStr}`;
-  } else {
-    openAttendanceDayModal(dateStr);
-  }
-}
-
-// Modal ringkas untuk Pimpinan (tidak punya akses ke halaman Absensi
-// Personel) -- menampilkan seluruh personel pada tanggal yang diklik,
-// memakai modal yang sama dengan klik-tembus pie chart "Kondisi Absensi
-// Hari Ini" tapi tanpa filter kelompok (semua status ditampilkan).
-async function openAttendanceDayModal(dateStr) {
-  const modal = document.getElementById('attendanceBucketModal');
-  const titleEl = document.getElementById('attendanceBucketModalTitle');
-  const bodyEl = document.getElementById('attendanceBucketModalBody');
-  titleEl.textContent = `Absensi Personel -- ${dateStr}`;
-  bodyEl.innerHTML = '<tr><td colspan="5">Memuat data...</td></tr>';
-  modal.classList.add('open');
-
-  try {
-    const res = await api(`/attendance?date=${dateStr}`);
-    const list = res.data;
-    titleEl.textContent = `Absensi Personel -- ${dateStr} (${list.length})`;
-    bodyEl.innerHTML = list.length
-      ? list
-          .map(
-            (r) => `
-        <tr>
-          <td>${escapeHtml(r.full_name)}</td>
-          <td>${escapeHtml(r.rank_info || '-')}</td>
-          <td>${escapeHtml(r.position)}</td>
-          <td>${attendanceStatusBadgeHtml(r.status)}</td>
-          <td>${escapeHtml(r.attendance_notes || '-')}</td>
-        </tr>
-      `
-          )
-          .join('')
-      : '<tr><td colspan="5">Tidak ada data.</td></tr>';
-  } catch (err) {
-    bodyEl.innerHTML = `<tr><td colspan="5" style="color:var(--danger);">${escapeHtml(err.message)}</td></tr>`;
-  }
+  window.location.href = `absensi?date=${dateStr}`;
 }
 
 // ---- Klik-tembus dari pie chart "Kondisi Absensi Hari Ini" ----

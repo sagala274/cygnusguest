@@ -1,9 +1,12 @@
 requireAuth();
-requireRole('admin', 'verifikator');
+requireRole('admin', 'verifikator', 'pimpinan');
 renderNav('bank-data');
 
 const user = getUser();
 const isAdmin = user && user.role === 'admin';
+// Pimpinan hanya boleh MELIHAT data & analisa -- tidak boleh
+// mengubah kategori/keterangan analisa maupun profiling perusahaan.
+const canEditAnalysis = user && ['admin', 'verifikator'].includes(user.role);
 
 // Kelompok "Lainnya" (tamu tanpa afiliasi instansi) menggabungkan banyak
 // nilai company mentah yang berbeda (kosong, "pribadi", "umum", dst) --
@@ -64,14 +67,14 @@ function groupCardHTML(group) {
       <td>${m.visit_count}x</td>
       <td>${formatDateTime(m.last_visit_at)}</td>
       <td>
-        <button class="btn btn-small manage-btn"
+        ${canEditAnalysis ? `<button class="btn btn-small manage-btn"
           data-guest-id="${m.guest_id}"
           data-member-id="${m.id}"
           data-name="${escapeHtml(m.full_name)}"
           data-affiliation="${escapeHtml(m.affiliation || '')}"
           data-category="${escapeHtml(m.security_category || '')}"
           data-notes="${escapeHtml(m.analysis_notes || '')}"
-        >Kelola Analisa</button>
+        >Kelola Analisa</button>` : ''}
         ${isAdmin ? `
           <button class="btn btn-small btn-danger delete-member-btn"
             data-guest-id="${m.guest_id}"
@@ -98,7 +101,7 @@ function groupCardHTML(group) {
           <h2 class="section-title">${escapeHtml(group.company)} <span class="optional-badge">${group.members.length} orang${group.total_registrations !== group.members.length ? ` &middot; ${group.total_registrations} kunjungan` : ''}</span></h2>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button type="button" class="btn btn-small download-group-btn" data-company="${escapeHtml(group.company)}">Unduh PDF Kelompok</button>
-            ${canEditProfile ? `
+            ${canEditAnalysis && canEditProfile ? `
               <button type="button" class="btn btn-small profile-company-btn"
                 data-company="${escapeHtml(group.company)}"
                 data-category="${escapeHtml((profile && profile.security_category) || '')}"

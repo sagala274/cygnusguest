@@ -1,6 +1,15 @@
 requireAuth();
-requireRole('admin', 'verifikator');
+requireRole('admin', 'verifikator', 'pimpinan');
 renderNav('absensi');
+
+// Pimpinan (Danpussiberal/Wadanpussiberal) hanya boleh MELIHAT halaman ini --
+// tidak boleh mengubah/menambah/menghapus apapun. Kaurpam (admin) dan
+// Verifikator tetap bisa mengedit seperti biasa.
+const user = getUser();
+const canEditAttendance = user && ['admin', 'verifikator'].includes(user.role);
+if (!canEditAttendance) {
+  document.getElementById('manageLink').style.display = 'none';
+}
 
 const resultBox = document.getElementById('resultBox');
 const groupsContainer = document.getElementById('groupsContainer');
@@ -222,6 +231,18 @@ function statusOptionsHtml(currentStatus) {
 }
 
 function personnelRowHtml(r, no) {
+  if (!canEditAttendance) {
+    return `
+      <tr data-personnel-id="${r.personnel_id}">
+        <td>${no}</td>
+        <td>${escapeHtml(r.full_name)}</td>
+        <td>${escapeHtml(r.rank_info || '-')}</td>
+        <td>${escapeHtml(r.position)}${r.personnel_notes ? ` <span class="label-note">(${escapeHtml(r.personnel_notes)})</span>` : ''}</td>
+        <td class="attendance-status-cell">${statusBadgeHtml(r.status)}</td>
+        <td>${escapeHtml(r.attendance_notes || '-')}</td>
+      </tr>
+    `;
+  }
   return `
     <tr data-personnel-id="${r.personnel_id}">
       <td class="drag-handle-cell"><span class="drag-handle" draggable="true" title="Geser untuk urutkan">${icon('grip')}</span></td>
@@ -249,21 +270,21 @@ function categoryCardHtml(category, members, startNo) {
       <div class="section">
         <div class="section-header-row">
           <h2 class="section-title">${escapeHtml(category)} <span class="optional-badge">${members.length} personel</span></h2>
-          <button type="button" class="btn btn-small add-personnel-btn" data-category="${escapeHtml(category)}">+ Tambah Personel</button>
+          ${canEditAttendance ? `<button type="button" class="btn btn-small add-personnel-btn" data-category="${escapeHtml(category)}">+ Tambah Personel</button>` : ''}
         </div>
-        <p class="page-description" style="margin:-6px 0 14px;">Geser ikon <span style="display:inline-flex;vertical-align:middle;">${icon('grip')}</span> untuk mengurutkan personel (mis. berdasarkan senioritas pangkat/NRP).</p>
+        ${canEditAttendance ? `<p class="page-description" style="margin:-6px 0 14px;">Geser ikon <span style="display:inline-flex;vertical-align:middle;">${icon('grip')}</span> untuk mengurutkan personel (mis. berdasarkan senioritas pangkat/NRP).</p>` : ''}
         <div class="table-wrap">
           <table data-category="${escapeHtml(category)}">
             <thead>
               <tr>
-                <th style="width:28px;"></th>
+                ${canEditAttendance ? '<th style="width:28px;"></th>' : ''}
                 <th style="width:40px;">No</th>
                 <th>Nama</th>
                 <th>Pangkat/Korps/NRP/NIP</th>
                 <th>Jabatan</th>
                 <th style="width:220px;">Status Absensi</th>
                 <th>Keterangan</th>
-                <th></th>
+                ${canEditAttendance ? '<th></th>' : ''}
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>

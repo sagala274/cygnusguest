@@ -1,6 +1,14 @@
 requireAuth();
-requireRole('admin', 'verifikator');
+requireRole('admin', 'verifikator', 'pimpinan');
 renderNav('personnel-list');
+
+// Pimpinan hanya boleh MELIHAT daftar personel -- tidak boleh
+// menambah/mengedit/menghapus.
+const user = getUser();
+const canEditPersonnel = user && ['admin', 'verifikator'].includes(user.role);
+if (!canEditPersonnel) {
+  document.getElementById('addPersonnelBtn').style.display = 'none';
+}
 
 const searchInput = document.getElementById('searchInput');
 const showInactiveCheck = document.getElementById('showInactiveCheck');
@@ -52,8 +60,8 @@ function render() {
       <td>${escapeHtml(p.notes || '-')}</td>
       <td>${statusBadgeHtml(p.is_active)}</td>
       <td>
-        <button type="button" class="btn btn-small edit-personnel-btn" data-id="${p.id}">Edit</button>
-        <button type="button" class="btn btn-small btn-danger delete-personnel-btn" data-id="${p.id}" data-name="${escapeHtml(p.full_name)}" style="margin-left:6px;">Hapus</button>
+        ${canEditPersonnel ? `<button type="button" class="btn btn-small edit-personnel-btn" data-id="${p.id}">Edit</button>
+        <button type="button" class="btn btn-small btn-danger delete-personnel-btn" data-id="${p.id}" data-name="${escapeHtml(p.full_name)}" style="margin-left:6px;">Hapus</button>` : '-'}
       </td>
     </tr>
   `

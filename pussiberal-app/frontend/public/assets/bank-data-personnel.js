@@ -1,5 +1,5 @@
 requireAuth();
-requireRole('admin', 'verifikator');
+requireRole('admin', 'verifikator', 'pimpinan');
 renderNav('bank-data');
 
 const params = new URLSearchParams(window.location.search);
@@ -8,6 +8,11 @@ const memberId = params.get('member_id');
 const resultBox = document.getElementById('resultBox');
 const user = getUser();
 const isAdmin = user && user.role === 'admin';
+// Pimpinan hanya boleh MELIHAT ringkasan data ini -- tidak boleh mengedit.
+const canEditAnalysis = user && ['admin', 'verifikator'].includes(user.role);
+if (!canEditAnalysis) {
+  document.getElementById('editSummaryBtn').style.display = 'none';
+}
 
 if (!nik) {
   window.location.href = 'bank-data';

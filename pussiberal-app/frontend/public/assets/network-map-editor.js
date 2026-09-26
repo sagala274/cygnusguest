@@ -1,5 +1,5 @@
 requireAuth();
-requireRole('admin', 'verifikator');
+requireRole('admin', 'verifikator', 'pimpinan');
 renderNav('network-map');
 
 const params = new URLSearchParams(window.location.search);
@@ -13,6 +13,19 @@ const canvasWrap = document.getElementById('canvasWrap');
 const svg = document.getElementById('mapCanvas');
 const nodesLayer = document.getElementById('nodesLayer');
 const edgesLayer = document.getElementById('edgesLayer');
+
+// Pimpinan hanya boleh MELIHAT diagram -- tidak boleh menambah, memindah,
+// mengganti warna/label, menghubungkan, menghapus, atau menyimpan.
+const user = getUser();
+const canEditDiagram = user && ['admin', 'verifikator'].includes(user.role);
+if (!canEditDiagram) {
+  nameInput.setAttribute('readonly', 'readonly');
+  document.getElementById('addPersonBtn').style.display = 'none';
+  document.getElementById('addCompanyBtn').style.display = 'none';
+  document.getElementById('connectModeBtn').style.display = 'none';
+  document.getElementById('saveBtn').style.display = 'none';
+  saveStatus.style.display = 'none';
+}
 
 // Palet terpisah: kotak/lingkaran pakai warna pastel (teks gelap tetap
 // terbaca), garis penghubung pakai warna lebih pekat supaya jelas terlihat
@@ -189,7 +202,7 @@ function deselect() {
 function updateToolbarForSelection() {
   const colorGroup = document.getElementById('colorGroup');
   const selectionActions = document.getElementById('selectionActions');
-  if (!selected) {
+  if (!selected || !canEditDiagram) {
     colorGroup.style.display = 'none';
     selectionActions.style.display = 'none';
     return;
@@ -212,7 +225,7 @@ function updateToolbarForSelection() {
 }
 
 function applyColor(color) {
-  if (!selected) return;
+  if (!selected || !canEditDiagram) return;
   if (selected.type === 'node') {
     const node = state.nodes.find((n) => n.id === selected.id);
     if (node) node.fill = color;
@@ -226,7 +239,7 @@ function applyColor(color) {
 }
 
 function deleteSelected() {
-  if (!selected) return;
+  if (!selected || !canEditDiagram) return;
   if (selected.type === 'node') {
     state.nodes = state.nodes.filter((n) => n.id !== selected.id);
     state.edges = state.edges.filter((e) => e.from !== selected.id && e.to !== selected.id);
@@ -240,6 +253,7 @@ function deleteSelected() {
 }
 
 function editNodeLabel(node) {
+  if (!canEditDiagram) return;
   const g = nodesLayer.querySelector(`[data-node-id="${node.id}"]`);
   if (!g) return;
   const shapeRect = g.querySelector('.map-node-shape').getBoundingClientRect();
@@ -251,6 +265,7 @@ function editNodeLabel(node) {
 }
 
 function editEdgeLabel(edge) {
+  if (!canEditDiagram) return;
   const group = edgesLayer.querySelector(`[data-edge-id="${edge.id}"]`);
   if (!group) return;
   const lineRect = group.querySelector('.map-edge').getBoundingClientRect();
@@ -294,6 +309,7 @@ function openInlineEditor(initialValue, rect, onCommit) {
 }
 
 function addNode(shape, defaultLabel) {
+  if (!canEditDiagram) return;
   const node = {
     id: genId('n'),
     shape,
@@ -320,6 +336,7 @@ function onNodeMouseDown(e, node) {
     return;
   }
   selectElement('node', node.id);
+  if (!canEditDiagram) return;
   dragState = {
     nodeId: node.id,
     startClientX: e.clientX,
@@ -330,6 +347,7 @@ function onNodeMouseDown(e, node) {
 }
 
 function handleConnectClick(nodeId) {
+  if (!canEditDiagram) return;
   if (!connectPendingNodeId) {
     connectPendingNodeId = nodeId;
     renderAll();
@@ -432,7 +450,7 @@ document.getElementById('renameElementBtn').addEventListener('click', () => {
 
 document.addEventListener('keydown', (e) => {
   if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-  if ((e.key === 'Delete' || e.key === 'Backspace') && selected) {
+  if (canEditDiagram && (e.key === 'Delete' || e.key === 'Backspace') && selected) {
     e.preventDefault();
     deleteSelected();
   }
@@ -441,6 +459,7 @@ document.addEventListener('keydown', (e) => {
 nameInput.addEventListener('input', markDirty);
 
 async function save() {
+  if (!canEditDiagram) return;
   resultBox.style.display = 'none';
   try {
     await api(`/network-diagrams/${diagramId}`, {

@@ -1,6 +1,14 @@
 requireAuth();
-requireRole('admin', 'verifikator');
+requireRole('admin', 'verifikator', 'pimpinan');
 renderNav('network-map');
+
+// Pimpinan hanya boleh MELIHAT pemetaan -- tidak boleh membuat, mengganti
+// nama, atau menghapus.
+const user = getUser();
+const canEditDiagrams = user && ['admin', 'verifikator'].includes(user.role);
+if (!canEditDiagrams) {
+  document.getElementById('createBtn').style.display = 'none';
+}
 
 const tbody = document.getElementById('diagramTableBody');
 const resultBox = document.getElementById('resultBox');
@@ -29,8 +37,8 @@ async function load() {
         <td>${escapeHtml(d.updated_by_name || d.created_by_name || '-')}</td>
         <td>
           <a class="btn btn-small" href="network-map-editor?id=${d.id}">Buka</a>
-          <button type="button" class="btn btn-small rename-btn" data-id="${d.id}" data-name="${escapeHtml(d.name)}" style="margin-left:6px;">Ganti Nama</button>
-          <button type="button" class="btn btn-small btn-danger delete-btn" data-id="${d.id}" data-name="${escapeHtml(d.name)}" style="margin-left:6px;">Hapus</button>
+          ${canEditDiagrams ? `<button type="button" class="btn btn-small rename-btn" data-id="${d.id}" data-name="${escapeHtml(d.name)}" style="margin-left:6px;">Ganti Nama</button>
+          <button type="button" class="btn btn-small btn-danger delete-btn" data-id="${d.id}" data-name="${escapeHtml(d.name)}" style="margin-left:6px;">Hapus</button>` : ''}
         </td>
       </tr>
     `

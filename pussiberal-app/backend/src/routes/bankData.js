@@ -8,7 +8,13 @@ const { logAudit } = require('../utils/audit');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
-router.use(authenticate, requireRole('admin', 'verifikator'));
+// "pimpinan" boleh MELIHAT (GET) tapi tidak boleh menulis -- route
+// PUT/DELETE company & company-profile di bawah masing-masing sudah punya
+// requireRole tersendiri yang sengaja TIDAK menyertakan "pimpinan". Edit
+// analisa per-orang (security_category/analysis_notes) lewat
+// PUT /guests/:id/members/:memberId di guests.js, yang juga sudah
+// mengecualikan "pimpinan".
+router.use(authenticate, requireRole('admin', 'verifikator', 'pimpinan'));
 
 const INDEPENDENT_GROUP_LABEL = 'Lainnya';
 

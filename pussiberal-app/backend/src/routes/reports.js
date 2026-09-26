@@ -233,12 +233,12 @@ async function fetchVisits(from, to) {
   return rows;
 }
 
-router.get('/visits', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
+router.get('/visits', requireRole('admin', 'verifikator', 'pimpinan'), asyncHandler(async (req, res) => {
   const rows = await fetchVisits(req.query.from, req.query.to);
   res.json({ data: rows });
 }));
 
-router.get('/visits/export', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
+router.get('/visits/export', requireRole('admin', 'verifikator', 'pimpinan'), asyncHandler(async (req, res) => {
   const { format, from, to } = req.query;
   const rows = await fetchVisits(from, to);
 

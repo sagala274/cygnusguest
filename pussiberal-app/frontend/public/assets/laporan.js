@@ -1,5 +1,5 @@
 requireAuth();
-requireRole('admin', 'verifikator');
+requireRole('admin', 'verifikator', 'pimpinan');
 renderNav('laporan');
 
 const tbody = document.getElementById('reportTableBody');

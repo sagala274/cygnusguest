@@ -6,7 +6,10 @@ const asyncHandler = require('../utils/asyncHandler');
 const { VALID_SECURITY_CATEGORIES } = require('../utils/validators');
 
 const router = express.Router();
-router.use(authenticate, requireRole('admin', 'pos_depan', 'verifikator'));
+// "pimpinan" boleh MELIHAT (GET) tapi tidak boleh menulis -- PUT /:id di
+// bawah sengaja diberi requireRole tersendiri yang TIDAK menyertakan
+// "pimpinan" (POST dan DELETE sudah punya requireRole sendiri juga).
+router.use(authenticate, requireRole('admin', 'pos_depan', 'verifikator', 'pimpinan'));
 
 // Status dihitung dari tanggal, bukan disimpan -- supaya selalu akurat tanpa
 // perlu job terjadwal untuk memperbarui status saat tanggalnya lewat.
@@ -109,7 +112,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
 }));
 
 // PUT /api/trainees/:id  (identitas & kegiatan: admin/pos depan -- hasil profiling: admin/verifikator)
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', requireRole('admin', 'pos_depan', 'verifikator'), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const {
     full_name, rank_title, position, institution, address, birth_place, birth_date, activities, start_date, end_date,

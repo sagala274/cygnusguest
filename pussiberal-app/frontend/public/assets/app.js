@@ -560,24 +560,24 @@ function renderNav(active) {
       title: 'Tamu & Kunjungan',
       items: [
         { href: 'pendaftaran', label: 'Pendaftaran Tamu', icon: 'pendaftaran', roles: ['admin', 'pos_depan'] },
-        { href: 'daftar-tamu', label: 'Daftar Tamu', icon: 'daftar-tamu', roles: ['admin', 'pos_depan', 'verifikator'] },
-        { href: 'daftar-tamu?status=Menunggu%20Verifikasi', label: 'Verifikasi Tamu', icon: 'verifikasi', roles: ['admin', 'verifikator'], matchHref: 'daftar-tamu' },
-        { href: 'laporan', label: 'Rekap Kunjungan', icon: 'laporan', roles: ['admin', 'verifikator'] },
+        { href: 'daftar-tamu', label: 'Daftar Tamu', icon: 'daftar-tamu', roles: ['admin', 'pos_depan', 'verifikator', 'pimpinan'] },
+        { href: 'daftar-tamu?status=Menunggu%20Verifikasi', label: 'Verifikasi Tamu', icon: 'verifikasi', roles: ['admin', 'verifikator', 'pimpinan'], matchHref: 'daftar-tamu' },
+        { href: 'laporan', label: 'Rekap Kunjungan', icon: 'laporan', roles: ['admin', 'verifikator', 'pimpinan'] },
       ],
     },
     {
       title: 'Personel Internal',
       items: [
-        { href: 'personnel-list', label: 'Data Personel', icon: 'people', roles: ['admin', 'verifikator'] },
-        { href: 'absensi', label: 'Absensi Personel', icon: 'clipboard', roles: ['admin', 'verifikator'] },
-        { href: 'personel-pembelajaran', label: 'Pembelajaran', icon: 'graduation', roles: ['admin', 'pos_depan', 'verifikator'] },
+        { href: 'personnel-list', label: 'Data Personel', icon: 'people', roles: ['admin', 'verifikator', 'pimpinan'] },
+        { href: 'absensi', label: 'Absensi Personel', icon: 'clipboard', roles: ['admin', 'verifikator', 'pimpinan'] },
+        { href: 'personel-pembelajaran', label: 'Pembelajaran', icon: 'graduation', roles: ['admin', 'pos_depan', 'verifikator', 'pimpinan'] },
       ],
     },
     {
       title: 'Bank Data & Intelijen',
       items: [
-        { href: 'bank-data', label: 'Bank Data', icon: 'bank-data', roles: ['admin', 'verifikator'] },
-        { href: 'network-map', label: 'Pemetaan Hubungan', icon: 'network', roles: ['admin', 'verifikator'] },
+        { href: 'bank-data', label: 'Bank Data', icon: 'bank-data', roles: ['admin', 'verifikator', 'pimpinan'] },
+        { href: 'network-map', label: 'Pemetaan Hubungan', icon: 'network', roles: ['admin', 'verifikator', 'pimpinan'] },
       ],
     },
     {

@@ -6,7 +6,10 @@ const asyncHandler = require('../utils/asyncHandler');
 const { categoryOrderSql } = require('../utils/attendance');
 
 const router = express.Router();
-router.use(authenticate, requireRole('admin', 'verifikator'));
+// "pimpinan" boleh MELIHAT (GET) tapi tidak boleh menulis -- setiap route
+// tulis (POST/PUT/DELETE) di bawah punya requireRole tersendiri yang
+// sengaja TIDAK menyertakan "pimpinan".
+router.use(authenticate, requireRole('admin', 'verifikator', 'pimpinan'));
 
 // GET /api/personnel  (?includeInactive=1)
 router.get('/', asyncHandler(async (req, res) => {
@@ -28,7 +31,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // POST /api/personnel
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
   const { full_name, rank_info, position, category, notes } = req.body || {};
 
   const errors = {};
@@ -79,7 +82,7 @@ router.post('/', asyncHandler(async (req, res) => {
 // Absensi Personel (mis. supaya bisa diurutkan manual berdasarkan
 // senioritas pangkat/NRP). Didaftarkan SEBELUM "PUT /:id" di bawah supaya
 // "reorder" tidak keliru ditangkap sebagai :id.
-router.put('/reorder', asyncHandler(async (req, res) => {
+router.put('/reorder', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
   const { category, personnel_ids } = req.body || {};
   if (!category || !String(category).trim()) {
     return res.status(400).json({ error: 'Kategori wajib diisi' });
@@ -111,7 +114,7 @@ router.put('/reorder', asyncHandler(async (req, res) => {
 }));
 
 // PUT /api/personnel/:id
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { full_name, rank_info, position, category, notes, is_active } = req.body || {};
 
@@ -162,7 +165,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 // punya riwayat, hanya dinonaktifkan (tidak muncul di absensi harian lagi)
 // supaya riwayat absensi lama tidak kehilangan konteks personelnya --
 // pola yang sama dipakai untuk akun pengguna yang pernah beraktivitas.
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const [personnelRows] = await pool.execute('SELECT full_name FROM personnel WHERE id = :id', { id });
   if (!personnelRows[0]) return res.status(404).json({ error: 'Data personel tidak ditemukan' });
