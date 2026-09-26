@@ -4,6 +4,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { logAudit } = require('../utils/audit');
 const asyncHandler = require('../utils/asyncHandler');
 const { categoryOrderSql } = require('../utils/attendance');
+const { VALID_SECURITY_CATEGORIES } = require('../utils/validators');
 
 const router = express.Router();
 // "pimpinan" boleh MELIHAT (GET) tapi tidak boleh menulis -- setiap route
@@ -16,7 +17,8 @@ router.get('/', asyncHandler(async (req, res) => {
   const includeInactive = req.query.includeInactive === '1';
   const where = includeInactive ? '' : 'WHERE is_active = 1';
   const [rows] = await pool.query(
-    `SELECT id, full_name, rank_info, position, category, notes, sort_order, is_active, created_at, updated_at
+    `SELECT id, full_name, rank_info, position, category, notes, sort_order, is_active,
+            security_category, analysis_notes, created_at, updated_at
      FROM personnel ${where}
      ORDER BY ${categoryOrderSql()}, category, sort_order, id`
   );
@@ -116,7 +118,7 @@ router.put('/reorder', requireRole('admin', 'verifikator'), asyncHandler(async (
 // PUT /api/personnel/:id
 router.put('/:id', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { full_name, rank_info, position, category, notes, is_active } = req.body || {};
+  const { full_name, rank_info, position, category, notes, is_active, security_category, analysis_notes } = req.body || {};
 
   const [existing] = await pool.execute('SELECT id FROM personnel WHERE id = :id', { id });
   if (!existing[0]) return res.status(404).json({ error: 'Data personel tidak ditemukan' });
@@ -149,6 +151,16 @@ router.put('/:id', requireRole('admin', 'verifikator'), asyncHandler(async (req,
   }
   if (is_active !== undefined) {
     fields.push('is_active = :is_active'); params.is_active = is_active ? 1 : 0;
+  }
+  if (security_category !== undefined) {
+    if (security_category !== null && security_category !== '' && !VALID_SECURITY_CATEGORIES.includes(security_category)) {
+      return res.status(400).json({ error: 'Kategori keamanan tidak valid' });
+    }
+    fields.push('security_category = :security_category'); params.security_category = security_category || null;
+  }
+  if (analysis_notes !== undefined) {
+    if (analysis_notes && String(analysis_notes).length > 2000) return res.status(400).json({ error: 'Catatan analisa maksimal 2000 karakter' });
+    fields.push('analysis_notes = :analysis_notes'); params.analysis_notes = analysis_notes && String(analysis_notes).trim() ? String(analysis_notes).trim() : null;
   }
 
   if (fields.length) {

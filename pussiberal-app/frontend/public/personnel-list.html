@@ -72,6 +72,7 @@
                 <th>Kategori/Satuan</th>
                 <th>Keterangan</th>
                 <th>Status</th>
+                <th>Kategori Keamanan</th>
                 <th></th>
               </tr>
             </thead>
@@ -122,6 +123,37 @@
         <div class="full modal-actions">
           <button type="button" class="btn" id="modalCancelBtn">Batal</button>
           <button type="submit" class="btn btn-accent" id="modalSubmitBtn">Tambah Personel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="analysisModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="analysisModalTitle">Analisa Intelijen</h2>
+      <button type="button" class="modal-close" id="analysisModalCloseBtn"><span class="icon-slot" id="analysisCloseIconSlot"></span></button>
+    </div>
+    <div class="modal-body">
+      <form id="analysisForm" class="grid">
+        <div class="field full">
+          <label for="analysisCategory">KATEGORI KEAMANAN <span class="label-note">Opsional</span></label>
+          <select id="analysisCategory">
+            <option value="">Belum Dianalisa</option>
+            <option value="aman">Aman</option>
+            <option value="perlu_perhatian">Perlu Perhatian</option>
+            <option value="perlu_penanganan">Perlu Penanganan</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="analysisNotes">CATATAN ANALISA <span class="label-note">Opsional, mis. indikasi anomali/kecurigaan</span></label>
+          <textarea id="analysisNotes" placeholder="Catatan hasil analisa/anomali yang mencurigakan terhadap personel ini..." maxlength="2000"></textarea>
+        </div>
+
+        <div class="full modal-actions">
+          <button type="button" class="btn" id="analysisCancelBtn">Batal</button>
+          <button type="submit" class="btn btn-accent" id="analysisSubmitBtn">Simpan Analisa</button>
         </div>
       </form>
     </div>

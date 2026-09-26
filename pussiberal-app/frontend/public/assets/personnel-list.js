@@ -44,7 +44,7 @@ function render() {
   const filtered = allRows.filter((p) => (showInactiveCheck.checked || p.is_active) && matchesSearch(p, q));
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="8">Tidak ada data personel ditemukan.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9">Tidak ada data personel ditemukan.</td></tr>`;
     return;
   }
 
@@ -53,12 +53,13 @@ function render() {
       (p, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td>${escapeHtml(p.full_name)}</td>
+      <td>${canEditPersonnel ? `<a href="#" class="link analysis-trigger" data-id="${p.id}">${escapeHtml(p.full_name)}</a>` : escapeHtml(p.full_name)}</td>
       <td>${escapeHtml(p.rank_info || '-')}</td>
       <td>${escapeHtml(p.position)}</td>
       <td>${escapeHtml(p.category)}</td>
       <td>${escapeHtml(p.notes || '-')}</td>
       <td>${statusBadgeHtml(p.is_active)}</td>
+      <td><span class="badge ${securityCategoryBadgeClass(p.security_category)}">${escapeHtml(securityCategoryLabel(p.security_category))}</span></td>
       <td>
         ${canEditPersonnel ? `<button type="button" class="btn btn-small edit-personnel-btn" data-id="${p.id}">Edit</button>
         <button type="button" class="btn btn-small btn-danger delete-personnel-btn" data-id="${p.id}" data-name="${escapeHtml(p.full_name)}" style="margin-left:6px;">Hapus</button>` : '-'}
@@ -74,17 +75,23 @@ function render() {
   document.querySelectorAll('.delete-personnel-btn').forEach((btn) => {
     btn.addEventListener('click', () => deletePersonnel(Number(btn.dataset.id), btn.dataset.name));
   });
+  document.querySelectorAll('.analysis-trigger').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      openAnalysisModal(Number(link.dataset.id));
+    });
+  });
 }
 
 async function load() {
-  tbody.innerHTML = `<tr><td colspan="8">Memuat data...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="9">Memuat data...</td></tr>`;
   try {
     const res = await api('/personnel?includeInactive=1');
     allRows = res.data;
     populateCategoryList();
     render();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="8">${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9">${escapeHtml(err.message)}</td></tr>`;
   }
 }
 
@@ -213,6 +220,58 @@ personnelForm.addEventListener('submit', async (e) => {
     if (err.fields) {
       Object.entries(err.fields).forEach(([field, message]) => showFieldError(field, message));
     }
+  }
+});
+
+// ---- Analisa intelijen per personel -- klik nama untuk isi/lihat kategori
+// keamanan & catatan anomali/kecurigaan, sama seperti "Kelola Analisa" di
+// Bank Data (tapi untuk personel internal, bukan tamu).
+
+const analysisModal = document.getElementById('analysisModal');
+const analysisForm = document.getElementById('analysisForm');
+let analysisPersonnelId = null;
+
+document.getElementById('analysisCloseIconSlot').innerHTML = icon('close');
+
+function openAnalysisModal(id) {
+  resultBox.style.display = 'none';
+  const p = allRows.find((r) => r.id === id);
+  if (!p) return;
+  analysisPersonnelId = id;
+  document.getElementById('analysisModalTitle').textContent = `Analisa Intelijen: ${p.full_name}`;
+  document.getElementById('analysisCategory').value = p.security_category || '';
+  document.getElementById('analysisNotes').value = p.analysis_notes || '';
+  analysisModal.classList.add('open');
+}
+
+function closeAnalysisModal() {
+  analysisModal.classList.remove('open');
+  analysisPersonnelId = null;
+  analysisForm.reset();
+}
+
+document.getElementById('analysisModalCloseBtn').addEventListener('click', closeAnalysisModal);
+document.getElementById('analysisCancelBtn').addEventListener('click', closeAnalysisModal);
+analysisModal.addEventListener('click', (e) => { if (e.target === analysisModal) closeAnalysisModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && analysisModal.classList.contains('open')) closeAnalysisModal(); });
+
+analysisForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (analysisPersonnelId === null) return;
+  resultBox.style.display = 'none';
+
+  const payload = {
+    security_category: document.getElementById('analysisCategory').value || null,
+    analysis_notes: document.getElementById('analysisNotes').value.trim() || null,
+  };
+
+  try {
+    await api(`/personnel/${analysisPersonnelId}`, { method: 'PUT', body: JSON.stringify(payload) });
+    showMessage('Analisa berhasil disimpan.', false);
+    closeAnalysisModal();
+    load();
+  } catch (err) {
+    showMessage(err.message, true);
   }
 });
 

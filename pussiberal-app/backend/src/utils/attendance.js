@@ -156,6 +156,31 @@ function categoryOrderSql(column = 'category') {
   return `CASE WHEN FIELD(${column}, ${list}) = 0 THEN 999 ELSE FIELD(${column}, ${list}) END`;
 }
 
+async function columnExists(table, column) {
+  const [rows] = await pool.query(
+    `SELECT 1 FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column`,
+    { table, column }
+  );
+  return rows.length > 0;
+}
+
+// Kolom analisa intelijen (anomali/kecurigaan) untuk personel internal --
+// pola & kategori yang sama seperti analisa Bank Data pada tamu (lihat
+// utils/validators.js VALID_SECURITY_CATEGORIES), supaya konsisten. Dicek
+// lewat information_schema (idempoten) karena MySQL tidak punya
+// "ADD COLUMN IF NOT EXISTS".
+async function ensurePersonnelAnalysisColumns() {
+  if (!(await columnExists('personnel', 'security_category'))) {
+    await pool.query(
+      "ALTER TABLE personnel ADD COLUMN security_category ENUM('aman','perlu_perhatian','perlu_penanganan') NULL AFTER is_active"
+    );
+  }
+  if (!(await columnExists('personnel', 'analysis_notes'))) {
+    await pool.query('ALTER TABLE personnel ADD COLUMN analysis_notes TEXT NULL AFTER security_category');
+  }
+}
+
 // MySQL tidak punya "ALTER TYPE ADD VALUE" -- MODIFY COLUMN dijalankan tiap
 // start backend (bukan dikondisikan seperti ADD COLUMN) supaya nilai ENUM
 // baru (mis. "wfh", "libur") ikut ditambahkan ke database yang sudah lebih
@@ -167,5 +192,6 @@ async function ensureAttendanceStatusEnum() {
 }
 
 module.exports = {
-  ensurePersonnelTables, ensureAttendanceStatusEnum, CATEGORY_ORDER, ATTENDANCE_STATUSES, categoryOrderSql, isWeekend,
+  ensurePersonnelTables, ensureAttendanceStatusEnum, ensurePersonnelAnalysisColumns,
+  CATEGORY_ORDER, ATTENDANCE_STATUSES, categoryOrderSql, isWeekend,
 };
