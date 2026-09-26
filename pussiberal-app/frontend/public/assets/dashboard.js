@@ -236,6 +236,13 @@ async function loadActivity() {
 
 async function load() {
   document.getElementById('welcomeTitle').textContent = `Selamat datang, ${user.full_name}!`;
+  // Pos Depan fokusnya memang cuma tamu -- role lain (Admin, Verifikator,
+  // Pimpinan) sudah mencakup absensi & kondisi personel juga, jadi kalimat
+  // sambutannya disesuaikan supaya tidak seolah-olah aplikasi ini cuma
+  // soal tamu.
+  document.getElementById('welcomeDesc').textContent = user.role === 'pos_depan'
+    ? 'Berikut ringkasan aktivitas pendaftaran dan kunjungan tamu PUSSIBERAL.'
+    : 'Berikut ringkasan aktivitas tamu, serta absensi dan kondisi personel PUSSIBERAL.';
   document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   document.getElementById('calendarIconSlot').innerHTML = icon('calendar');
   document.getElementById('dateChevronSlot').innerHTML = icon('chevronDown');
