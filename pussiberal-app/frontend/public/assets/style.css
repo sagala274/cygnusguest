@@ -295,22 +295,30 @@ button, input, select, textarea { font: inherit; }
 }
 .page-title-icon {
   width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
-  background: var(--accent-soft); color: var(--accent);
+  background: linear-gradient(135deg, #1e3a8a, #38bdf8); color: #fff;
   display: flex; align-items: center; justify-content: center;
 }
 .page-title-icon .icon { width: 19px; height: 19px; }
-.page-description { margin: 0 0 30px; color: #344054; font-size: 14px; line-height: 1.65; max-width: 790px; }
+.page-description { margin: 0 0 22px; color: #344054; font-size: 14px; line-height: 1.65; max-width: 790px; }
 
-/* Form card */
+/* Form card -- aksen gradasi tipis di tepi atas (konsisten dengan tema
+   cyber) + tampilan sedikit lebih padat, berlaku di SEMUA halaman karena
+   ".form-card"/".section" dipakai bersama di mana-mana. */
 .form-card {
-  background: #fff; border: 1px solid #dce1e8; border-radius: 6px;
-  overflow: hidden; box-shadow: 0 1px 2px rgba(16,24,40,.04);
+  position: relative;
+  background: #fff; border: 1px solid #dce1e8; border-radius: 8px;
+  overflow: hidden; box-shadow: 0 2px 10px rgba(16, 24, 40, .06);
+}
+.form-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #1e3a8a, #38bdf8);
 }
 
-.section { padding: 30px 28px; border-bottom: 1px solid #dfe3ea; }
+.section { padding: 24px 26px; border-bottom: 1px solid #dfe3ea; }
 .section:last-of-type { border-bottom: 0; }
 
-.section-title { display: flex; align-items: center; gap: 11px; margin: 0 0 25px; font-size: 18px; font-weight: 800; }
+.section-title { display: flex; align-items: center; gap: 11px; margin: 0 0 18px; font-size: 17px; font-weight: 800; }
 .section-icon { width: 20px; text-align: center; font-size: 18px; }
 
 .grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 21px; row-gap: 27px; }
@@ -368,7 +376,10 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn-primary { min-width: 220px; background: #000; border-color: #000; color: #fff; }
-.btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-accent {
+  background: linear-gradient(135deg, #1e3a8a, #0ea5e9);
+  border-color: transparent; color: #fff;
+}
 .btn-danger { border-color: var(--danger); color: var(--danger); }
 .btn-small { height: 34px; padding: 0 14px; font-size: 12px; min-width: 0; }
 .btn .icon { width: 16px; height: 16px; }
@@ -787,10 +798,10 @@ input:focus, select:focus, textarea:focus {
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 thead th {
-  text-align: left; padding: 12px 16px; background: #fafbfc; color: var(--muted);
+  text-align: left; padding: 10px 14px; background: #fafbfc; color: var(--muted);
   font-size: 10px; font-weight: 800; letter-spacing: .4px; border-bottom: 1px solid #dfe3ea; white-space: nowrap;
 }
-tbody td { padding: 14px 16px; border-bottom: 1px solid #eef0f4; vertical-align: middle; white-space: nowrap; }
+tbody td { padding: 11px 14px; border-bottom: 1px solid #eef0f4; vertical-align: middle; white-space: nowrap; }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr:hover { background: #fafbff; }
 a.link { color: var(--accent); text-decoration: none; font-weight: 700; }
@@ -968,6 +979,8 @@ a.link:hover { text-decoration: underline; }
   .pagination { flex-wrap: wrap; justify-content: center; padding: 14px; }
   .page-header-row { flex-direction: column; }
   .page-header-row .btn-accent, .page-header-row .date-badge-btn { width: 100%; justify-content: center; }
+  .dash-hero { padding: 20px 20px; }
+  .dash-hero .date-badge-btn { justify-content: center; }
   .stat-grid { grid-template-columns: 1fr; }
   .donut-wrap { flex-direction: column; align-items: stretch; }
   .table-toolbar { flex-direction: column; align-items: stretch; }
@@ -988,6 +1001,8 @@ a.link:hover { text-decoration: underline; }
 @media (max-width: 480px) {
   .page-title { font-size: 21px; }
   .page-description { font-size: 13px; }
+  .dash-hero { padding: 16px 14px; }
+  .dash-hero .page-title { font-size: 18px; }
   .section { padding: 20px 16px; }
   .section-title { font-size: 16px; }
   .actions { padding: 18px 16px; }
