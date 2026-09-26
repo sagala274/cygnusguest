@@ -549,6 +549,11 @@ input:focus, select:focus, textarea:focus {
 .user-cell { display: flex; align-items: center; gap: 10px; }
 .user-cell-name { font-weight: 700; }
 
+/* Tanda segitiga peringatan di sebelah nomor urut (indikasi analisa
+   intelijen personel) -- lihat securityCategoryWarningIconHtml() di app.js */
+.security-warning-icon { display: inline-flex; vertical-align: middle; margin-left: 5px; }
+.security-warning-icon .icon { width: 15px; height: 15px; }
+
 /* Badge role (Manajemen Pengguna) */
 .badge-role { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px 5px 8px; border-radius: 20px; font-size: 10.5px; font-weight: 800; letter-spacing: .2px; }
 .badge-role .icon { width: 12px; height: 12px; }

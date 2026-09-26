@@ -3,6 +3,7 @@ const API_BASE = '/api';
 /* Ikon garis (gaya Feather/Lucide) di-inline sebagai SVG, bukan icon font/CDN,
    supaya tidak perlu melonggarkan CSP (script-src/font-src 'self'). */
 const ICONS = {
+  warning: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
   dashboard: '<polyline points="3,10 12,3 21,10"/><path d="M5,10 V20 H19 V10"/>',
   pendaftaran: '<circle cx="9" cy="7" r="3.2"/><path d="M3.5,20 a5.5,5.2 0 0 1 11,0"/><line x1="18" y1="8" x2="18" y2="14"/><line x1="15" y1="11" x2="21" y2="11"/>',
   'daftar-tamu': '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
@@ -178,6 +179,17 @@ function securityCategoryBadgeClass(category) {
     perlu_perhatian: 'badge-amber',
     perlu_penanganan: 'badge-red',
   }[category] || 'badge-gray';
+}
+
+// Tanda segitiga peringatan di sebelah nomor urut -- cuma untuk kategori
+// yang benar-benar butuh perhatian (Perlu Perhatian/Perlu Penanganan),
+// supaya langsung terlihat sekilas tanpa perlu baca lencana di kolom nama.
+// "Aman" dan "Belum Dianalisa" tidak diberi tanda apa pun di sini.
+function securityCategoryWarningIconHtml(category) {
+  const color = { perlu_perhatian: 'var(--amber)', perlu_penanganan: 'var(--danger)' }[category];
+  if (!color) return '';
+  const title = securityCategoryLabel(category);
+  return `<span class="security-warning-icon" style="color:${color};" title="${title}">${icon('warning')}</span>`;
 }
 
 const TARGET_OFFICIAL_LABELS = {
