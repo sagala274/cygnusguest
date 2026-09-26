@@ -1,10 +1,14 @@
-# Dokumentasi Pekerjaan Terbaru
+# Penyempurnaan Absensi Personel dan Akses Pimpinan
+## Aplikasi Pendaftaran Tamu PUSSIBERAL
 
-**Sistem:** PUSSIBERAL Guest Management
-**Tanggal disusun:** 22 September 2026
-**Diperbarui:** 26 September 2026
-
-Dokumen ini merangkum seluruh pekerjaan (perbaikan & fitur baru) yang sudah dikerjakan, diuji, dan sudah **aktif berjalan** di server produksi (https://187.52.126.252) sampai tanggal disusunnya dokumen ini.
+Dokumen ini mencatat pekerjaan pada **22-26 September 2026** (lanjutan dari
+`10_pendamping_tamu_notifikasi_logout_dan_penyempurnaan_dashboard.md`):
+pembatasan login & keamanan tambahan, perbaikan Bank Data, menu baru
+Pemetaan Hubungan, fitur Absensi Personel & Kelola Personel, perluasan role
+Pimpinan jadi akses lihat-saja di seluruh halaman Verifikator, dan analisa
+intelijen pada Data Personel. Seluruh pekerjaan di dokumen ini sudah diuji
+dan **aktif berjalan** di server produksi (https://187.52.126.252) sampai
+tanggal disusunnya dokumen ini.
 
 ---
 
