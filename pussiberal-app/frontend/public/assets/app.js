@@ -605,6 +605,13 @@ function renderNav(active) {
     },
   ];
 
+  // Beberapa menu berbagi halaman yang sama tapi dibedakan lewat query
+  // string (mis. "Daftar Tamu" -> daftar-tamu, "Verifikasi Tamu" ->
+  // daftar-tamu?status=Menunggu%20Verifikasi, keduanya punya matchHref yang
+  // sama). Query string saat ini dicek juga supaya cuma SATU yang menyala,
+  // bukan dua-duanya -- item tanpa query di hrefnya hanya dianggap aktif
+  // kalau halaman saat ini juga tidak sedang membawa query apa pun.
+  const currentSearch = window.location.search;
   const nav = document.getElementById('mainNav');
   if (nav) {
     nav.innerHTML = groups
@@ -613,7 +620,10 @@ function renderNav(active) {
         if (!visibleItems.length) return '';
         const itemsHtml = visibleItems
           .map((l) => {
-            const isActive = (l.matchHref || l.href) === active;
+            const [hrefPath, hrefQuery] = l.href.split('?');
+            const path = l.matchHref || hrefPath;
+            const wantSearch = hrefQuery ? `?${hrefQuery}` : '';
+            const isActive = path === active && wantSearch === currentSearch;
             return `
             <a class="nav-item ${isActive ? 'active' : ''}" href="${l.href}">
               <span class="nav-icon">${icon(l.icon)}</span><span>${l.label}</span>
@@ -657,9 +667,16 @@ function renderNav(active) {
     initNotifications();
   }
 
-  /* Ikon bubble di sebelah judul halaman, mengikuti ikon menu aktifnya. */
+  /* Ikon bubble di sebelah judul halaman, mengikuti ikon menu aktifnya --
+     sama seperti di atas, dicocokkan juga dengan query string supaya
+     halaman "Verifikasi Tamu" tidak ikut memakai ikon "Daftar Tamu". */
   const allLinks = groups.flatMap((g) => g.items);
-  const activeLink = allLinks.find((l) => (l.matchHref || l.href) === active);
+  const activeLink = allLinks.find((l) => {
+    const [hrefPath, hrefQuery] = l.href.split('?');
+    const path = l.matchHref || hrefPath;
+    const wantSearch = hrefQuery ? `?${hrefQuery}` : '';
+    return path === active && wantSearch === currentSearch;
+  }) || allLinks.find((l) => (l.matchHref || l.href) === active);
   const titleEl = document.querySelector('.page-title');
   if (titleEl && activeLink && !titleEl.querySelector('.page-title-icon')) {
     titleEl.insertAdjacentHTML('afterbegin', `<span class="page-title-icon">${icon(activeLink.icon)}</span>`);
