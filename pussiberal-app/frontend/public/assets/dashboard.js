@@ -659,6 +659,24 @@ document.addEventListener('keydown', (e) => {
 
 load();
 
+// Dashboard ini sering dibiarkan terbuka lama (mis. ditampilkan terus di
+// layar ruang jaga) -- kalau tanggal berganti tanpa halaman dimuat ulang,
+// kartu ringkasan (diambil sekali saat load()) jadi menampilkan data hari
+// SEBELUMNYA yang sudah basi, sementara jendela detail (yang menghitung
+// "hari ini" ulang tiap kali diklik) menampilkan hari yang baru --
+// keduanya jadi tidak sinkron. Diperiksa tiap menit; kalau tanggal
+// berubah, halaman dimuat ulang otomatis supaya semuanya kembali sinkron.
+(() => {
+  let lastKnownDate = todayDateString();
+  setInterval(() => {
+    const current = todayDateString();
+    if (current !== lastKnownDate) {
+      lastKnownDate = current;
+      window.location.reload();
+    }
+  }, 60000);
+})();
+
 // ---- Grafik Kunjungan Tamu (Administrator & Verifikator) ----
 
 if (canSeeVisitChart) {
