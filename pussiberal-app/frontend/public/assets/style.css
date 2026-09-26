@@ -63,19 +63,42 @@ button, input, select, textarea { font: inherit; }
 
 .app { min-height: 100vh; display: flex; }
 
-/* Sidebar */
+/* Sidebar -- tema "cyber": gradasi navy-ke-biru gelap + garis grid tipis
+   (pola yang sama seperti banner Dashboard, murni CSS) supaya konsisten
+   di SELURUH halaman (sidebar dipakai bersama semua halaman, bukan cuma
+   Dashboard). */
 .sidebar {
   width: 250px;
   min-height: 100vh;
-  background: var(--sidebar-bg);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(56, 217, 255, .18), transparent 55%),
+    linear-gradient(180deg, #050b1c 0%, #0b1830 40%, #0a2247 100%);
   color: #aeb6cf;
   display: flex;
   flex-direction: column;
   padding: 20px 14px;
   flex-shrink: 0;
 }
+.sidebar::before {
+  content: '';
+  position: absolute; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(125, 226, 255, .06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 226, 255, .06) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .85), transparent 94%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .85), transparent 94%);
+}
 
-.brand { display: flex; align-items: center; gap: 6px; margin: 0 0 34px; padding-left: 2px; }
+.brand {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 6px;
+  margin: 0 0 20px; padding: 0 2px 18px;
+  border-bottom: 1px solid rgba(125, 226, 255, .14);
+}
 
 .brand-mark {
   width: 72px; height: 72px;
@@ -85,26 +108,31 @@ button, input, select, textarea { font: inherit; }
 }
 
 .brand-name { color: #fff; font-weight: 800; font-size: 19px; letter-spacing: .2px; }
-.brand-subtitle { color: #78829f; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; margin-top: 5px; }
+.brand-subtitle { color: #6fa3c9; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; margin-top: 5px; }
 
-.nav { display: grid; gap: 8px; }
+.nav { position: relative; z-index: 1; display: grid; gap: 8px; }
 
 /* Label judul kelompok menu (mis. "TAMU & KUNJUNGAN") -- bukan tautan,
    cuma pemisah visual supaya sidebar lebih rapi & mudah dipindai. */
 .nav-group-label {
   padding: 0 14px; margin-top: 14px; font-size: 10px; font-weight: 800;
-  letter-spacing: .8px; color: #5b6685; text-transform: uppercase;
+  letter-spacing: .8px; color: #5b7699; text-transform: uppercase;
 }
 .nav-group-label:first-child { margin-top: 0; }
 
 .nav-item {
   height: 39px; display: flex; align-items: center; gap: 14px;
-  padding: 0 14px; border-radius: 3px; color: #8792b2;
+  padding: 0 14px; border-radius: 5px; color: #8792b2;
   text-decoration: none; font-size: 12px; font-weight: 700; letter-spacing: .3px;
+  transition: background .12s, color .12s;
 }
 
-.nav-item:hover { background: var(--navy-2); color: #fff; }
-.nav-item.active { background: var(--accent-hover); color: #fff; }
+.nav-item:hover { background: rgba(125, 226, 255, .08); color: #fff; }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(56, 217, 255, .22), rgba(30, 58, 138, .5));
+  color: #fff;
+  box-shadow: inset 3px 0 0 0 #38bdf8, 0 0 16px rgba(56, 217, 255, .22);
+}
 .nav-icon { width: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .nav-chevron { width: 14px; display: flex; align-items: center; justify-content: center; margin-left: auto; flex-shrink: 0; }
 .nav-chevron .icon { width: 14px; height: 14px; }
