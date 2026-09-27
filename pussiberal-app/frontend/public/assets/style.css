@@ -477,9 +477,16 @@ input:focus, select:focus, textarea:focus {
   border-radius: 12px;
   padding: 26px 30px;
   margin-bottom: 22px;
-  background:
-    radial-gradient(circle at 88% 12%, rgba(56, 217, 255, .28), transparent 55%),
-    linear-gradient(135deg, #050b1c 0%, #0b1f4d 45%, #0a3f72 78%, #062334 100%);
+  /* Foto kapal TNI-AL sebagai latar, dengan gradasi gelap semi-transparan
+     DI ATASNYA (bukan mengganti) supaya foto tetap terlihat tapi teks
+     "Selamat datang" tetap kontras tinggi/terbaca di bagian mana pun. */
+  background-image:
+    radial-gradient(circle at 88% 12%, rgba(56, 217, 255, .22), transparent 55%),
+    linear-gradient(135deg, rgba(5, 11, 28, .88) 0%, rgba(11, 31, 77, .80) 45%, rgba(10, 63, 114, .68) 78%, rgba(6, 35, 52, .82) 100%),
+    url('dashboard-hero.jpg');
+  background-size: auto, auto, cover;
+  background-position: center, center, center;
+  background-repeat: no-repeat, no-repeat, no-repeat;
   box-shadow: 0 14px 34px rgba(4, 12, 30, .28);
 }
 /* Garis grid tipis a la "cyber" -- dua linear-gradient tegak lurus
