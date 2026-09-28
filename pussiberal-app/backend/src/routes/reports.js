@@ -100,8 +100,8 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
 // kehadiran per periode, dipakai grafik "Tren Kehadiran Personel" di
 // dashboard (period/count sama seperti /visit-stats, supaya bisa pakai
 // toggle Per Hari/Per Minggu/Per Bulan yang sama). "Kehadiran" di sini
-// mencakup status Hadir DAN Dinas Dalam (keduanya dianggap personel
-// benar-benar bekerja hari itu) -- Dinas Luar/BKO/WFH tidak dihitung.
+// mencakup status Hadir, Terlambat, DAN Dinas Dalam (ketiganya dianggap
+// personel benar-benar bekerja hari itu) -- Dinas Luar/BKO/WFH tidak dihitung.
 // Persentase dihitung terhadap TOTAL personel aktif (sama seperti kartu
 // "Kondisi Absensi Hari Ini"), bukan hanya yang sudah diisi absensinya --
 // supaya konsisten dan tidak bias saat data belum lengkap diisi.
@@ -123,7 +123,7 @@ router.get('/attendance-trend', requireRole('admin', 'verifikator', 'pimpinan'),
     const t = new Date(row.attendance_date).getTime();
     const idx = periods.findIndex((p) => t >= p.start.getTime() && t < p.end.getTime());
     if (idx === -1) return;
-    if (row.status === 'hadir' || row.status === 'dinas_dalam') hadir[idx] += 1;
+    if (row.status === 'hadir' || row.status === 'terlambat' || row.status === 'dinas_dalam') hadir[idx] += 1;
   });
 
   const now = nowJakartaLocal();

@@ -6,7 +6,7 @@ const pool = require('../db');
 const CATEGORY_ORDER = ['PIMPINAN', 'SET', 'BAGKU', 'SATMA', 'DITBINKAM', 'DITBINMINLOGPERS', 'SATINASI', 'SATHAN', 'SATDAK'];
 
 const ATTENDANCE_STATUSES = [
-  'hadir', 'wfh', 'dinas_dalam', 'dinas_luar', 'sakit', 'ijin', 'cuti', 'pendidikan', 'bko', 'libur', 'tanpa_keterangan',
+  'hadir', 'wfh', 'dinas_dalam', 'dinas_luar', 'sakit', 'ijin', 'cuti', 'pendidikan', 'bko', 'libur', 'terlambat', 'tanpa_keterangan',
 ];
 
 // Hari Sabtu (6) & Minggu (0) otomatis dianggap "libur" untuk personel yang

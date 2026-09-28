@@ -44,7 +44,7 @@ const SECURITY_COLOR = {
 
 // Status absensi mentah dikelompokkan jadi kondisi ringkas untuk pie chart &
 // Ringkasan Personel di dashboard (urutan & warna tetap, tidak diacak) --
-// rincian per status (9 pilihan) tetap bisa dilihat lengkap di halaman
+// rincian per status (12 pilihan) tetap bisa dilihat lengkap di halaman
 // Absensi Personel. "Berhalangan" dipecah jadi Sakit/Ijin-Cuti/Pendidikan
 // supaya lebih rinci -- palet warnanya sudah divalidasi lewat validator
 // skill dataviz (aman dari segi keterbacaan warna buta).
@@ -57,6 +57,7 @@ const ATTENDANCE_BUCKETS = [
   { key: 'ijin_cuti', label: 'Ijin/Cuti', color: '#be185d', statuses: ['ijin', 'cuti'], title: 'Ijin atau Cuti' },
   { key: 'pendidikan', label: 'Pendidikan', color: '#0891b2', statuses: ['pendidikan'] },
   { key: 'tanpa_keterangan', label: 'Tanpa Keterangan', color: 'var(--danger)', statuses: ['tanpa_keterangan'] },
+  { key: 'terlambat', label: 'Terlambat', color: '#93a000', statuses: ['terlambat'] },
   { key: 'belum_diisi', label: 'Belum Diisi', color: '#98a2b3', statuses: [null] },
 ];
 
@@ -576,11 +577,11 @@ function todayDateString() {
 
 const ATTENDANCE_STATUS_LABEL = {
   hadir: 'Hadir', wfh: 'WFH', dinas_dalam: 'Dinas Dalam', dinas_luar: 'Dinas Luar', sakit: 'Sakit', ijin: 'Ijin',
-  cuti: 'Cuti', pendidikan: 'Pendidikan', bko: 'BKO', libur: 'Libur', tanpa_keterangan: 'Tanpa Keterangan',
+  cuti: 'Cuti', pendidikan: 'Pendidikan', bko: 'BKO', libur: 'Libur', terlambat: 'Terlambat', tanpa_keterangan: 'Tanpa Keterangan',
 };
 const ATTENDANCE_STATUS_BADGE_CLASS = {
   hadir: 'badge-green', wfh: 'badge-teal', dinas_dalam: 'badge-blue', dinas_luar: 'badge-blue', sakit: 'badge-red', ijin: 'badge-amber',
-  cuti: 'badge-amber', pendidikan: 'badge-purple', bko: 'badge-gray', libur: 'badge-pink', tanpa_keterangan: 'badge-red',
+  cuti: 'badge-amber', pendidikan: 'badge-purple', bko: 'badge-gray', libur: 'badge-pink', terlambat: 'badge-amber', tanpa_keterangan: 'badge-red',
 };
 
 function attendanceStatusBadgeHtml(status) {
@@ -695,7 +696,7 @@ if (canSeeAttendanceTrend) {
       b.classList.toggle('is-active', b.dataset.period === period);
     });
     document.getElementById('attendanceTrendDesc').textContent =
-      `Persentase kehadiran (status Hadir atau Dinas Dalam) personel ${ATTENDANCE_PERIOD_LABEL[period]}.`;
+      `Persentase kehadiran (status Hadir, Terlambat, atau Dinas Dalam) personel ${ATTENDANCE_PERIOD_LABEL[period]}.`;
 
     const container = document.getElementById('attendanceTrendChart');
     container.innerHTML = '<p class="page-description" style="margin:0;">Memuat grafik...</p>';

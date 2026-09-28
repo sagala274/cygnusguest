@@ -28,6 +28,7 @@ const STATUS_LABELS = {
   pendidikan: 'Pendidikan',
   bko: 'BKO',
   libur: 'Libur',
+  terlambat: 'Terlambat',
   tanpa_keterangan: 'Tanpa Keterangan',
 };
 const STATUS_ORDER = Object.keys(STATUS_LABELS);
@@ -48,6 +49,7 @@ const STATUS_COLORS = {
   pendidikan: '#0891b2',
   bko: '#92400e',
   libur: '#0d9488',
+  terlambat: '#93a000',
   tanpa_keterangan: '#c62828',
 };
 const BELUM_DIISI_COLOR = '#98a2b3';
@@ -616,7 +618,7 @@ async function deletePersonnel(id, name) {
 
 const STATUS_BADGE_CLASS = {
   hadir: 'badge-green', wfh: 'badge-teal', dinas_dalam: 'badge-blue', dinas_luar: 'badge-blue', sakit: 'badge-red', ijin: 'badge-amber',
-  cuti: 'badge-amber', pendidikan: 'badge-purple', bko: 'badge-gray', libur: 'badge-pink', tanpa_keterangan: 'badge-red',
+  cuti: 'badge-amber', pendidikan: 'badge-purple', bko: 'badge-gray', libur: 'badge-pink', terlambat: 'badge-amber', tanpa_keterangan: 'badge-red',
 };
 
 function statusBadgeHtml(status) {
