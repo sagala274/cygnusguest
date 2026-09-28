@@ -682,7 +682,11 @@ function renderNav(active) {
     const footer = document.createElement('div');
     footer.id = 'sidebarFooter';
     footer.className = 'sidebar-footer';
-    footer.textContent = 'Dikembangkan oleh Kapten Laut (P) Tetuko Sagala, CTIA. / Ka Urpam Pussiberal 2026';
+    ['Dikembangkan oleh', 'Kapten Laut (P) Tetuko Sagala, CTIA.', 'Ka Urpam Pussiberal 2026'].forEach((line) => {
+      const lineEl = document.createElement('div');
+      lineEl.textContent = line;
+      footer.appendChild(lineEl);
+    });
     sidebarEl.appendChild(footer);
   }
 

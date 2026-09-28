@@ -145,6 +145,7 @@ button, input, select, textarea { font: inherit; }
   border-top: 1px solid rgba(125, 226, 255, .12);
   color: #4d6088; font-size: 9.5px; text-align: center; letter-spacing: .2px;
 }
+.sidebar-footer div + div { margin-top: 3px; }
 
 /* Kredit di bagian ATAS sidebar (di atas logo) -- pasangan dari
    .sidebar-footer di atas, disuntik lewat renderNav() juga. */
