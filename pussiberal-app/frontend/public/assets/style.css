@@ -145,6 +145,16 @@ button, input, select, textarea { font: inherit; }
   border-top: 1px solid rgba(125, 226, 255, .12);
   color: #4d6088; font-size: 9.5px; text-align: center; letter-spacing: .2px;
 }
+.sidebar-footer div + div { margin-top: 3px; }
+
+/* Kredit di bagian ATAS sidebar (di atas logo) -- pasangan dari
+   .sidebar-footer di atas, disuntik lewat renderNav() juga. */
+.sidebar-footer-top {
+  position: relative; z-index: 1;
+  margin: 0 0 14px; padding: 0 6px 12px;
+  border-bottom: 1px solid rgba(125, 226, 255, .12);
+  color: #4d6088; font-size: 9.5px; text-align: center; letter-spacing: .2px;
+}
 
 .icon { width: 18px; height: 18px; flex-shrink: 0; }
 
@@ -970,7 +980,7 @@ a.link:hover { text-decoration: underline; }
 
 @media (max-width: 700px) {
   .sidebar { width: 68px; padding: 20px 8px; }
-  .brand-name, .brand-subtitle, .nav-item span:not(.nav-icon), .nav-chevron, .nav-group-label, .sidebar-footer { display: none; }
+  .brand-name, .brand-subtitle, .nav-item span:not(.nav-icon), .nav-chevron, .nav-group-label, .sidebar-footer, .sidebar-footer-top { display: none; }
   .brand { justify-content: center; }
   .nav-item { justify-content: center; padding: 0; }
   .topbar { padding: 0 16px; }

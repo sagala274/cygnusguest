@@ -667,14 +667,27 @@ function renderNav(active) {
     initNotifications();
   }
 
-  // Kredit di bagian bawah sidebar -- disuntik lewat JS (bukan ditulis
-  // ulang di tiap file HTML) sama seperti elemen bersama lainnya di atas.
+  // Kredit di ATAS sidebar (di atas logo) & di BAWAH -- disuntik lewat JS
+  // (bukan ditulis ulang di tiap file HTML) sama seperti elemen bersama
+  // lainnya di atas. Ditaruh dua kali atas permintaan langsung.
   const sidebarEl = document.querySelector('.sidebar');
+  if (sidebarEl && !document.getElementById('sidebarFooterTop')) {
+    const footerTop = document.createElement('div');
+    footerTop.id = 'sidebarFooterTop';
+    footerTop.className = 'sidebar-footer-top';
+    footerTop.textContent = '© 2026 Kapten Laut (P) Tetuko Sagala, CTIA.';
+    sidebarEl.insertBefore(footerTop, sidebarEl.firstChild);
+  }
   if (sidebarEl && !document.getElementById('sidebarFooter')) {
     const footer = document.createElement('div');
     footer.id = 'sidebarFooter';
     footer.className = 'sidebar-footer';
-    footer.textContent = '© 2026 Kapten Laut (P) Tetuko Sagala, CTIA.';
+    const line1 = document.createElement('div');
+    line1.textContent = '© 2026 Kapten Laut (P) Tetuko Sagala, CTIA.';
+    const line2 = document.createElement('div');
+    line2.textContent = 'Dikembangkan oleh Kapten Laut (P) Tetuko Sagala, CTIA. / Ka Urpam Pussiberal 2026';
+    footer.appendChild(line1);
+    footer.appendChild(line2);
     sidebarEl.appendChild(footer);
   }
 
