@@ -111,8 +111,18 @@ router.get('/attendance-trend', requireRole('admin', 'verifikator', 'pimpinan'),
   const periods = buildPeriods(period, count);
   const since = periods[0].start;
 
+  // JOIN ke personnel & filter is_active=1 -- supaya pembilang (jumlah hadir)
+  // dan penyebut (activeCount di bawah) sama-sama hanya menghitung personel
+  // yang MASIH aktif sekarang. Tanpa ini, riwayat absensi milik personel yang
+  // sudah dinonaktifkan tetap ikut terhitung di pembilang (data historisnya
+  // tidak terhapus, cuma personelnya dinonaktifkan), sehingga persentase bisa
+  // lebih tinggi dari yang seharusnya dan tidak sinkron dengan kartu
+  // "Kondisi Absensi Hari Ini" (yang sudah lebih dulu memfilter is_active=1).
   const [rows] = await pool.query(
-    'SELECT attendance_date, status FROM attendance_records WHERE attendance_date >= :since',
+    `SELECT ar.attendance_date, ar.status
+     FROM attendance_records ar
+     JOIN personnel p ON p.id = ar.personnel_id
+     WHERE ar.attendance_date >= :since AND p.is_active = 1`,
     { since }
   );
   const [activeRows] = await pool.query('SELECT COUNT(*) AS activeCount FROM personnel WHERE is_active = 1');
