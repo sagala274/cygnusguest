@@ -95,14 +95,41 @@ function computeEdgeLine(fromNode, toNode) {
   return { x1: start.x, y1: start.y, x2: end.x, y2: end.y };
 }
 
+// Diagram (nodes/edges) disimpan sebagai satu blob JSON bebas (lihat
+// isValidDiagramData di backend, sengaja cuma memvalidasi bentuknya array,
+// bukan isinya) -- kalau field seperti fill/warna/id/koordinat dipakai
+// mentah-mentah sebagai atribut SVG di sini, satu pengguna Verifikator/Admin
+// bisa menyisipkan payload (mis. lewat panggilan API langsung, bukan lewat
+// editor visual ini) yang tereksekusi di browser pengguna LAIN yang membuka
+// diagram yang sama -- stored XSS antar-pengguna. safeNum()/safeAttr() di
+// bawah memastikan tiap nilai dari data diagram selalu berupa angka murni
+// atau teks yang sudah di-escape sebelum masuk ke atribut HTML/SVG.
+function safeNum(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function safeAttr(value, fallback) {
+  const s = typeof value === 'string' ? value : fallback;
+  return escapeHtml(s);
+}
+
 function nodeSvg(node) {
   const isSelected = selected && selected.type === 'node' && selected.id === node.id;
   const isPending = connectPendingNodeId === node.id;
+  const x = safeNum(node.x, 0);
+  const y = safeNum(node.y, 0);
+  const w = safeNum(node.w, 120);
+  const h = safeNum(node.h, 60);
+  const rx = safeNum(node.rx, 60);
+  const ry = safeNum(node.ry, 40);
+  const fill = safeAttr(node.fill, '#ffffff');
+  const nodeId = safeAttr(node.id, '');
   const shapeEl = node.shape === 'ellipse'
-    ? `<ellipse class="map-node-shape" rx="${node.rx}" ry="${node.ry}" fill="${node.fill}"></ellipse>`
-    : `<rect class="map-node-shape" x="${-node.w / 2}" y="${-node.h / 2}" width="${node.w}" height="${node.h}" rx="8" fill="${node.fill}"></rect>`;
+    ? `<ellipse class="map-node-shape" rx="${rx}" ry="${ry}" fill="${fill}"></ellipse>`
+    : `<rect class="map-node-shape" x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="8" fill="${fill}"></rect>`;
   return `
-    <g class="map-node${isSelected ? ' is-selected' : ''}${isPending ? ' is-connect-pending' : ''}" data-node-id="${node.id}" transform="translate(${node.x},${node.y})">
+    <g class="map-node${isSelected ? ' is-selected' : ''}${isPending ? ' is-connect-pending' : ''}" data-node-id="${nodeId}" transform="translate(${x},${y})">
       <title>${escapeHtml(node.label)}</title>
       ${shapeEl}
       <text class="map-node-label">${escapeHtml(truncateLabel(node.label, 18))}</text>
@@ -120,10 +147,12 @@ function edgeSvg(edge) {
   const midY = (y1 + y2) / 2;
   const shortLabel = edge.label ? truncateLabel(edge.label, 24) : '';
   const labelWidth = shortLabel ? Math.max(24, shortLabel.length * 6.5 + 10) : 0;
+  const color = safeAttr(edge.color, '#172033');
+  const edgeId = safeAttr(edge.id, '');
   return `
-    <g class="map-edge-group" data-edge-id="${edge.id}">
+    <g class="map-edge-group" data-edge-id="${edgeId}">
       <title>${escapeHtml(edge.label || '')}</title>
-      <line class="map-edge${isSelected ? ' is-selected' : ''}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${edge.color}" marker-end="url(#arrowHead)"></line>
+      <line class="map-edge${isSelected ? ' is-selected' : ''}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" marker-end="url(#arrowHead)"></line>
       <line class="map-edge-hit" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"></line>
       ${shortLabel ? `<rect class="map-edge-label-bg" x="${midX - labelWidth / 2}" y="${midY - 9}" width="${labelWidth}" height="16" rx="3"></rect><text class="map-edge-label" x="${midX}" y="${midY + 3}">${escapeHtml(shortLabel)}</text>` : ''}
     </g>
