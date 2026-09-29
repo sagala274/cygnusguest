@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS guest_members (
   employee_id VARCHAR(50) NULL,
   device_status ENUM('tidak_membawa','dititipkan','dibawa_alasan_khusus') NULL,
   device_reason VARCHAR(500) NULL,
+  checked_out_at DATETIME NULL,
   affiliation VARCHAR(200) NULL,
   social_media VARCHAR(255) NULL,
   address VARCHAR(255) NULL,

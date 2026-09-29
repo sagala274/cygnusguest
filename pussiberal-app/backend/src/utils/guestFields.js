@@ -80,6 +80,18 @@ async function ensureGuestExtraColumns() {
 // Migrasi kolom pada guest_members (bukan guests) -- dipisah supaya nama
 // fungsi tetap jelas menunjuk tabel mana yang diubah.
 async function ensureGuestMemberExtraColumns() {
+  // Check-out MANDIRI per tamu -- satu pendaftaran bisa berisi beberapa
+  // tamu dari PT yang sama, dan kadang salah satu sudah pulang duluan
+  // sementara yang lain masih di dalam. NULL berarti tamu ini masih di
+  // area; begitu terisi, tamu ini dianggap sudah keluar walau kunjungan
+  // PT-nya (visits.status) belum "Selesai" secara keseluruhan (lihat
+  // POST /:id/members/:memberId/check-out di routes/guests.js).
+  if (!(await columnExists('guest_members', 'checked_out_at'))) {
+    await pool.query(`
+      ALTER TABLE guest_members ADD COLUMN checked_out_at
+        DATETIME NULL AFTER device_reason
+    `);
+  }
   if (!(await columnExists('guest_members', 'social_media'))) {
     await pool.query(`
       ALTER TABLE guest_members ADD COLUMN social_media

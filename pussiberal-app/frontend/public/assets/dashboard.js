@@ -76,7 +76,7 @@ function attendanceBucketSegments(attendanceStats) {
 const ACTION_ICON = {
   login: 'login', logout: 'logout', account_locked: 'shield', create_guest: 'pendaftaran', schedule_guest: 'pendaftaran',
   complete_guest_schedule: 'checkCircle', update_guest: 'pencil', verify_guest: 'checkCircle',
-  check_in: 'login', check_out: 'logout', re_check_in: 'login', delete_guest: 'trash', create_user: 'people',
+  check_in: 'login', check_out: 'logout', check_out_member: 'logout', re_check_in: 'login', delete_guest: 'trash', create_user: 'people',
   update_user: 'pencil', delete_user: 'trash', create_backup: 'backup', download_backup: 'backup',
   ai_chat_query: 'ai-chat', update_ai_settings: 'ai-config', update_telegram_settings: 'telegram',
   rename_bank_data_company: 'pencil', delete_bank_data_company: 'trash', delete_guest_member: 'trash',
@@ -90,7 +90,7 @@ const ACTION_ICON = {
 const ACTION_COLOR = {
   login: 'icon-bubble-blue', logout: 'icon-bubble-amber', account_locked: 'icon-bubble-danger', create_guest: 'icon-bubble-accent', schedule_guest: 'icon-bubble-teal',
   complete_guest_schedule: 'icon-bubble-accent', update_guest: 'icon-bubble-blue',
-  verify_guest: 'icon-bubble-success', check_in: 'icon-bubble-blue', check_out: 'icon-bubble-amber', re_check_in: 'icon-bubble-teal',
+  verify_guest: 'icon-bubble-success', check_in: 'icon-bubble-blue', check_out: 'icon-bubble-amber', check_out_member: 'icon-bubble-amber', re_check_in: 'icon-bubble-teal',
   delete_guest: 'icon-bubble-danger', create_user: 'icon-bubble-teal', update_user: 'icon-bubble-blue',
   rename_bank_data_company: 'icon-bubble-blue', delete_bank_data_company: 'icon-bubble-danger', delete_guest_member: 'icon-bubble-danger',
   update_company_profile: 'icon-bubble-blue',

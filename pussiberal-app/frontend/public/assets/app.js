@@ -237,6 +237,7 @@ function actionLabel(action) {
     complete_guest_schedule: 'Lengkapi Kedatangan Tamu Terjadwal',
     check_in: 'Check-in Tamu',
     check_out: 'Check-out Tamu',
+    check_out_member: 'Check-out Mandiri (Satu Tamu)',
     re_check_in: 'Check-in Ulang Tamu',
     rename_bank_data_company: 'Ubah Nama Perusahaan (Bank Data)',
     delete_bank_data_company: 'Hapus Perusahaan (Bank Data)',

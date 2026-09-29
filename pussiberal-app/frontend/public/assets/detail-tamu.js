@@ -135,9 +135,21 @@ async function saveScheduleCompany() {
 const saveScheduleCompanyBtn = document.getElementById('saveScheduleCompanyBtn');
 if (saveScheduleCompanyBtn) saveScheduleCompanyBtn.addEventListener('click', saveScheduleCompany);
 
-function memberCardHTML(m, isDraftGuest) {
+// isOngoingVisit: kunjungan PT ini sedang berjalan (visit_status ===
+// "Sedang Berkunjung") -- tombol/badge check-out mandiri per tamu cuma
+// relevan selama itu (sebelum check-in atau setelah semua selesai, tidak
+// ada gunanya menandai satu per satu). Diminta karena satu PT bisa datang
+// beberapa orang, dan kadang salah satu sudah pulang duluan sementara yang
+// lain masih di dalam -- check-out "Semua Tamu" sifatnya sekaligus untuk
+// seluruh anggota, jadi tidak cukup untuk kasus itu.
+function memberCardHTML(m, isDraftGuest, isOngoingVisit) {
   const needsPhotoUpload = isDraftGuest && canManage && !m.photo;
   const needsDeviceDeclaration = isDraftGuest && canManage && !m.device_status;
+  const checkoutBlock = isOngoingVisit
+    ? (m.checked_out_at
+        ? `<span class="badge badge-gray" title="${escapeHtml(formatDateTime(m.checked_out_at))}">Sudah Check-out</span>`
+        : (canManage ? `<button type="button" class="btn btn-small member-checkout-btn" data-member-id="${m.id}" data-name="${escapeHtml(m.full_name)}">Check-out</button>` : ''))
+    : '';
 
   const photoBlock = (kind, label, value) => {
     if (kind === 'photo' && needsPhotoUpload) {
@@ -195,6 +207,7 @@ function memberCardHTML(m, isDraftGuest) {
     <div class="member-card" data-member-id="${m.id}">
       <div class="member-card-head">
         <span class="member-card-title">${escapeHtml(m.full_name)}</span>
+        ${checkoutBlock}
       </div>
       <div class="detail-row"><span class="detail-label">NIK</span><span class="detail-value">${escapeHtml(m.nik || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Nomor HP</span><span class="detail-value">${escapeHtml(m.phone_number)}</span></div>
@@ -262,10 +275,14 @@ async function load() {
     `;
 
     const isDraftGuest = g.status === 'Draft';
-    document.getElementById('membersList').innerHTML = g.members.map((m) => memberCardHTML(m, isDraftGuest)).join('');
+    const isOngoingVisit = g.visit_status === 'Sedang Berkunjung';
+    document.getElementById('membersList').innerHTML = g.members.map((m) => memberCardHTML(m, isDraftGuest, isOngoingVisit)).join('');
 
     document.querySelectorAll('.delete-photo-btn').forEach((btn) => {
       btn.addEventListener('click', () => deletePhoto(btn.dataset.memberId, btn.dataset.kind));
+    });
+    document.querySelectorAll('.member-checkout-btn').forEach((btn) => {
+      btn.addEventListener('click', () => doMemberCheckOut(btn.dataset.memberId, btn.dataset.name));
     });
 
     // Tamu terjadwal: aktifkan widget kamera/unggah foto & radio kebijakan
@@ -347,6 +364,25 @@ async function doVisitAction(action) {
   try {
     await api(`/guests/${guestId}/${action}`, { method: 'POST' });
     showMessage(action === 'check-in' ? 'Semua tamu berhasil check-in.' : 'Semua tamu berhasil check-out.', false);
+    load();
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
+// Check-out satu tamu duluan, walau anggota PT yang lain masih di dalam --
+// begitu SEMUA anggota sudah check-out mandiri, backend otomatis menutup
+// kunjungan keseluruhan juga (sama seperti "Check-out Semua Tamu").
+async function doMemberCheckOut(memberId, fullName) {
+  if (!confirm(`Check-out "${fullName}" sekarang? Anggota PT yang lain (jika ada) tidak ikut ter-check-out.`)) return;
+  try {
+    const res = await api(`/guests/${guestId}/members/${memberId}/check-out`, { method: 'POST' });
+    showMessage(
+      res.data.all_checked_out
+        ? `"${fullName}" berhasil check-out. Semua anggota sudah check-out, kunjungan ini otomatis selesai.`
+        : `"${fullName}" berhasil check-out.`,
+      false
+    );
     load();
   } catch (err) {
     showMessage(err.message, true);

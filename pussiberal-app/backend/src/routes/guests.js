@@ -40,6 +40,7 @@ function formatMember(row, role) {
     employee_id: row.employee_id,
     device_status: row.device_status,
     device_reason: row.device_reason,
+    checked_out_at: row.checked_out_at,
     affiliation: row.affiliation,
     social_media: row.social_media,
     address: row.address,
@@ -770,7 +771,10 @@ router.post('/:id/check-in', requireRole('admin', 'pos_depan'), asyncHandler(asy
   res.json({ data: { id: Number(id), status: 'Sedang Berkunjung' } });
 }));
 
-// POST /api/guests/:id/check-out
+// POST /api/guests/:id/check-out  (check-out SELURUH anggota pendaftaran
+// sekaligus -- kalau sebagian anggota sudah check-out mandiri lebih dulu
+// lewat endpoint di bawah, sisanya yang belum ikut ditandai check-out juga
+// di sini supaya tetap konsisten)
 router.post('/:id/check-out', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
   const id = req.params.id;
   const [rows] = await pool.execute('SELECT status FROM visits WHERE guest_id = :id', { id });
@@ -779,11 +783,60 @@ router.post('/:id/check-out', requireRole('admin', 'pos_depan'), asyncHandler(as
     return res.status(409).json({ error: 'Pendaftaran ini belum check-in' });
   }
 
+  await pool.execute(
+    'UPDATE guest_members SET checked_out_at = NOW() WHERE guest_id = :id AND checked_out_at IS NULL',
+    { id }
+  );
   await pool.execute("UPDATE visits SET check_out_at = NOW(), status = 'Selesai' WHERE guest_id = :id", { id });
   await pool.execute("UPDATE guests SET status = 'Selesai' WHERE id = :id", { id });
   await logAudit(req.user.sub, 'check_out', 'guest', id, null);
 
   res.json({ data: { id: Number(id), status: 'Selesai' } });
+}));
+
+// POST /api/guests/:id/members/:memberId/check-out  (SATU anggota check-out
+// duluan, sementara anggota PT lain masih di dalam -- mis. sudah selesai
+// urusannya lebih cepat. Begitu SEMUA anggota sudah check-out mandiri satu
+// per satu, kunjungan keseluruhan otomatis ditutup juga (sama seperti tombol
+// "Check-out Semua Tamu"), supaya status pendaftaran & laporan tetap akurat
+// tanpa petugas perlu menekan tombol itu lagi secara manual.)
+router.post('/:id/members/:memberId/check-out', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
+  const { id, memberId } = req.params;
+
+  const [visitRows] = await pool.execute('SELECT status FROM visits WHERE guest_id = :id', { id });
+  if (!visitRows[0]) return res.status(404).json({ error: 'Data kunjungan tidak ditemukan' });
+  if (visitRows[0].status !== 'Sedang Berkunjung') {
+    return res.status(409).json({ error: 'Pendaftaran ini belum check-in atau sudah check-out' });
+  }
+
+  const [memberRows] = await pool.execute(
+    'SELECT id, full_name, checked_out_at FROM guest_members WHERE id = :memberId AND guest_id = :id',
+    { memberId, id }
+  );
+  if (!memberRows[0]) return res.status(404).json({ error: 'Tamu tidak ditemukan pada pendaftaran ini' });
+  if (memberRows[0].checked_out_at) {
+    return res.status(409).json({ error: 'Tamu ini sudah check-out sebelumnya' });
+  }
+
+  await pool.execute('UPDATE guest_members SET checked_out_at = NOW() WHERE id = :memberId', { memberId });
+  await logAudit(req.user.sub, 'check_out_member', 'guest_member', memberId, {
+    full_name: memberRows[0].full_name,
+    guest_id: Number(id),
+  });
+
+  const [remainingRows] = await pool.execute(
+    'SELECT COUNT(*) AS remaining FROM guest_members WHERE guest_id = :id AND checked_out_at IS NULL',
+    { id }
+  );
+  let allCheckedOut = false;
+  if (remainingRows[0].remaining === 0) {
+    allCheckedOut = true;
+    await pool.execute("UPDATE visits SET check_out_at = NOW(), status = 'Selesai' WHERE guest_id = :id", { id });
+    await pool.execute("UPDATE guests SET status = 'Selesai' WHERE id = :id", { id });
+    await logAudit(req.user.sub, 'check_out', 'guest', id, { auto: true, reason: 'Seluruh anggota sudah check-out mandiri satu per satu' });
+  }
+
+  res.json({ data: { member_id: Number(memberId), all_checked_out: allCheckedOut } });
 }));
 
 // POST /api/guests/:id/re-check-in  (tamu yang sudah check-out balik lagi ke
@@ -814,6 +867,11 @@ router.post('/:id/re-check-in', requireRole('admin', 'pos_depan'), asyncHandler(
      WHERE guest_id = :id`,
     { id, reason: trimmedReason }
   );
+  // Reset status check-out mandiri semua anggota -- kunjungan ini dianggap
+  // sesi baru, jadi anggota yang sebelumnya sudah check-out (individual
+  // ataupun ikut ter-checkout lewat "Check-out Semua Tamu") kembali
+  // dianggap di dalam area.
+  await pool.execute('UPDATE guest_members SET checked_out_at = NULL WHERE guest_id = :id', { id });
   await pool.execute("UPDATE guests SET status = 'Sedang Berkunjung' WHERE id = :id", { id });
   await logAudit(req.user.sub, 're_check_in', 'guest', id, { reason: trimmedReason });
 
