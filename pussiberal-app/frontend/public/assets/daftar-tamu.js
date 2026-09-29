@@ -9,10 +9,13 @@ const resultBox = document.getElementById('resultBox');
 
 const user = getUser();
 const isAdmin = user && user.role === 'admin';
-// Sama seperti hak edit data tamu lainnya (lihat PUT /api/guests/:id
-// di backend) -- Verifikator/Pimpinan cuma boleh MELIHAT foto kegiatan
-// yang sudah ada, tidak boleh mengunggah/mengubahnya.
-const canEditActivityPhoto = user && ['admin', 'pos_depan'].includes(user.role);
+// Foto Kegiatan: hanya Kaurpam & Baurpam (admin/verifikator) yang boleh
+// mengunggah/mengubah; Pimpinan cuma boleh melihat; Pos Depan sama sekali
+// tidak boleh mengunggah MAUPUN melihat (lihat juga filter di backend,
+// GET /api/guests & GET /api/guests/:id, yang menyembunyikan field ini
+// dari respons untuk Pos Depan -- bukan cuma disembunyikan di tampilan).
+const canEditActivityPhoto = user && ['admin', 'verifikator'].includes(user.role);
+const canViewActivityPhoto = user && ['admin', 'verifikator', 'pimpinan'].includes(user.role);
 
 const initialStatus = new URLSearchParams(window.location.search).get('status') || '';
 if (initialStatus) statusFilter.value = initialStatus;
@@ -97,7 +100,7 @@ function activityPhotoCellHtml(g) {
     const label = g.has_activity_photo ? 'Lihat/Ubah' : '+ Upload';
     return `<button type="button" class="btn btn-small activity-photo-btn" data-id="${g.id}" data-reg="${escapeHtml(g.registration_number)}">${label}</button>`;
   }
-  if (g.has_activity_photo) {
+  if (canViewActivityPhoto && g.has_activity_photo) {
     return `<button type="button" class="btn btn-small activity-photo-btn" data-id="${g.id}" data-reg="${escapeHtml(g.registration_number)}">Lihat</button>`;
   }
   return '-';
@@ -121,6 +124,7 @@ function activityPhotoModalEls() {
 }
 
 async function openActivityPhotoModal(id, regNumber) {
+  if (!canEditActivityPhoto && !canViewActivityPhoto) return;
   const els = activityPhotoModalEls();
   if (!activityPhotoWidget) activityPhotoWidget = initPhotoWidget(els.widgetRoot, 'environment');
 
@@ -170,7 +174,7 @@ document.addEventListener('keydown', (e) => {
 document.getElementById('activityPhotoSaveBtn').addEventListener('click', async () => {
   if (activityPhotoGuestId === null || !activityPhotoWidget) return;
   try {
-    await api(`/guests/${activityPhotoGuestId}`, {
+    await api(`/guests/${activityPhotoGuestId}/activity-photo`, {
       method: 'PUT',
       body: JSON.stringify({ activity_photo: activityPhotoWidget.getValue() || null }),
     });
