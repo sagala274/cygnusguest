@@ -722,11 +722,11 @@ if (canSeeAttendanceTrend) {
     btn.addEventListener('click', () => loadAttendanceTrend(btn.dataset.period));
   });
 
-  loadAttendanceTrend('week');
+  loadAttendanceTrend('day');
 }
 
 if (canSeeVisitChart) {
-  let currentPeriod = 'week';
+  let currentPeriod = 'day';
   let showingTable = false;
   let lastData = [];
 
@@ -900,5 +900,5 @@ if (canSeeVisitChart) {
     e.target.textContent = showingTable ? 'Lihat sebagai Grafik' : 'Lihat sebagai Tabel';
   });
 
-  loadVisitChart('week');
+  loadVisitChart('day');
 }
