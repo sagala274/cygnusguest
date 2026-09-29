@@ -160,7 +160,7 @@ function renderDonut(segments, centerValue, centerLabel) {
       const gap = circumference - dash;
       const offset = -cumulative * circumference;
       cumulative += pct;
-      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${strokeWidth}" class="donut-arc" style="--dash:${dash.toFixed(1)}; --gap:${gap.toFixed(1)}; --total:${circumference.toFixed(1)}; animation-delay:${i * 70}ms;" stroke-dasharray="${dash.toFixed(1)} ${gap.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" />`;
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${strokeWidth}" class="donut-arc" style="--dash:${dash.toFixed(1)}; --gap:${gap.toFixed(1)}; --total:${circumference.toFixed(1)}; animation-delay:${i * 150}ms;" stroke-dasharray="${dash.toFixed(1)} ${gap.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" />`;
     })
     .join('');
 
@@ -205,7 +205,7 @@ function renderBarList(segments, totalValue, totalLabel) {
       const pct = maxCount > 0 ? (s.count / maxCount) * 100 : 0;
       return `
         <div class="bar-list-row">
-          <div class="bar-list-track"><div class="bar-list-fill" style="width:${pct}%; background:${s.color}; --target-width:${pct}%; animation-delay:${i * 90}ms;"></div></div>
+          <div class="bar-list-track"><div class="bar-list-fill" style="width:${pct}%; background:${s.color}; --target-width:${pct}%; animation-delay:${i * 180}ms;"></div></div>
           <div class="bar-list-meta">
             <span class="bar-list-label">${escapeHtml(s.label)}</span>
             <span class="bar-list-count">${s.count}</span>

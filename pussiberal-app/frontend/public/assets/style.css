@@ -573,12 +573,12 @@ input:focus, select:focus, textarea:focus {
   from { stroke-dasharray: 0 var(--total); }
   to { stroke-dasharray: var(--dash) var(--gap); }
 }
-.donut-arc { animation: donutArcGrow .7s cubic-bezier(.22, 1, .36, 1) both; }
+.donut-arc { animation: donutArcGrow 1.6s cubic-bezier(.22, 1, .36, 1) both; }
 @keyframes donutCenterFade {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.donut-center-value, .donut-center-label { animation: donutCenterFade .45s ease .45s both; }
+.donut-center-value, .donut-center-label { animation: donutCenterFade .6s ease 1.2s both; }
 .donut-legend { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 12px; }
 .donut-legend-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; padding: 3px 6px; margin: 0 -6px; border-radius: 4px; }
 .donut-legend-row.is-clickable { cursor: pointer; transition: background .12s; }
@@ -601,7 +601,7 @@ input:focus, select:focus, textarea:focus {
   from { width: 0; }
   to { width: var(--target-width); }
 }
-.bar-list-fill { animation: barListGrow .6s cubic-bezier(.22, 1, .36, 1) both; }
+.bar-list-fill { animation: barListGrow 1.3s cubic-bezier(.22, 1, .36, 1) both; }
 .bar-list-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 12.5px; }
 .bar-list-label { font-weight: 600; color: #344054; }
 .bar-list-count { font-weight: 800; }
@@ -693,13 +693,13 @@ input:focus, select:focus, textarea:focus {
   from { stroke-dashoffset: 2000; }
   to { stroke-dashoffset: 0; }
 }
-.chart-area-line { stroke-dasharray: 2000; animation: chartLineDraw 1s cubic-bezier(.22, 1, .36, 1) both; }
+.chart-area-line { stroke-dasharray: 2000; animation: chartLineDraw 3s linear both; }
 @keyframes chartFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.chart-area-fill { animation: chartFadeIn .8s ease .25s both; }
-.chart-point, .chart-point-last { animation: chartFadeIn .4s ease .5s both; }
+.chart-area-fill { animation: chartFadeIn 1.2s ease 1.5s both; }
+.chart-point, .chart-point-last { animation: chartFadeIn .5s ease 2.7s both; }
 .chart-bar-group { cursor: pointer; }
 .chart-bar-group:hover .chart-point,
 .chart-bar-group.is-hovered .chart-point,
