@@ -39,6 +39,12 @@ const app = express();
 // Berada di belakang reverse proxy nginx (1 hop) -- perlu agar rate limiter dan
 // req.ip membaca alamat client asli dari header X-Forwarded-For, bukan IP nginx.
 app.set('trust proxy', 1);
+// Header "X-Powered-By: Express" memberi tahu penyerang framework backend yang
+// dipakai (memudahkan mencari exploit spesifik Express/Node) -- tidak ada
+// manfaatnya untuk pengguna, jadi dimatikan. Header keamanan HTTP lain
+// (HSTS, CSP, X-Frame-Options, dst.) sudah dipasang di nginx (satu-satunya
+// titik masuk dari luar; backend tidak punya port yang diekspos ke host).
+app.disable('x-powered-by');
 
 app.use(express.json({ limit: '5mb' }));
 

@@ -11,6 +11,15 @@ const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
 
+// "no-cache" global di nginx cuma mewajibkan validasi ulang sebelum dipakai --
+// respons endpoint ini (berisi JWT/data akun) tidak boleh tersimpan sama
+// sekali di cache mana pun (browser, proxy perantara), jadi ditambah "no-store"
+// khusus di sini.
+router.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
