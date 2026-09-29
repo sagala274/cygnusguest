@@ -69,6 +69,7 @@
                 <th>Jml</th>
                 <th>Status</th>
                 <th>Terdaftar</th>
+                <th>Foto Kegiatan</th>
                 <th></th>
               </tr>
             </thead>
@@ -79,6 +80,49 @@
       </div>
     </section>
   </main>
+</div>
+
+<div class="modal-overlay" id="activityPhotoModal">
+  <div class="modal-card" style="max-width: 520px;">
+    <div class="modal-head">
+      <h2 id="activityPhotoModalTitle">Foto Kegiatan</h2>
+      <button type="button" class="modal-close" id="activityPhotoCloseBtn"><span class="icon-slot" id="activityPhotoCloseIconSlot"></span></button>
+    </div>
+    <div class="modal-body">
+      <p class="page-description" id="activityPhotoDesc" style="margin-top:0;">Dokumentasikan kegiatan/kunjungan tamu ini (1 foto per pendaftaran) -- mis. suasana audiensi/rapat. Untuk mengganti foto yang sudah ada, tekan "Ambil Ulang" lalu ambil/unggah foto baru; untuk menghapusnya, tekan "Ambil Ulang" lalu simpan tanpa mengambil foto baru.</p>
+
+      <div class="photo-widget" data-kind="activity_photo" id="activityPhotoWidgetRoot">
+        <label class="photo-widget-label">Foto Kegiatan <span class="optional-badge">Opsional</span></label>
+        <div class="photo-frame">
+          <div class="photo-frame-empty">Kamera belum aktif.<br>Tekan "Aktifkan Kamera" atau unggah foto.</div>
+          <video autoplay playsinline muted style="display:none;"></video>
+          <img alt="Pratinjau foto kegiatan" style="display:none;">
+        </div>
+        <canvas style="display:none;"></canvas>
+        <div class="photo-actions">
+          <button type="button" class="btn btn-small start-camera-btn">Aktifkan Kamera</button>
+          <button type="button" class="btn btn-small btn-primary capture-btn" style="display:none;">Ambil Foto</button>
+          <button type="button" class="btn btn-small retake-btn" style="display:none;">Ambil Ulang</button>
+          <button type="button" class="btn btn-small upload-btn">Unggah</button>
+          <input type="file" class="file-input-hidden photo-file-input" accept="image/*">
+        </div>
+        <p class="photo-hint"></p>
+      </div>
+
+      <!-- Untuk role yang cuma boleh MELIHAT (Verifikator/Pimpinan, tidak
+           boleh mengubah data tamu) -- ditukar dengan widget di atas lewat
+           JS, bukan dihapus dari DOM, supaya modal yang sama dipakai ulang. -->
+      <div id="activityPhotoViewOnly" style="display:none; text-align:center;">
+        <img id="activityPhotoViewImg" alt="Foto kegiatan" style="max-width:100%; border-radius:8px; display:none;">
+        <p class="page-description" id="activityPhotoViewEmpty" style="display:none;">Belum ada foto kegiatan untuk kunjungan ini.</p>
+      </div>
+
+      <div class="full modal-actions" style="margin-top:16px;">
+        <button type="button" class="btn" id="activityPhotoCancelBtn">Batal</button>
+        <button type="button" class="btn btn-accent" id="activityPhotoSaveBtn">Simpan</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="assets/app.js"></script>

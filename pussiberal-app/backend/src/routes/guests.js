@@ -74,6 +74,7 @@ function validateMember(member, index, errors, isScheduled) {
 
 const GUEST_LIST_SELECT = `
   SELECT g.id, g.registration_number, g.company, g.purpose, g.status, g.created_at,
+         (g.activity_photo IS NOT NULL) AS has_activity_photo,
          COUNT(gm.id) AS member_count,
          GROUP_CONCAT(gm.full_name ORDER BY gm.id SEPARATOR ', ') AS member_names,
          MAX(v.vehicle_type) AS vehicle_type, MAX(v.plate_number) AS plate_number,
@@ -122,6 +123,7 @@ router.get('/', asyncHandler(async (req, res) => {
       company: r.company,
       purpose: r.purpose,
       status: r.status,
+      has_activity_photo: !!r.has_activity_photo,
       member_count: r.member_count,
       member_names: r.member_names,
       vehicle_type: r.vehicle_type,
@@ -201,6 +203,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
       purpose: g.purpose,
       purpose_category: g.purpose_category,
       accompanied_by: g.accompanied_by,
+      activity_photo: g.activity_photo,
       device_status: g.device_status,
       device_reason: g.device_reason,
       status: g.status,
@@ -370,7 +373,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
 
 // PUT /api/guests/:id  (edit data pendaftaran -- bukan status verifikasi)
 router.put('/:id', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
-  const { company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, vehicle_type, plate_number } = req.body || {};
+  const { company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, vehicle_type, plate_number, activity_photo } = req.body || {};
   const id = req.params.id;
 
   const fields = [];
@@ -404,6 +407,17 @@ router.put('/:id', requireRole('admin', 'pos_depan'), asyncHandler(async (req, r
     fields.push('accompanied_by = :accompanied_by');
     params.accompanied_by = accompanied_by && String(accompanied_by).trim() ? String(accompanied_by).trim() : null;
   }
+  // Foto kegiatan boleh diisi/diganti/dihapus (kirim null) kapan saja oleh
+  // Admin/Pos Depan -- tidak dibatasi status pendaftaran seperti foto tamu
+  // individu, karena dokumentasi kegiatan biasanya baru diambil SETELAH
+  // tamu selesai berkunjung.
+  if (activity_photo !== undefined) {
+    if (activity_photo && !isValidPhotoDataUrl(activity_photo)) {
+      return res.status(400).json({ error: 'Foto kegiatan tidak valid atau ukurannya terlalu besar (maks 3MB)' });
+    }
+    fields.push('activity_photo = :activity_photo');
+    params.activity_photo = activity_photo || null;
+  }
 
   if (fields.length) {
     const [result] = await pool.execute(`UPDATE guests SET ${fields.join(', ')} WHERE id = :id`, params);
@@ -425,7 +439,11 @@ router.put('/:id', requireRole('admin', 'pos_depan'), asyncHandler(async (req, r
     }
   }
 
-  await logAudit(req.user.sub, 'update_guest', 'guest', id, req.body);
+  const auditDetail = { ...req.body };
+  if (auditDetail.activity_photo !== undefined) {
+    auditDetail.activity_photo = auditDetail.activity_photo ? '[foto kegiatan diperbarui]' : '[foto kegiatan dihapus]';
+  }
+  await logAudit(req.user.sub, 'update_guest', 'guest', id, auditDetail);
   res.json({ data: { id: Number(id) } });
 }));
 

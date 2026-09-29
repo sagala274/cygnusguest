@@ -64,6 +64,17 @@ async function ensureGuestExtraColumns() {
         VARCHAR(150) NULL AFTER purpose_category
     `);
   }
+
+  // Foto kegiatan (mis. dokumentasi audiensi/rapat) -- SATU foto per
+  // pendaftaran/kunjungan (bukan per tamu individu seperti photo/ktp_photo
+  // di guest_members), diisi/diganti dari halaman Daftar Tamu setelah tamu
+  // berkunjung.
+  if (!(await columnExists('guests', 'activity_photo'))) {
+    await pool.query(`
+      ALTER TABLE guests ADD COLUMN activity_photo
+        MEDIUMTEXT NULL AFTER accompanied_by
+    `);
+  }
 }
 
 // Migrasi kolom pada guest_members (bukan guests) -- dipisah supaya nama
