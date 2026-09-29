@@ -561,6 +561,24 @@ input:focus, select:focus, textarea:focus {
 .donut-svg { flex-shrink: 0; }
 .donut-center-value { font-size: 20px; font-weight: 800; fill: var(--text); }
 .donut-center-label { font-size: 9.5px; font-weight: 700; fill: var(--muted); }
+
+/* Animasi "menyapu" saat donut pertama muncul (Dashboard) -- tiap potongan
+   tumbuh dari 0 ke ukuran aslinya sendiri-sendiri (jeda antar-potongan diatur
+   lewat animation-delay inline, lihat dashboard.js renderDonut()). Nilai
+   --dash/--gap/--total disuntik inline per elemen karena beda-beda per
+   potongan; stroke-dasharray statis di atribut HTML tetap jadi nilai akhir
+   yang benar walau animasinya dimatikan (lihat prefers-reduced-motion di
+   bawah). */
+@keyframes donutArcGrow {
+  from { stroke-dasharray: 0 var(--total); }
+  to { stroke-dasharray: var(--dash) var(--gap); }
+}
+.donut-arc { animation: donutArcGrow .7s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes donutCenterFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.donut-center-value, .donut-center-label { animation: donutCenterFade .45s ease .45s both; }
 .donut-legend { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 12px; }
 .donut-legend-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; padding: 3px 6px; margin: 0 -6px; border-radius: 4px; }
 .donut-legend-row.is-clickable { cursor: pointer; transition: background .12s; }
@@ -576,6 +594,14 @@ input:focus, select:focus, textarea:focus {
 .bar-list { display: flex; flex-direction: column; gap: 18px; margin-top: 18px; }
 .bar-list-track { width: 100%; height: 10px; border-radius: 6px; background: #eef0f4; overflow: hidden; }
 .bar-list-fill { height: 100%; border-radius: 6px; min-width: 6px; transition: width .3s ease; }
+/* Tumbuh dari 0 ke lebar aslinya (--target-width, disuntik inline per
+   batang di dashboard.js renderBarList()) saat pertama muncul, dengan jeda
+   antar-batang -- pasangan animasi untuk .donut-arc di atas. */
+@keyframes barListGrow {
+  from { width: 0; }
+  to { width: var(--target-width); }
+}
+.bar-list-fill { animation: barListGrow .6s cubic-bezier(.22, 1, .36, 1) both; }
 .bar-list-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 12.5px; }
 .bar-list-label { font-weight: 600; color: #344054; }
 .bar-list-count { font-weight: 800; }
@@ -656,6 +682,24 @@ input:focus, select:focus, textarea:focus {
 .chart-area-line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
 .chart-point { fill: #fff; stroke: var(--accent); stroke-width: 2.5; transition: r .1s; }
 .chart-point-last { fill: var(--accent); }
+
+/* Garis "digambar" dari kiri ke kanan saat grafik pertama muncul (Tren
+   Kehadiran Personel & Grafik Kunjungan Tamu) -- 2000 dipilih lebih besar
+   dari kemungkinan panjang garis di viewBox chart ini (lebar plot < 700px),
+   supaya seluruh garis pasti tersembunyi di titik awal animasi tanpa perlu
+   menghitung panjang sebenarnya lewat JS (getTotalLength()). Area & titik
+   menyusul memudar begitu garisnya selesai "digambar".*/
+@keyframes chartLineDraw {
+  from { stroke-dashoffset: 2000; }
+  to { stroke-dashoffset: 0; }
+}
+.chart-area-line { stroke-dasharray: 2000; animation: chartLineDraw 1s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes chartFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.chart-area-fill { animation: chartFadeIn .8s ease .25s both; }
+.chart-point, .chart-point-last { animation: chartFadeIn .4s ease .5s both; }
 .chart-bar-group { cursor: pointer; }
 .chart-bar-group:hover .chart-point,
 .chart-bar-group.is-hovered .chart-point,
@@ -1030,4 +1074,16 @@ a.link:hover { text-decoration: underline; }
   .detail-value { text-align: left; }
   thead th, tbody td { padding: 10px 12px; }
   .brand-mark { width: 44px; height: 44px; }
+}
+
+/* Matikan animasi masuk pie chart/grafik (Dashboard) untuk pengguna yang
+   memilih mengurangi gerakan di sistemnya -- atribut/nilai statis yang
+   sudah ditulis di HTML (stroke-dasharray, width, dst.) tetap jadi hasil
+   akhir yang benar walau animasinya dimatikan. */
+@media (prefers-reduced-motion: reduce) {
+  .donut-arc, .donut-center-value, .donut-center-label,
+  .bar-list-fill, .chart-area-line, .chart-area-fill,
+  .chart-point, .chart-point-last {
+    animation: none;
+  }
 }

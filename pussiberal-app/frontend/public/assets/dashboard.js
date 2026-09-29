@@ -147,13 +147,20 @@ function renderDonut(segments, centerValue, centerLabel) {
   const circumference = 2 * Math.PI * r;
   let cumulative = 0;
 
+  // Tiap arc "tumbuh" dari 0 ke ukuran aslinya saat pertama muncul (lihat
+  // .donut-arc di style.css) -- --dash/--gap dipakai keyframe animasinya,
+  // stroke-dasharray statis tetap ditulis juga sebagai nilai akhir/fallback
+  // kalau animasi dimatikan (prefers-reduced-motion). Jeda antar-arc
+  // (animation-delay) dibuat bertahap supaya terlihat "menyapu" satu per
+  // satu, bukan semua tumbuh serempak.
   const arcs = segments
-    .map((s) => {
+    .map((s, i) => {
       const pct = total > 0 ? s.count / total : 0;
       const dash = pct * circumference;
+      const gap = circumference - dash;
       const offset = -cumulative * circumference;
       cumulative += pct;
-      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${strokeWidth}" stroke-dasharray="${dash.toFixed(1)} ${(circumference - dash).toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" />`;
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${strokeWidth}" class="donut-arc" style="--dash:${dash.toFixed(1)}; --gap:${gap.toFixed(1)}; --total:${circumference.toFixed(1)}; animation-delay:${i * 70}ms;" stroke-dasharray="${dash.toFixed(1)} ${gap.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" />`;
     })
     .join('');
 
@@ -190,12 +197,15 @@ function renderDonut(segments, centerValue, centerLabel) {
 function renderBarList(segments, totalValue, totalLabel) {
   const maxCount = Math.max(...segments.map((s) => s.count), 1);
 
+  // Sama seperti donut-arc: batang tumbuh dari 0 ke lebar aslinya saat
+  // pertama muncul (lihat .bar-list-fill di style.css), lebar akhirnya
+  // tetap ditulis statis sebagai fallback kalau animasi dimatikan.
   const rows = segments
-    .map((s) => {
+    .map((s, i) => {
       const pct = maxCount > 0 ? (s.count / maxCount) * 100 : 0;
       return `
         <div class="bar-list-row">
-          <div class="bar-list-track"><div class="bar-list-fill" style="width:${pct}%; background:${s.color}"></div></div>
+          <div class="bar-list-track"><div class="bar-list-fill" style="width:${pct}%; background:${s.color}; --target-width:${pct}%; animation-delay:${i * 90}ms;"></div></div>
           <div class="bar-list-meta">
             <span class="bar-list-label">${escapeHtml(s.label)}</span>
             <span class="bar-list-count">${s.count}</span>
