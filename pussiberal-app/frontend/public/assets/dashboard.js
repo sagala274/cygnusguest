@@ -49,9 +49,14 @@ const SECURITY_COLOR = {
 // supaya lebih rinci -- palet warnanya sudah divalidasi lewat validator
 // skill dataviz (aman dari segi keterbacaan warna buta).
 const ATTENDANCE_BUCKETS = [
-  { key: 'hadir', label: 'Hadir', color: 'var(--success)', statuses: ['hadir'] },
+  // Dinas Dalam ikut dihitung "Hadir" -- personel itu tetap standby/bertugas
+  // DI DALAM kantor (mis. jaga), beda dengan Dinas Luar/BKO yang berarti
+  // sedang tidak berada di tempat. Sejalan dengan logika yang sama di
+  // grafik "Tren Kehadiran Personel" (lihat routes/reports.js), supaya
+  // definisi "hadir" konsisten di semua tempat.
+  { key: 'hadir', label: 'Hadir', color: 'var(--success)', statuses: ['hadir', 'dinas_dalam'], title: 'Hadir atau Dinas Dalam (standby di kantor)' },
   { key: 'wfh', label: 'WFH', color: '#d97706', statuses: ['wfh'] },
-  { key: 'bertugas', label: 'Bertugas', color: '#175cd3', statuses: ['dinas_dalam', 'dinas_luar', 'bko'], title: 'Dinas Dalam, Dinas Luar, atau BKO' },
+  { key: 'bertugas', label: 'Bertugas', color: '#175cd3', statuses: ['dinas_luar', 'bko'], title: 'Dinas Luar atau BKO' },
   { key: 'sakit', label: 'Sakit', color: '#6b21a8', statuses: ['sakit'] },
   { key: 'libur', label: 'Libur', color: '#0d9488', statuses: ['libur'] },
   { key: 'ijin_cuti', label: 'Ijin/Cuti', color: '#be185d', statuses: ['ijin', 'cuti'], title: 'Ijin atau Cuti' },
