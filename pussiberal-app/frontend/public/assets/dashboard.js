@@ -61,7 +61,7 @@ const ATTENDANCE_BUCKETS = [
   { key: 'belum_diisi', label: 'Belum Diisi', color: '#98a2b3', statuses: [null] },
 ];
 
-// Kartu "Hadir Hari Ini" di Ringkasan Personel sengaja menghitung Hadir +
+// Kartu "Hadir di Kantor Hari Ini" di Ringkasan Personel sengaja menghitung Hadir +
 // Dinas Dalam DIGABUNG (personel Dinas Dalam tetap standby di kantor,
 // mis. jaga) -- beda dengan pie chart "Kondisi Absensi Hari Ini" di
 // sebelahnya yang tetap memisahkan tiap kategori apa adanya (Dinas Dalam
@@ -289,7 +289,7 @@ async function load() {
       const totalPersonnel = segs.reduce((sum, s) => sum + s.count, 0);
       const pct = (count) => (totalPersonnel > 0 ? `${((count / totalPersonnel) * 100).toFixed(1)}% dari total` : '-');
 
-      // "Hadir Hari Ini" di kartu ini sengaja menghitung Hadir + Dinas Dalam
+      // "Hadir di Kantor Hari Ini" di kartu ini sengaja menghitung Hadir + Dinas Dalam
       // digabung (lihat HADIR_GABUNGAN_BUCKET) -- BEDA dengan pie chart di
       // sebelahnya yang tetap memisahkan tiap kategori apa adanya.
       const countByStatus = countByAttendanceStatus(attendanceStats);
@@ -302,7 +302,7 @@ async function load() {
       // dua kali dalam bentuk berbeda.
       document.getElementById('personnelStatGrid').innerHTML = [
         statCardHtml({ bubbleClass: 'icon-bubble-accent', iconName: 'people', label: 'Total Personel', value: totalPersonnel, caption: 'Seluruh personel aktif' }),
-        statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Hadir Hari Ini', value: hadirGabungan, caption: pct(hadirGabungan), bucketKey: 'hadir_gabungan' }),
+        statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Hadir di Kantor Hari Ini', value: hadirGabungan, caption: pct(hadirGabungan), bucketKey: 'hadir_gabungan' }),
       ].join('');
       document.querySelectorAll('#personnelStatGrid .stat-card.is-clickable').forEach((card) => {
         card.addEventListener('click', () => openAttendanceBucketModal(card.dataset.bucketKey));
