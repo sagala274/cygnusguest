@@ -49,14 +49,9 @@ const SECURITY_COLOR = {
 // supaya lebih rinci -- palet warnanya sudah divalidasi lewat validator
 // skill dataviz (aman dari segi keterbacaan warna buta).
 const ATTENDANCE_BUCKETS = [
-  // Dinas Dalam ikut dihitung "Hadir" -- personel itu tetap standby/bertugas
-  // DI DALAM kantor (mis. jaga), beda dengan Dinas Luar/BKO yang berarti
-  // sedang tidak berada di tempat. Sejalan dengan logika yang sama di
-  // grafik "Tren Kehadiran Personel" (lihat routes/reports.js), supaya
-  // definisi "hadir" konsisten di semua tempat.
-  { key: 'hadir', label: 'Hadir', color: 'var(--success)', statuses: ['hadir', 'dinas_dalam'], title: 'Hadir atau Dinas Dalam (standby di kantor)' },
+  { key: 'hadir', label: 'Hadir', color: 'var(--success)', statuses: ['hadir'] },
   { key: 'wfh', label: 'WFH', color: '#d97706', statuses: ['wfh'] },
-  { key: 'bertugas', label: 'Bertugas', color: '#175cd3', statuses: ['dinas_luar', 'bko'], title: 'Dinas Luar atau BKO' },
+  { key: 'bertugas', label: 'Bertugas', color: '#175cd3', statuses: ['dinas_dalam', 'dinas_luar', 'bko'], title: 'Dinas Dalam, Dinas Luar, atau BKO' },
   { key: 'sakit', label: 'Sakit', color: '#6b21a8', statuses: ['sakit'] },
   { key: 'libur', label: 'Libur', color: '#0d9488', statuses: ['libur'] },
   { key: 'ijin_cuti', label: 'Ijin/Cuti', color: '#be185d', statuses: ['ijin', 'cuti'], title: 'Ijin atau Cuti' },
@@ -66,9 +61,24 @@ const ATTENDANCE_BUCKETS = [
   { key: 'belum_diisi', label: 'Belum Diisi', color: '#98a2b3', statuses: [null] },
 ];
 
-function attendanceBucketSegments(attendanceStats) {
+// Kartu "Hadir Hari Ini" di Ringkasan Personel sengaja menghitung Hadir +
+// Dinas Dalam DIGABUNG (personel Dinas Dalam tetap standby di kantor,
+// mis. jaga) -- beda dengan pie chart "Kondisi Absensi Hari Ini" di
+// sebelahnya yang tetap memisahkan tiap kategori apa adanya (Dinas Dalam
+// masuk "Bertugas", lihat ATTENDANCE_BUCKETS di atas). Bukan bagian dari
+// ATTENDANCE_BUCKETS supaya tidak ikut muncul sebagai potongan sendiri di
+// pie chart, tapi tetap bisa diklik-tembus lewat openAttendanceBucketModal()
+// seperti kartu/potongan lainnya.
+const HADIR_GABUNGAN_BUCKET = { key: 'hadir_gabungan', label: 'Hadir (termasuk Dinas Dalam)', statuses: ['hadir', 'dinas_dalam'] };
+
+function countByAttendanceStatus(attendanceStats) {
   const countByStatus = {};
   attendanceStats.forEach((r) => { countByStatus[r.status === null ? 'null' : r.status] = r.count; });
+  return countByStatus;
+}
+
+function attendanceBucketSegments(attendanceStats) {
+  const countByStatus = countByAttendanceStatus(attendanceStats);
   return ATTENDANCE_BUCKETS.map((b) => ({
     key: b.key,
     label: b.label,
@@ -276,10 +286,14 @@ async function load() {
 
     if (attendanceStats) {
       const segs = attendanceBucketSegments(attendanceStats);
-      const byKey = {};
-      ATTENDANCE_BUCKETS.forEach((b, i) => { byKey[b.key] = segs[i]; });
       const totalPersonnel = segs.reduce((sum, s) => sum + s.count, 0);
       const pct = (count) => (totalPersonnel > 0 ? `${((count / totalPersonnel) * 100).toFixed(1)}% dari total` : '-');
+
+      // "Hadir Hari Ini" di kartu ini sengaja menghitung Hadir + Dinas Dalam
+      // digabung (lihat HADIR_GABUNGAN_BUCKET) -- BEDA dengan pie chart di
+      // sebelahnya yang tetap memisahkan tiap kategori apa adanya.
+      const countByStatus = countByAttendanceStatus(attendanceStats);
+      const hadirGabungan = HADIR_GABUNGAN_BUCKET.statuses.reduce((sum, s) => sum + (countByStatus[s] || 0), 0);
 
       // Sengaja cuma 2 kartu inti (Total & Hadir) -- rincian per kategori
       // (WFH/Bertugas/Sakit/Libur/Ijin-Cuti/Pendidikan/Tanpa Keterangan)
@@ -288,7 +302,7 @@ async function load() {
       // dua kali dalam bentuk berbeda.
       document.getElementById('personnelStatGrid').innerHTML = [
         statCardHtml({ bubbleClass: 'icon-bubble-accent', iconName: 'people', label: 'Total Personel', value: totalPersonnel, caption: 'Seluruh personel aktif' }),
-        statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Hadir Hari Ini', value: byKey.hadir.count, caption: pct(byKey.hadir.count), bucketKey: 'hadir' }),
+        statCardHtml({ bubbleClass: 'icon-bubble-success', iconName: 'checkCircle', label: 'Hadir Hari Ini', value: hadirGabungan, caption: pct(hadirGabungan), bucketKey: 'hadir_gabungan' }),
       ].join('');
       document.querySelectorAll('#personnelStatGrid .stat-card.is-clickable').forEach((card) => {
         card.addEventListener('click', () => openAttendanceBucketModal(card.dataset.bucketKey));
@@ -620,7 +634,9 @@ function personnelNameHtml(r) {
 let attendanceModalCache = null;
 
 async function openAttendanceBucketModal(bucketKey) {
-  const bucket = ATTENDANCE_BUCKETS.find((b) => b.key === bucketKey);
+  const bucket = bucketKey === HADIR_GABUNGAN_BUCKET.key
+    ? HADIR_GABUNGAN_BUCKET
+    : ATTENDANCE_BUCKETS.find((b) => b.key === bucketKey);
   if (!bucket) return;
 
   const modal = document.getElementById('attendanceBucketModal');
