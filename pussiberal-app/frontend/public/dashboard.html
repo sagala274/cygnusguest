@@ -86,23 +86,7 @@
             </div>
           </div>
 
-          <!-- "Aktivitas Terbaru" (Admin) ditaruh di grid yang sama dengan
-               dashboardMidRow (bukan baris tersendiri) supaya ukurannya
-               sama dengan kartu lain & mengisi slot kosong pojok kanan
-               bawah kalau jumlah kartu di dashboardMidRow ganjil (mis.
-               saat "Kategori Keamanan Personel" ikut tampil). #dashboardMidRow
-               dibuat "display:contents" supaya kartu-kartu yang disuntik JS
-               ke dalamnya ikut jadi item grid langsung dari wrapper ini. -->
-          <div class="dashboard-row" id="dashboardMidRowWrap">
-            <div id="dashboardMidRow" style="display:contents;"></div>
-            <div class="form-card" style="display:none;" id="activityCard">
-              <div class="section">
-                <h2 class="section-title">Aktivitas Terbaru</h2>
-                <div id="activityList"></div>
-                <a class="link dashboard-card-link" href="audit-log">Lihat semua aktivitas &rarr;</a>
-              </div>
-            </div>
-          </div>
+          <div class="dashboard-row" id="dashboardMidRow"></div>
         </div>
 
         <div class="row-divider" id="dashboardDivider" style="display:none;"></div>
@@ -145,6 +129,18 @@
               <a class="link dashboard-card-link" href="absensi" id="attendanceAttentionLink">Lihat Semua &rarr;</a>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Aktivitas Terbaru (Admin) ditaruh TERPISAH di bawah kedua kolom
+           (Tamu & Absensi Personel) -- bukan ikut salah satu kelompok, karena
+           log aktivitasnya mencakup seluruh aplikasi (bukan cuma urusan
+           tamu atau cuma absensi personel). -->
+      <div class="form-card" style="display:none; margin-top:24px;" id="activityCard">
+        <div class="section">
+          <h2 class="section-title">Aktivitas Terbaru</h2>
+          <div id="activityList"></div>
+          <a class="link dashboard-card-link" href="audit-log">Lihat semua aktivitas &rarr;</a>
         </div>
       </div>
     </section>
