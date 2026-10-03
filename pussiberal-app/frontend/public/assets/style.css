@@ -925,7 +925,12 @@ input:focus, select:focus, textarea:focus {
 .modal-actions .btn { flex: 1; }
 
 /* Table */
-.table-wrap { overflow-x: auto; }
+/* Klik-geser (drag) untuk menggeser tabel lebar ke kiri/kanan -- supaya
+   pengguna tidak perlu mencari scrollbar tipis di bagian paling bawah
+   tabel panjang dulu (lihat wiring drag-nya di app.js, berlaku otomatis
+   di SEMUA tabel/halaman lewat event delegation). */
+.table-wrap { overflow-x: auto; cursor: grab; }
+.table-wrap.is-dragging { cursor: grabbing; user-select: none; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 thead th {
   text-align: left; padding: 10px 14px; background: #fafbfc; color: var(--muted);

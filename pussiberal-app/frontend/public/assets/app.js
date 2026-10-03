@@ -878,3 +878,41 @@ async function openTelegramLinkModal() {
 
   renderStatus();
 }
+
+// ---- Klik-geser (drag) untuk menggeser tabel lebar ke kiri/kanan ----
+// Tabel dengan banyak kolom (Daftar Tamu, Users, dst.) butuh scroll
+// horizontal, tapi scrollbar-nya tipis dan cuma muncul di bagian PALING
+// BAWAH tabel -- kalau tabelnya panjang, pengguna harus scroll halaman ke
+// bawah dulu baru bisa menggesernya. Dengan ini, klik-tahan di mana pun pada
+// area tabel (yang bukan tombol/link/input) lalu geser mouse sudah cukup.
+// Dipasang sekali di sini (bukan per halaman) lewat event delegation ke
+// document, supaya otomatis berlaku untuk SEMUA tabel di SEMUA halaman --
+// termasuk yang isinya baru disuntik lewat JS belakangan -- tanpa perlu
+// diaktifkan satu per satu di tiap file.
+(() => {
+  let dragState = null;
+
+  document.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    const wrap = e.target.closest('.table-wrap');
+    if (!wrap) return;
+    // Jangan ganggu interaksi normal (klik tombol/link/checkbox/input di
+    // dalam tabel) -- drag-scroll cuma aktif kalau yang diklik area kosong
+    // tabelnya sendiri.
+    if (e.target.closest('a, button, input, select, textarea, [contenteditable]')) return;
+    dragState = { wrap, startX: e.pageX, scrollLeft: wrap.scrollLeft };
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!dragState) return;
+    dragState.wrap.classList.add('is-dragging');
+    dragState.wrap.scrollLeft = dragState.scrollLeft - (e.pageX - dragState.startX);
+  });
+
+  function endDrag() {
+    if (dragState) dragState.wrap.classList.remove('is-dragging');
+    dragState = null;
+  }
+  document.addEventListener('mouseup', endDrag);
+  document.addEventListener('mouseleave', endDrag);
+})();
