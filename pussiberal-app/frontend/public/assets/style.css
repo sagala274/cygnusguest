@@ -381,8 +381,11 @@ input:focus, select:focus, textarea:focus {
 .actions { padding: 29px 28px; display: flex; justify-content: flex-end; gap: 14px; background: #fafbfc; }
 
 .btn {
-  height: 48px; min-width: 90px; border-radius: 4px; padding: 0 21px;
+  height: 48px; min-width: 90px; border-radius: 6px; padding: 0 21px;
   border: 1px solid #8d93a0; background: #fff; color: #172033; font-weight: 800; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  text-decoration: none;
+  transition: opacity .15s, border-color .15s, box-shadow .15s, background .15s, color .15s;
 }
 
 .btn-primary { min-width: 220px; background: #000; border-color: #000; color: #fff; }
@@ -689,11 +692,33 @@ input:focus, select:focus, textarea:focus {
 .confirm-checkbox input[type="checkbox"] { accent-color: #000; }
 .confirm-checkbox span { font-size: 12.5px; font-weight: 600; color: #344054; line-height: 1.4; }
 
-/* Bar chart (Grafik Kunjungan Tamu) */
+/* Bar chart (Grafik Kunjungan Tamu & Tren Kehadiran Personel) -- kapsul
+   toggle periode dengan aksen gradasi navy-ke-cyan, konsep yang sama
+   dengan kapsul navigasi tanggal di Absensi Personel (lihat absensi.css).
+   Diberi gaya lewat selector ".chart-period-toggle .btn" (bukan nama
+   class tombolnya) supaya otomatis berlaku untuk kedua grafik -- yang satu
+   pakai class .chart-period-btn, yang lain .attendance-period-btn,
+   keduanya dibungkus wrapper yang sama. */
 .chart-controls-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
-.chart-period-toggle { display: flex; gap: 6px; }
-.chart-period-btn { min-width: 0; }
-.chart-period-btn.is-active { background: #000; color: #fff; border-color: #000; }
+.chart-period-toggle {
+  position: relative; overflow: hidden;
+  display: flex; gap: 2px; padding: 4px;
+  background: #fff; border: 1px solid #dde1e8; border-radius: 9px;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, .05);
+}
+.chart-period-toggle::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, #1e3a8a, #38bdf8);
+}
+.chart-period-toggle .btn {
+  min-width: 0; border: 1px solid transparent; background: transparent; color: #344054;
+}
+.chart-period-toggle .btn:hover { opacity: 1; background: rgba(56, 189, 248, .10); color: var(--navy); }
+.chart-period-toggle .btn.is-active {
+  background: linear-gradient(135deg, #1e3a8a, #0ea5e9); color: #fff; border-color: transparent;
+  box-shadow: 0 3px 10px rgba(14, 165, 233, .30);
+}
+.chart-period-toggle .btn.is-active:hover { opacity: .92; }
 
 .bar-chart-wrap { position: relative; }
 .bar-chart-svg { width: 100%; height: auto; display: block; }
@@ -840,14 +865,18 @@ input:focus, select:focus, textarea:focus {
 }
 .pagination-controls { display: flex; align-items: center; gap: 6px; }
 .page-btn {
-  width: 30px; height: 30px; border-radius: 5px; border: 1px solid #d0d5dd;
+  width: 30px; height: 30px; border-radius: 6px; border: 1px solid #d0d5dd;
   background: #fff; color: #344054; display: flex; align-items: center; justify-content: center;
   cursor: pointer; font-size: 12px; font-weight: 700;
+  transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
 }
-.page-btn:hover:not(:disabled) { background: #f9fafb; }
+.page-btn:hover:not(:disabled) { background: rgba(56, 189, 248, .10); border-color: rgba(56, 189, 248, .4); color: var(--navy); }
 .page-btn:disabled { opacity: .4; cursor: not-allowed; }
 .page-btn .icon { width: 14px; height: 14px; }
-.page-btn.is-current { background: var(--accent); border-color: var(--accent); color: #fff; }
+.page-btn.is-current {
+  background: linear-gradient(135deg, #1e3a8a, #0ea5e9); border-color: transparent; color: #fff;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, .30);
+}
 .page-size-select { height: 30px; padding: 0 8px; font-size: 12px; width: auto; min-width: 0; }
 
 /* Modal (Tambah/Edit Pengguna) */
