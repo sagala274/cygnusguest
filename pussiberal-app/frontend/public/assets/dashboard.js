@@ -464,17 +464,20 @@ async function load() {
 
     if (attendanceAttention) {
       document.getElementById('attendanceAttentionCard').style.display = 'block';
-      const STATUS_BADGE = {
-        tanpa_keterangan: '<span class="badge badge-red">Tanpa Keterangan</span>',
-        null: '<span class="badge badge-amber">Belum Absensi</span>',
-      };
-      document.getElementById('attendanceAttentionTableBody').innerHTML = attendanceAttention.length
-        ? attendanceAttention
+      // Tabel ini khusus "Belum Absensi" (statusnya benar-benar kosong) --
+      // personel "Tanpa Keterangan" TIDAK ikut ditampilkan di sini, karena
+      // absensinya sudah dilaksanakan (statusnya sudah diisi, cuma tanpa
+      // keterangan jelas kenapa dia tidak masuk). Mereka tetap terlihat
+      // lewat chip "Tanpa Keterangan" di kartu Perlu Perhatian & potongan
+      // "Tanpa Keterangan" pada pie chart, jadi tidak hilang begitu saja.
+      const belumAbsensi = attendanceAttention.filter((p) => p.status === null);
+      document.getElementById('attendanceAttentionTableBody').innerHTML = belumAbsensi.length
+        ? belumAbsensi
             .map(
               (p) => `
         <tr>
           <td>${personnelNameHtml(p)}${p.position ? ` <span class="label-note">(${escapeHtml(p.position)})</span>` : ''}</td>
-          <td>${STATUS_BADGE[p.status === null ? 'null' : p.status]}</td>
+          <td><span class="badge badge-amber">Belum Absensi</span></td>
         </tr>
       `
             )

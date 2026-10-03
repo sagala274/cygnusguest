@@ -480,6 +480,11 @@ input:focus, select:focus, textarea:focus {
    ditambahkan. */
 .dashboard-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 24px; align-items: stretch; }
 .dashboard-row .form-card { margin: 0; }
+/* Kondisi Absensi Hari Ini (pie chart) ditumpuk di ATAS kartu Perlu
+   Perhatian, bukan berdampingan seperti kartu .dashboard-row lainnya --
+   permintaan langsung supaya urutannya vertikal (pie chart dulu, baru
+   Perlu Perhatian di bawahnya), bukan sejajar. */
+#attendancePriorityRow { grid-template-columns: 1fr; }
 
 /* Kartu "Perlu Perhatian" -- state siaga (merah) kalau ada yang perlu
    ditindaklanjuti, atau state aman (hijau) kalau semua sudah lengkap. */
