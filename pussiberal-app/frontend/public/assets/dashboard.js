@@ -153,7 +153,7 @@ function registrationTrendCard(today, yesterday) {
   return { bubbleClass: 'icon-bubble-blue', iconName: 'clipboard', label: 'Pendaftaran Hari Ini', value: today, caption, trendIcon, trendClass };
 }
 
-function renderDonut(segments, centerValue, centerLabel) {
+function renderDonut(segments, centerValue, centerLabel, tooltipId) {
   const total = segments.reduce((sum, s) => sum + s.count, 0);
   const r = 52;
   const cx = 64;
@@ -167,7 +167,8 @@ function renderDonut(segments, centerValue, centerLabel) {
   // stroke-dasharray statis tetap ditulis juga sebagai nilai akhir/fallback
   // kalau animasi dimatikan (prefers-reduced-motion). Jeda antar-arc
   // (animation-delay) dibuat bertahap supaya terlihat "menyapu" satu per
-  // satu, bukan semua tumbuh serempak.
+  // satu, bukan semua tumbuh serempak. data-index dipakai wireDonutTooltip()
+  // untuk menampilkan prosentase saat kursor diarahkan ke salah satu warna.
   const arcs = segments
     .map((s, i) => {
       const pct = total > 0 ? s.count / total : 0;
@@ -175,7 +176,7 @@ function renderDonut(segments, centerValue, centerLabel) {
       const gap = circumference - dash;
       const offset = -cumulative * circumference;
       cumulative += pct;
-      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${strokeWidth}" class="donut-arc" style="--dash:${dash.toFixed(1)}; --gap:${gap.toFixed(1)}; --total:${circumference.toFixed(1)}; animation-delay:${i * 150}ms;" stroke-dasharray="${dash.toFixed(1)} ${gap.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" />`;
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${strokeWidth}" class="donut-arc" data-index="${i}" style="--dash:${dash.toFixed(1)}; --gap:${gap.toFixed(1)}; --total:${circumference.toFixed(1)}; animation-delay:${i * 150}ms;" stroke-dasharray="${dash.toFixed(1)} ${gap.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" />`;
     })
     .join('');
 
@@ -197,7 +198,7 @@ function renderDonut(segments, centerValue, centerLabel) {
     .join('');
 
   return `
-    <div class="donut-wrap">
+    <div class="donut-wrap" data-donut-id="${tooltipId}">
       <svg class="donut-svg" width="128" height="128" viewBox="0 0 128 128">
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#eef0f4" stroke-width="${strokeWidth}" />
         ${arcs}
@@ -205,8 +206,52 @@ function renderDonut(segments, centerValue, centerLabel) {
         <text x="${cx}" y="${cy + 13}" text-anchor="middle" class="donut-center-label">${escapeHtml(centerLabel)}</text>
       </svg>
       <div class="donut-legend">${legend || '<p style="color:var(--muted);font-size:12.5px;">Belum ada data.</p>'}</div>
+      <div class="chart-tooltip" id="donutTooltip-${tooltipId}" style="display:none;"></div>
     </div>
   `;
+}
+
+// Tooltip saat kursor diarahkan ke salah satu warna di cincin donut --
+// posisinya mengikuti kursor (bukan posisi tetap seperti chart batang/garis,
+// karena semua arc donut berbagi bounding box lingkaran yang sama, tidak
+// bisa dibedakan lewat getBoundingClientRect() per arc). Dipanggil setelah
+// markup dari renderDonut() disisipkan ke DOM.
+function wireDonutTooltip(tooltipId, segments) {
+  const wrap = document.querySelector(`.donut-wrap[data-donut-id="${tooltipId}"]`);
+  const tooltip = document.getElementById(`donutTooltip-${tooltipId}`);
+  if (!wrap || !tooltip) return;
+  const total = segments.reduce((sum, s) => sum + s.count, 0);
+
+  function showTooltip(e, arc) {
+    const s = segments[Number(arc.dataset.index)];
+    if (!s) return;
+    const pct = total > 0 ? (s.count / total) * 100 : 0;
+
+    tooltip.innerHTML = '';
+    const valueEl = document.createElement('div');
+    valueEl.className = 'chart-tooltip-value';
+    valueEl.textContent = `${pct.toFixed(1)}%`;
+    const labelEl = document.createElement('div');
+    labelEl.className = 'chart-tooltip-label';
+    labelEl.textContent = `${s.label} -- ${s.count}`;
+    tooltip.appendChild(valueEl);
+    tooltip.appendChild(labelEl);
+    tooltip.style.display = 'block';
+
+    const wrapRect = wrap.getBoundingClientRect();
+    tooltip.style.left = `${e.clientX - wrapRect.left}px`;
+    tooltip.style.top = `${e.clientY - wrapRect.top}px`;
+  }
+
+  function hideTooltip() {
+    tooltip.style.display = 'none';
+  }
+
+  wrap.querySelectorAll('.donut-arc').forEach((arc) => {
+    arc.addEventListener('pointerenter', (e) => showTooltip(e, arc));
+    arc.addEventListener('pointermove', (e) => showTooltip(e, arc));
+    arc.addEventListener('pointerleave', hideTooltip);
+  });
 }
 
 function renderBarList(segments, totalValue, totalLabel) {
@@ -321,7 +366,7 @@ async function load() {
         <div class="form-card" id="attendanceDonutCard">
           <div class="section">
             <h2 class="section-title">Kondisi Absensi Hari Ini</h2>
-            ${renderDonut(attendanceSegments, totalPersonnel, 'Personel')}
+            ${renderDonut(attendanceSegments, totalPersonnel, 'Personel', 'attendance')}
             <p class="page-description" style="margin:10px 0 0;">Klik salah satu kelompok untuk lihat daftar personelnya.</p>
             ${canSeeAttendanceTrend ? '<a class="link dashboard-card-link" href="absensi">Lihat detail &rarr;</a>' : ''}
           </div>
@@ -350,15 +395,12 @@ async function load() {
     document.getElementById('attendancePriorityRow').innerHTML = priorityCards.join('');
 
     const midCards = [];
+    const registrationSegments = byStatus.map((s) => ({ label: guestStatusLabel(s.status), count: s.count, color: STATUS_COLOR[s.status] || '#98a2b3' }));
     midCards.push(`
       <div class="form-card">
         <div class="section">
           <h2 class="section-title">Status Pendaftaran</h2>
-          ${renderDonut(
-            byStatus.map((s) => ({ label: guestStatusLabel(s.status), count: s.count, color: STATUS_COLOR[s.status] || '#98a2b3' })),
-            total,
-            'Total'
-          )}
+          ${renderDonut(registrationSegments, total, 'Total', 'registration')}
           <a class="link dashboard-card-link" href="daftar-tamu">Lihat semua pendaftaran &rarr;</a>
         </div>
       </div>
@@ -401,12 +443,14 @@ async function load() {
     }
     const midRow = document.getElementById('dashboardMidRow');
     midRow.innerHTML = midCards.join('');
+    wireDonutTooltip('registration', registrationSegments);
 
     const attendanceDonutCard = document.getElementById('attendanceDonutCard');
     if (attendanceDonutCard) {
       attendanceDonutCard.querySelectorAll('.donut-legend-row.is-clickable').forEach((row) => {
         row.addEventListener('click', () => openAttendanceBucketModal(row.dataset.bucketKey));
       });
+      wireDonutTooltip('attendance', attendanceSegments);
     }
 
     if (attendanceAttention) {

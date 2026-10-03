@@ -557,7 +557,8 @@ input:focus, select:focus, textarea:focus {
 #dashboardColumns .alert-card { padding: 18px; }
 
 /* Donut chart */
-.donut-wrap { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.donut-wrap { position: relative; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.donut-arc { cursor: default; }
 .donut-svg { flex-shrink: 0; }
 .donut-center-value { font-size: 20px; font-weight: 800; fill: var(--text); }
 .donut-center-label { font-size: 9.5px; font-weight: 700; fill: var(--muted); }
