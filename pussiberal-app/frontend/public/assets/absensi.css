@@ -1,8 +1,42 @@
+/* Kapsul navigasi tanggal -- tema cyber (aksen gradasi navy-ke-cyan di tepi
+   atas, sama seperti .form-card di style.css) dibungkus jadi satu wadah,
+   tombol-tombol di dalamnya jadi "ghost" (tanpa kotak sendiri) supaya
+   terasa menyatu sebagai satu kontrol, bukan 4 tombol lepas berdampingan.
+   "Hari Ini" diberi isian gradasi penuh sebagai aksi yang paling sering
+   dipakai. */
 .attendance-date-bar {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 20px;
+  background: #fff; border: 1px solid #dde1e8; border-radius: 10px; padding: 5px;
+  box-shadow: 0 2px 10px rgba(16, 24, 40, .06);
 }
-.attendance-date-bar #dateInput { width: auto; height: 38px; }
-.attendance-save-status { font-size: 12px; color: var(--muted); font-weight: 600; margin-left: auto; }
+.attendance-date-bar::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, #1e3a8a, #38bdf8);
+}
+.attendance-date-bar .btn {
+  border: 1px solid transparent; background: transparent; color: #344054;
+  box-shadow: none; transition: background .15s, color .15s, border-color .15s;
+}
+.attendance-date-bar .btn:hover {
+  opacity: 1; background: rgba(56, 189, 248, .10); color: var(--navy); border-color: rgba(56, 189, 248, .35);
+}
+.attendance-date-bar #todayBtn {
+  background: linear-gradient(135deg, #1e3a8a, #0ea5e9); color: #fff; border-color: transparent;
+  box-shadow: 0 3px 10px rgba(14, 165, 233, .32);
+}
+.attendance-date-bar #todayBtn:hover {
+  background: linear-gradient(135deg, #1e3a8a, #0ea5e9); opacity: .9;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, .42);
+}
+.attendance-date-bar #dateInput {
+  width: auto; height: 38px; border: 1px solid #dde1e8; border-radius: 7px;
+  background: #f8fafc; color: var(--navy); font-weight: 700;
+}
+.attendance-date-bar #dateInput:focus {
+  border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, .18);
+}
+.attendance-save-status { font-size: 12px; color: var(--muted); font-weight: 600; margin-left: auto; padding: 0 6px; }
 .attendance-save-status.is-error { color: var(--danger); }
 
 .attendance-summary { display: flex; gap: 10px; flex-wrap: wrap; }

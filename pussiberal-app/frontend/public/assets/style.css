@@ -396,6 +396,26 @@ input:focus, select:focus, textarea:focus {
 .btn:hover { opacity: .88; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
+/* Varian "cyber outline" -- tepi gradasi navy-ke-cyan (trik dua lapis
+   background + background-clip, bukan border biasa, supaya gradasinya
+   mengikuti lengkung sudut) dengan isian terang, dipakai untuk tombol
+   navigasi sekunder yang tetap ingin terasa "modern/futuristik" tanpa
+   seberat .btn-accent (yang isiannya penuh gradasi). */
+.btn-outline-accent {
+  position: relative;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    linear-gradient(135deg, #1e3a8a, #38bdf8) border-box;
+  border: 1.5px solid transparent;
+  color: var(--navy);
+}
+.btn-outline-accent:hover {
+  background:
+    linear-gradient(135deg, rgba(30, 58, 138, .07), rgba(56, 189, 248, .14)) padding-box,
+    linear-gradient(135deg, #1e3a8a, #38bdf8) border-box;
+  opacity: 1;
+}
+
 /* Result / message boxes */
 .result-box { margin: 0 28px 24px; padding: 14px 16px; border-radius: 4px; background: #ecfdf3; color: #067647; font-size: 13px; font-weight: 600; }
 .result-box.error-box { background: #fef3f2; color: var(--danger); }
