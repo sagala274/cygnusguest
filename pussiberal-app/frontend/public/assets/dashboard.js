@@ -61,15 +61,20 @@ const ATTENDANCE_BUCKETS = [
   { key: 'belum_diisi', label: 'Belum Diisi', color: '#98a2b3', statuses: [null] },
 ];
 
-// Kartu "Hadir di Kantor Hari Ini" di Ringkasan Personel sengaja menghitung Hadir +
-// Dinas Dalam DIGABUNG (personel Dinas Dalam tetap standby di kantor,
-// mis. jaga) -- beda dengan pie chart "Kondisi Absensi Hari Ini" di
-// sebelahnya yang tetap memisahkan tiap kategori apa adanya (Dinas Dalam
-// masuk "Bertugas", lihat ATTENDANCE_BUCKETS di atas). Bukan bagian dari
+// Kartu "Hadir di Kantor Hari Ini" di Ringkasan Personel menghitung Hadir +
+// Terlambat + Dinas Dalam DIGABUNG -- persis rumus yang sama dengan grafik
+// "Tren Kehadiran Personel" (lihat ATTENDANCE_PERIOD_LABEL & deskripsi
+// grafiknya, serta /reports/attendance-trend di backend), supaya angka
+// "X% dari total" di kartu ini selalu sama dengan titik "hari ini" pada
+// grafik tren -- sebelumnya cuma Hadir+Dinas Dalam (tanpa Terlambat),
+// sehingga keduanya sempat beda angka dan membingungkan. BEDA dengan pie
+// chart "Kondisi Absensi Hari Ini" di sebelahnya yang tetap memisahkan
+// tiap kategori apa adanya (Terlambat & Dinas Dalam masing-masing potongan
+// sendiri, lihat ATTENDANCE_BUCKETS di atas). Bukan bagian dari
 // ATTENDANCE_BUCKETS supaya tidak ikut muncul sebagai potongan sendiri di
 // pie chart, tapi tetap bisa diklik-tembus lewat openAttendanceBucketModal()
 // seperti kartu/potongan lainnya.
-const HADIR_GABUNGAN_BUCKET = { key: 'hadir_gabungan', label: 'Hadir (termasuk Dinas Dalam)', statuses: ['hadir', 'dinas_dalam'] };
+const HADIR_GABUNGAN_BUCKET = { key: 'hadir_gabungan', label: 'Hadir (termasuk Terlambat & Dinas Dalam)', statuses: ['hadir', 'terlambat', 'dinas_dalam'] };
 
 function countByAttendanceStatus(attendanceStats) {
   const countByStatus = {};
@@ -339,9 +344,12 @@ async function load() {
       const totalPersonnel = segs.reduce((sum, s) => sum + s.count, 0);
       const pct = (count) => (totalPersonnel > 0 ? `${((count / totalPersonnel) * 100).toFixed(1)}% dari total` : '-');
 
-      // "Hadir di Kantor Hari Ini" di kartu ini sengaja menghitung Hadir + Dinas Dalam
-      // digabung (lihat HADIR_GABUNGAN_BUCKET) -- BEDA dengan pie chart di
-      // sebelahnya yang tetap memisahkan tiap kategori apa adanya.
+      // "Hadir di Kantor Hari Ini" di kartu ini sengaja menghitung Hadir +
+      // Terlambat + Dinas Dalam digabung, sama persis dengan rumus grafik
+      // "Tren Kehadiran Personel" (lihat HADIR_GABUNGAN_BUCKET) -- supaya
+      // prosentasenya selalu sinkron dengan titik "hari ini" di grafik itu.
+      // BEDA dengan pie chart di sebelahnya yang tetap memisahkan tiap
+      // kategori apa adanya.
       const countByStatus = countByAttendanceStatus(attendanceStats);
       const hadirGabungan = HADIR_GABUNGAN_BUCKET.statuses.reduce((sum, s) => sum + (countByStatus[s] || 0), 0);
 
