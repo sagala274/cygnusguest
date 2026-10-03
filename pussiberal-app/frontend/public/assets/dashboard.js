@@ -155,10 +155,15 @@ function registrationTrendCard(today, yesterday) {
 
 function renderDonut(segments, centerValue, centerLabel, tooltipId) {
   const total = segments.reduce((sum, s) => sum + s.count, 0);
-  const r = 52;
-  const cx = 64;
-  const cy = 64;
-  const strokeWidth = 16;
+  // Donut dibesarkan (dari 128px) supaya bagian legenda (yang mengambil
+  // sisa lebar lewat flex:1 di .donut-legend) tidak terlalu melebar saat
+  // kartunya sendirian selebar penuh baris (lihat #attendancePriorityRow)
+  // -- jarak antara label & prosentase jadi lebih rapat.
+  const size = 184;
+  const r = 74;
+  const cx = size / 2;
+  const cy = size / 2;
+  const strokeWidth = 22;
   const circumference = 2 * Math.PI * r;
   let cumulative = 0;
 
@@ -199,11 +204,11 @@ function renderDonut(segments, centerValue, centerLabel, tooltipId) {
 
   return `
     <div class="donut-wrap" data-donut-id="${tooltipId}">
-      <svg class="donut-svg" width="128" height="128" viewBox="0 0 128 128">
+      <svg class="donut-svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#eef0f4" stroke-width="${strokeWidth}" />
         ${arcs}
-        <text x="${cx}" y="${cy - 3}" text-anchor="middle" class="donut-center-value">${centerValue}</text>
-        <text x="${cx}" y="${cy + 13}" text-anchor="middle" class="donut-center-label">${escapeHtml(centerLabel)}</text>
+        <text x="${cx}" y="${cy - 4}" text-anchor="middle" class="donut-center-value">${centerValue}</text>
+        <text x="${cx}" y="${cy + 19}" text-anchor="middle" class="donut-center-label">${escapeHtml(centerLabel)}</text>
       </svg>
       <div class="donut-legend">${legend || '<p style="color:var(--muted);font-size:12.5px;">Belum ada data.</p>'}</div>
       <div class="chart-tooltip" id="donutTooltip-${tooltipId}" style="display:none;"></div>

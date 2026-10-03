@@ -600,8 +600,8 @@ input:focus, select:focus, textarea:focus {
 .donut-wrap { position: relative; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
 .donut-arc { cursor: default; }
 .donut-svg { flex-shrink: 0; }
-.donut-center-value { font-size: 20px; font-weight: 800; fill: var(--text); }
-.donut-center-label { font-size: 9.5px; font-weight: 700; fill: var(--muted); }
+.donut-center-value { font-size: 28px; font-weight: 800; fill: var(--text); }
+.donut-center-label { font-size: 13px; font-weight: 700; fill: var(--muted); }
 
 /* Animasi "menyapu" saat donut pertama muncul (Dashboard) -- tiap potongan
    tumbuh dari 0 ke ukuran aslinya sendiri-sendiri (jeda antar-potongan diatur
