@@ -509,6 +509,8 @@ input:focus, select:focus, textarea:focus {
 .alert-card-row.is-danger .icon { color: var(--danger); }
 .alert-card-row.is-pending { border-color: #fde68a; }
 .alert-card-row.is-pending .icon { color: var(--amber); }
+.alert-card-row.is-clickable { cursor: pointer; transition: transform .12s, box-shadow .12s; }
+.alert-card-row.is-clickable:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(16, 24, 40, .12); }
 .alert-card .dashboard-card-link { margin-top: 18px; }
 .alert-card.is-warning .dashboard-card-link { color: var(--danger); }
 .dashboard-card-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; font-size: 12.5px; }

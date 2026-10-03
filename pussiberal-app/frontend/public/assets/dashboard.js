@@ -389,16 +389,20 @@ async function load() {
       const tk = attendanceAttention.filter((p) => p.status === 'tanpa_keterangan').length;
       const belum = attendanceAttention.filter((p) => p.status === null).length;
       const hasIssue = tk > 0 || belum > 0;
+      // bucketKey sama persis dengan key di ATTENDANCE_BUCKETS -- chip ini
+      // jadi bisa diklik untuk buka daftar nama lewat modal yang sama yang
+      // dipakai legenda pie chart "Kondisi Absensi Hari Ini" (lihat
+      // openAttendanceBucketModal), tidak perlu logika terpisah.
       const rows = [];
-      if (tk > 0) rows.push({ iconName: 'close', text: `${tk} Tanpa Keterangan`, tone: 'danger' });
-      if (belum > 0) rows.push({ iconName: 'clipboard', text: `${belum} Belum Absensi`, tone: 'pending' });
+      if (tk > 0) rows.push({ iconName: 'close', text: `${tk} Tanpa Keterangan`, tone: 'danger', bucketKey: 'tanpa_keterangan' });
+      if (belum > 0) rows.push({ iconName: 'clipboard', text: `${belum} Belum Absensi`, tone: 'pending', bucketKey: 'belum_diisi' });
       priorityCards.push(`
         <div class="form-card">
           <div class="alert-card ${hasIssue ? 'is-warning' : 'is-ok'}">
             <div class="alert-card-title">${icon(hasIssue ? 'bell' : 'checkCircle')}<span>Perlu Perhatian</span></div>
             <div class="alert-card-list">
               ${hasIssue
-                ? rows.map((r) => `<div class="alert-card-row is-${r.tone}">${icon(r.iconName)}<span>${r.text}</span></div>`).join('')
+                ? rows.map((r) => `<div class="alert-card-row is-${r.tone} is-clickable" data-bucket-key="${r.bucketKey}">${icon(r.iconName)}<span>${r.text}</span></div>`).join('')
                 : '<div class="alert-card-row">Semua personel sudah tercatat kehadirannya hari ini.</div>'}
             </div>
             ${canSeeAttendanceTrend ? '<a class="link dashboard-card-link" href="absensi">Lihat Detail &rarr;</a>' : ''}
@@ -407,6 +411,9 @@ async function load() {
       `);
     }
     document.getElementById('attendancePriorityRow').innerHTML = priorityCards.join('');
+    document.querySelectorAll('#attendancePriorityRow .alert-card-row.is-clickable').forEach((row) => {
+      row.addEventListener('click', () => openAttendanceBucketModal(row.dataset.bucketKey));
+    });
 
     const midCards = [];
     const registrationSegments = byStatus.map((s) => ({ label: guestStatusLabel(s.status), count: s.count, color: STATUS_COLOR[s.status] || '#98a2b3' }));
