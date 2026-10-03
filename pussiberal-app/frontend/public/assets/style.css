@@ -489,9 +489,21 @@ input:focus, select:focus, textarea:focus {
 .alert-card-title { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 800; margin-bottom: 16px; }
 .alert-card.is-warning .alert-card-title { color: var(--danger); }
 .alert-card.is-ok .alert-card-title { color: var(--success); }
-.alert-card-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: auto; }
-.alert-card-row { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: #172033; line-height: 1.5; }
-.alert-card-row .icon { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--amber); }
+/* Chip horizontal (bukan daftar vertikal bertumpuk) -- tiap jenis perhatian
+   (Tanpa Keterangan, Belum Absensi) jadi pil terpisah berdampingan, warnanya
+   beda sesuai tingkat urgensinya (lihat .is-danger/.is-pending), supaya
+   maknanya jelas berbeda sekaligus kartunya tidak terlihat kosong/sejajar
+   kalau cuma ada satu jenis. */
+.alert-card-list { display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; margin-bottom: auto; }
+.alert-card-row {
+  display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; color: #172033; line-height: 1.3;
+  background: #fff; border: 1px solid rgba(0, 0, 0, .08); border-radius: 20px; padding: 8px 14px;
+}
+.alert-card-row .icon { width: 14px; height: 14px; flex-shrink: 0; color: var(--amber); }
+.alert-card-row.is-danger { border-color: #fda29b; }
+.alert-card-row.is-danger .icon { color: var(--danger); }
+.alert-card-row.is-pending { border-color: #fde68a; }
+.alert-card-row.is-pending .icon { color: var(--amber); }
 .alert-card .dashboard-card-link { margin-top: 18px; }
 .alert-card.is-warning .dashboard-card-link { color: var(--danger); }
 .dashboard-card-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; font-size: 12.5px; }
