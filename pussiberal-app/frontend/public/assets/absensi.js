@@ -667,3 +667,66 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && statusLi
 const presetDate = new URLSearchParams(window.location.search).get('date');
 dateInput.value = /^\d{4}-\d{2}-\d{2}$/.test(presetDate || '') ? presetDate : todayDateString();
 load();
+
+// ---- Cetak Laporan (PDF/Excel) -- rekap kehadiran per rentang tanggal ----
+// Dibuka dengan rentang default satu minggu (Senin-Minggu) yang mencakup
+// tanggal yang sedang dilihat di halaman, boleh diubah bebas sebelum
+// diunduh. File-nya dibuat di backend (lihat GET /api/attendance/export),
+// di sini cuma memicu unduhannya lewat downloadFile() yang sudah ada.
+function mondayOf(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const day = dt.getDay();
+  const diffToMonday = (day === 0 ? -6 : 1) - day;
+  dt.setDate(dt.getDate() + diffToMonday);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+function addDaysLocal(dateStr, amount) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + amount);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
+const exportReportModal = document.getElementById('exportReportModal');
+const exportFromDate = document.getElementById('exportFromDate');
+const exportToDate = document.getElementById('exportToDate');
+
+function openExportReportModal() {
+  const anchor = /^\d{4}-\d{2}-\d{2}$/.test(dateInput.value) ? dateInput.value : todayDateString();
+  const monday = mondayOf(anchor);
+  exportFromDate.value = monday;
+  exportToDate.value = addDaysLocal(monday, 6);
+  exportReportModal.classList.add('open');
+}
+function closeExportReportModal() {
+  exportReportModal.classList.remove('open');
+}
+
+async function downloadAttendanceReport(format, ext) {
+  const from = exportFromDate.value;
+  const to = exportToDate.value;
+  if (!from || !to) {
+    showMessage('Isi tanggal "Dari" dan "Sampai" terlebih dahulu.', true);
+    return;
+  }
+  if (from > to) {
+    showMessage('Tanggal "Dari" tidak boleh setelah tanggal "Sampai".', true);
+    return;
+  }
+  resultBox.style.display = 'none';
+  try {
+    const params = new URLSearchParams({ from, to, format });
+    await downloadFile(`/attendance/export?${params.toString()}`, `rekap-absensi-${from}-sd-${to}.${ext}`);
+    closeExportReportModal();
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
+document.getElementById('exportReportBtn').addEventListener('click', openExportReportModal);
+document.getElementById('exportReportCloseIconSlot').innerHTML = icon('close');
+document.getElementById('exportReportCloseBtn').addEventListener('click', closeExportReportModal);
+exportReportModal.addEventListener('click', (e) => { if (e.target === exportReportModal) closeExportReportModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && exportReportModal.classList.contains('open')) closeExportReportModal(); });
+document.getElementById('exportXlsxBtn').addEventListener('click', () => downloadAttendanceReport('xlsx', 'xlsx'));
+document.getElementById('exportPdfBtn').addEventListener('click', () => downloadAttendanceReport('pdf', 'pdf'));

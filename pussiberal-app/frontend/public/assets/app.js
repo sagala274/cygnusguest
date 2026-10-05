@@ -252,6 +252,7 @@ function actionLabel(action) {
     deactivate_personnel: 'Nonaktifkan Personel',
     delete_personnel: 'Hapus Personel',
     save_attendance: 'Isi/Ubah Absensi Personel',
+    export_attendance: 'Unduh Laporan Absensi',
     delete_guest: 'Hapus Tamu',
     delete_guest_member: 'Hapus Data Tamu',
     create_user: 'Buat Pengguna',

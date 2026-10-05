@@ -45,7 +45,10 @@
           <h1 class="page-title">Absensi Personel</h1>
           <p class="page-description">Isi keterangan kehadiran seluruh personel PUSSIBERAL untuk tanggal yang dipilih. Setiap perubahan tersimpan otomatis.</p>
         </div>
-        <a class="btn btn-outline-accent" href="personnel-list" id="manageLink">Kelola Data Personel</a>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-outline-accent" id="exportReportBtn">Cetak Laporan</button>
+          <a class="btn btn-outline-accent" href="personnel-list" id="manageLink">Kelola Data Personel</a>
+        </div>
       </div>
 
       <div class="attendance-date-bar">
@@ -134,6 +137,32 @@
           <thead><tr><th>Nama</th><th>Pangkat/Korps/NRP/NIP</th><th>Jabatan</th><th>Kategori</th><th>Keterangan</th></tr></thead>
           <tbody id="statusListModalBody"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="exportReportModal">
+  <div class="modal-card" style="max-width: 480px;">
+    <div class="modal-head">
+      <h2>Cetak Laporan Absensi</h2>
+      <button type="button" class="modal-close" id="exportReportCloseBtn"><span class="icon-slot" id="exportReportCloseIconSlot"></span></button>
+    </div>
+    <div class="modal-body">
+      <p class="page-description" style="margin-top:0;">Rekap kehadiran &amp; seluruh kategori keterangan per hari untuk rentang tanggal yang dipilih (default satu minggu berjalan), lengkap dengan catatan/keterangan tiap personel.</p>
+      <div class="grid">
+        <div class="field">
+          <label for="exportFromDate">DARI TANGGAL</label>
+          <input id="exportFromDate" type="date">
+        </div>
+        <div class="field">
+          <label for="exportToDate">SAMPAI TANGGAL</label>
+          <input id="exportToDate" type="date">
+        </div>
+      </div>
+      <div class="full modal-actions" style="margin-top:21px;">
+        <button type="button" class="btn" id="exportPdfBtn">Unduh PDF</button>
+        <button type="button" class="btn btn-accent" id="exportXlsxBtn">Unduh Excel</button>
       </div>
     </div>
   </div>

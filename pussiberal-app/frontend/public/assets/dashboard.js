@@ -104,7 +104,7 @@ const ACTION_ICON = {
   update_company_profile: 'pencil',
   create_network_diagram: 'network', delete_network_diagram: 'trash',
   create_personnel: 'people', update_personnel: 'pencil', deactivate_personnel: 'trash', delete_personnel: 'trash',
-  save_attendance: 'clipboard',
+  save_attendance: 'clipboard', export_attendance: 'backup',
 };
 
 const ACTION_COLOR = {
@@ -117,7 +117,7 @@ const ACTION_COLOR = {
   create_trainee: 'icon-bubble-teal', update_trainee: 'icon-bubble-blue', delete_trainee: 'icon-bubble-danger',
   create_network_diagram: 'icon-bubble-teal', delete_network_diagram: 'icon-bubble-danger',
   create_personnel: 'icon-bubble-teal', update_personnel: 'icon-bubble-blue', deactivate_personnel: 'icon-bubble-danger', delete_personnel: 'icon-bubble-danger',
-  save_attendance: 'icon-bubble-accent',
+  save_attendance: 'icon-bubble-accent', export_attendance: 'icon-bubble-teal',
   delete_user: 'icon-bubble-danger', create_backup: 'icon-bubble-teal', download_backup: 'icon-bubble-teal',
   ai_chat_query: 'icon-bubble-accent', update_ai_settings: 'icon-bubble-accent', update_telegram_settings: 'icon-bubble-blue',
 };
