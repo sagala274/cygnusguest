@@ -15,6 +15,7 @@ const searchKeyStatusCallout = document.getElementById('searchKeyStatusCallout')
 const searchKeyStatusLabel = document.getElementById('searchKeyStatusLabel');
 const searchKeyStatusText = document.getElementById('searchKeyStatusText');
 const googleSearchCxInput = document.getElementById('googleSearchCx');
+const removeGoogleSearchBtn = document.getElementById('removeGoogleSearchBtn');
 
 let models = [];
 
@@ -136,6 +137,24 @@ googleSearchForm.addEventListener('submit', async (e) => {
     showMessage(err.message, true);
   } finally {
     submitBtn.disabled = false;
+  }
+});
+
+removeGoogleSearchBtn.addEventListener('click', async () => {
+  if (!confirm('Hapus kredensial Google Custom Search? Fitur pencarian profil publik di AI Chat akan nonaktif sampai diisi ulang.')) return;
+  resultBox.style.display = 'none';
+
+  removeGoogleSearchBtn.disabled = true;
+  try {
+    const res = await api('/ai-settings/google-search', { method: 'DELETE' });
+    document.getElementById('googleSearchApiKey').value = '';
+    googleSearchCxInput.value = '';
+    renderSearchKeyStatus(res.data.has_google_search_api_key, res.data.google_search_cx);
+    showMessage('Kredensial pencarian profil publik berhasil dihapus.', false);
+  } catch (err) {
+    showMessage(err.message, true);
+  } finally {
+    removeGoogleSearchBtn.disabled = false;
   }
 });
 

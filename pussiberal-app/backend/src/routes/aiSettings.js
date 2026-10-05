@@ -70,6 +70,17 @@ router.put('/', asyncHandler(async (req, res) => {
   res.json({ data: toPublicSettings(settings) });
 }));
 
+router.delete('/google-search', asyncHandler(async (req, res) => {
+  await pool.execute(
+    `UPDATE ai_settings SET google_search_api_key_encrypted = NULL, google_search_cx = NULL, updated_by = :updated_by WHERE id = 1`,
+    { updated_by: req.user.sub }
+  );
+  await logAudit(req.user.sub, 'clear_ai_google_search_settings', 'ai_settings', null, {});
+
+  const settings = await getAiSettings();
+  res.json({ data: toPublicSettings(settings) });
+}));
+
 // Katalog model OpenRouter bersifat publik (tidak perlu API key) -- di-cache
 // singkat di memori supaya halaman Konfigurasi AI tidak memanggil OpenRouter
 // setiap kali dibuka.
