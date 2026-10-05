@@ -80,6 +80,38 @@
           </form>
         </div>
       </div>
+
+      <div class="form-card">
+        <div class="section">
+          <h2 class="section-title">Pencarian Profil Publik (Google Custom Search)</h2>
+          <p class="page-description">
+            Dipakai AI Chat untuk mencari informasi publik (pekerjaan, pendidikan, dll.) berdasarkan nama tamu lewat
+            <a class="link" href="https://programmablesearchengine.google.com/" target="_blank" rel="noopener">Google Programmable Search Engine</a>.
+            Opsional -- jika kosong, AI Chat tetap berjalan tanpa fitur ini.
+          </p>
+
+          <div class="callout" id="searchKeyStatusCallout">
+            <span class="callout-label" id="searchKeyStatusLabel">Memuat status...</span>
+            <p id="searchKeyStatusText"></p>
+          </div>
+
+          <form id="googleSearchForm" class="grid">
+            <div class="field full">
+              <label for="googleSearchApiKey">API KEY GOOGLE CUSTOM SEARCH <span class="label-note">Kosongkan jika tidak ingin mengubah</span></label>
+              <input id="googleSearchApiKey" type="password" placeholder="AIza...">
+            </div>
+
+            <div class="field full">
+              <label for="googleSearchCx">SEARCH ENGINE ID (cx)</label>
+              <input id="googleSearchCx" placeholder="mis. 214db95a6d1274e12" autocomplete="off">
+            </div>
+
+            <div class="full">
+              <button type="submit" class="btn btn-primary">Simpan Kredensial Pencarian</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </section>
   </main>
 </div>

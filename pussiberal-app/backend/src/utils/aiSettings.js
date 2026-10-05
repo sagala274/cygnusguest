@@ -3,6 +3,15 @@ const { encrypt, decrypt } = require('./crypto');
 
 const DEFAULT_MODEL = 'anthropic/claude-opus-5';
 
+async function columnExists(table, column) {
+  const [rows] = await pool.query(
+    `SELECT 1 FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column`,
+    { table, column }
+  );
+  return rows.length > 0;
+}
+
 async function ensureAiSettingsTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS ai_settings (
@@ -27,6 +36,15 @@ async function ensureAiSettingsTable() {
     UPDATE ai_settings SET provider = 'openrouter', model = '${DEFAULT_MODEL}'
     WHERE id = 1 AND api_key_encrypted IS NULL AND model NOT LIKE '%/%'
   `);
+
+  // Kredensial Google Custom Search JSON API, dipakai tool pencarian profil
+  // publik tamu di AI Chat -- disimpan terpisah dari api_key OpenRouter.
+  if (!(await columnExists('ai_settings', 'google_search_api_key_encrypted'))) {
+    await pool.query('ALTER TABLE ai_settings ADD COLUMN google_search_api_key_encrypted TEXT NULL AFTER api_key_encrypted');
+  }
+  if (!(await columnExists('ai_settings', 'google_search_cx'))) {
+    await pool.query('ALTER TABLE ai_settings ADD COLUMN google_search_cx VARCHAR(100) NULL AFTER google_search_api_key_encrypted');
+  }
 }
 
 async function getAiSettings() {
@@ -40,4 +58,17 @@ async function getDecryptedApiKey() {
   return decrypt(settings.api_key_encrypted);
 }
 
-module.exports = { ensureAiSettingsTable, getAiSettings, getDecryptedApiKey, encrypt, DEFAULT_MODEL };
+async function getDecryptedGoogleSearchApiKey() {
+  const settings = await getAiSettings();
+  if (!settings || !settings.google_search_api_key_encrypted) return null;
+  return decrypt(settings.google_search_api_key_encrypted);
+}
+
+module.exports = {
+  ensureAiSettingsTable,
+  getAiSettings,
+  getDecryptedApiKey,
+  getDecryptedGoogleSearchApiKey,
+  encrypt,
+  DEFAULT_MODEL,
+};

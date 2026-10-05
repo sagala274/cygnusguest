@@ -17,6 +17,8 @@ function toPublicSettings(settings) {
     model: settings.model,
     system_prompt: settings.system_prompt,
     has_api_key: hasApiKey,
+    has_google_search_api_key: !!settings.google_search_api_key_encrypted,
+    google_search_cx: settings.google_search_cx || '',
     updated_at: settings.updated_at,
   };
 }
@@ -27,10 +29,13 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 router.put('/', asyncHandler(async (req, res) => {
-  const { model, system_prompt, api_key } = req.body || {};
+  const { model, system_prompt, api_key, google_search_api_key, google_search_cx } = req.body || {};
 
   if (model !== undefined && (typeof model !== 'string' || !MODEL_ID_PATTERN.test(model.trim()))) {
     return res.status(400).json({ error: 'Format model tidak valid. Gunakan format "vendor/model" sesuai katalog OpenRouter.' });
+  }
+  if (google_search_cx !== undefined && typeof google_search_cx === 'string' && google_search_cx.trim().length > 100) {
+    return res.status(400).json({ error: 'Search Engine ID (cx) terlalu panjang.' });
   }
 
   const fields = [];
@@ -41,6 +46,14 @@ router.put('/', asyncHandler(async (req, res) => {
     fields.push('api_key_encrypted = :api_key_encrypted');
     params.api_key_encrypted = encrypt(api_key.trim());
   }
+  if (typeof google_search_api_key === 'string' && google_search_api_key.trim()) {
+    fields.push('google_search_api_key_encrypted = :google_search_api_key_encrypted');
+    params.google_search_api_key_encrypted = encrypt(google_search_api_key.trim());
+  }
+  if (google_search_cx !== undefined) {
+    fields.push('google_search_cx = :google_search_cx');
+    params.google_search_cx = (google_search_cx || '').trim() || null;
+  }
   fields.push('updated_by = :updated_by');
   params.updated_by = req.user.sub;
 
@@ -49,6 +62,8 @@ router.put('/', asyncHandler(async (req, res) => {
     model,
     system_prompt_changed: system_prompt !== undefined,
     api_key_changed: typeof api_key === 'string' && !!api_key.trim(),
+    google_search_api_key_changed: typeof google_search_api_key === 'string' && !!google_search_api_key.trim(),
+    google_search_cx_changed: google_search_cx !== undefined,
   });
 
   const settings = await getAiSettings();

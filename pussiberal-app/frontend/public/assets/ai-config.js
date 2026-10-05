@@ -10,6 +10,11 @@ const apiKeyStatusText = document.getElementById('apiKeyStatusText');
 const modelInput = document.getElementById('model');
 const modelOptions = document.getElementById('modelOptions');
 const modelHint = document.getElementById('modelHint');
+const googleSearchForm = document.getElementById('googleSearchForm');
+const searchKeyStatusCallout = document.getElementById('searchKeyStatusCallout');
+const searchKeyStatusLabel = document.getElementById('searchKeyStatusLabel');
+const searchKeyStatusText = document.getElementById('searchKeyStatusText');
+const googleSearchCxInput = document.getElementById('googleSearchCx');
 
 let models = [];
 
@@ -25,6 +30,15 @@ function renderApiKeyStatus(hasApiKey) {
   apiKeyStatusText.textContent = hasApiKey
     ? 'AI Chat siap digunakan. Isi field API Key di bawah hanya jika ingin menggantinya.'
     : 'AI Chat belum bisa digunakan sampai API key OpenRouter diisi dan disimpan di bawah.';
+}
+
+function renderSearchKeyStatus(hasKey, cx) {
+  const ready = hasKey && !!cx;
+  searchKeyStatusCallout.classList.toggle('warn', !ready);
+  searchKeyStatusLabel.textContent = ready ? 'Pencarian Profil Publik Aktif' : 'Pencarian Profil Publik Belum Diatur';
+  searchKeyStatusText.textContent = ready
+    ? 'AI Chat bisa mencari informasi publik tamu. Isi field di bawah hanya jika ingin menggantinya.'
+    : 'Isi API key dan Search Engine ID (cx) di bawah untuk mengaktifkan fitur pencarian profil publik.';
 }
 
 function formatPrice(value) {
@@ -68,6 +82,8 @@ async function load() {
     modelInput.value = res.data.model;
     document.getElementById('systemPrompt').value = res.data.system_prompt || '';
     renderApiKeyStatus(res.data.has_api_key);
+    renderSearchKeyStatus(res.data.has_google_search_api_key, res.data.google_search_cx);
+    googleSearchCxInput.value = res.data.google_search_cx || '';
     updateModelHint();
   } catch (err) {
     showMessage(err.message, true);
@@ -94,6 +110,28 @@ form.addEventListener('submit', async (e) => {
     document.getElementById('apiKey').value = '';
     renderApiKeyStatus(res.data.has_api_key);
     showMessage('Konfigurasi AI berhasil disimpan.', false);
+  } catch (err) {
+    showMessage(err.message, true);
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+googleSearchForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  resultBox.style.display = 'none';
+
+  const payload = { google_search_cx: googleSearchCxInput.value.trim() };
+  const searchApiKey = document.getElementById('googleSearchApiKey').value.trim();
+  if (searchApiKey) payload.google_search_api_key = searchApiKey;
+
+  const submitBtn = googleSearchForm.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  try {
+    const res = await api('/ai-settings', { method: 'PUT', body: JSON.stringify(payload) });
+    document.getElementById('googleSearchApiKey').value = '';
+    renderSearchKeyStatus(res.data.has_google_search_api_key, res.data.google_search_cx);
+    showMessage('Kredensial pencarian profil publik berhasil disimpan.', false);
   } catch (err) {
     showMessage(err.message, true);
   } finally {
