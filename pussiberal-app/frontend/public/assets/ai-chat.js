@@ -18,14 +18,23 @@ function showMessage(message, isError) {
   resultBox.classList.toggle('error-box', !!isError);
 }
 
-function appendBubble(role, text, isError) {
+function appendBubble(role, text, isError, note) {
   chatEmpty.style.display = 'none';
   const wrap = document.createElement('div');
   wrap.className = `chat-message role-${role}${isError ? ' is-error' : ''}`;
+  const col = document.createElement('div');
+  col.className = 'chat-message-col';
   const bubble = document.createElement('div');
   bubble.className = 'chat-bubble';
   bubble.textContent = text;
-  wrap.appendChild(bubble);
+  col.appendChild(bubble);
+  if (note) {
+    const noteEl = document.createElement('div');
+    noteEl.className = 'chat-note';
+    noteEl.textContent = note;
+    col.appendChild(noteEl);
+  }
+  wrap.appendChild(col);
   chatWindow.appendChild(wrap);
   chatWindow.scrollTop = chatWindow.scrollHeight;
   return bubble;
@@ -61,7 +70,8 @@ async function sendMessage(text) {
       body: JSON.stringify({ message: text.trim(), history }),
     });
     removeTyping();
-    appendBubble('assistant', res.data.reply);
+    const note = res.data.fallback_used ? `Dijawab oleh AI lokal (${res.data.model}) -- kredit OpenRouter sedang habis/bermasalah` : '';
+    appendBubble('assistant', res.data.reply, false, note);
     history.push({ role: 'user', content: text.trim() });
     history.push({ role: 'assistant', content: res.data.reply });
   } catch (err) {

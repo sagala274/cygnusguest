@@ -3,7 +3,7 @@ const pool = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const asyncHandler = require('../utils/asyncHandler');
 const { logAudit } = require('../utils/audit');
-const { getAiSettings, getDecryptedApiKey } = require('../utils/aiSettings');
+const { getAiSettings, getDecryptedApiKey, getDecryptedOllamaApiKey } = require('../utils/aiSettings');
 const { formatJakartaDate, todayJakarta } = require('../utils/datetime');
 const { maskNik } = require('../utils/validators');
 
@@ -12,7 +12,10 @@ router.use(authenticate, requireRole('admin'));
 
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_HISTORY_TURNS = 20;
-const MAX_TOOL_ROUNDS = 4;
+// Dinaikkan dari 4 -> 6: saat beralih ke AI lokal (Ollama) karena kuota
+// OpenRouter habis, peralihan itu sendiri memakai satu putaran tambahan,
+// jadi perlu ruang lebih supaya tool-calling tetap kebagian putaran cukup.
+const MAX_TOOL_ROUNDS = 6;
 
 function isValidDateStr(value) {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(Date.parse(value));
@@ -184,11 +187,32 @@ async function callOpenRouter(apiKey, model, messages, useTools) {
   });
 }
 
-async function parseOpenRouterError(apiResponse) {
-  let errorMessage = `OpenRouter mengembalikan kesalahan (${apiResponse.status})`;
+// Server Ollama sendiri (lokal/on-premise), dipanggil lewat endpoint
+// kompatibel-OpenAI bawaannya (/v1/chat/completions) supaya bisa memakai
+// format request/response yang sama persis dengan OpenRouter di atas --
+// termasuk tool-calling, kalau model lokalnya mendukung.
+async function callOllama(baseUrl, apiKey, model, messages, useTools) {
+  return fetch(`${baseUrl}/v1/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 8000,
+      messages,
+      ...(useTools ? { tools: TOOLS, tool_choice: 'auto' } : {}),
+    }),
+  });
+}
+
+async function parseApiError(apiResponse, defaultLabel) {
+  let errorMessage = `${defaultLabel} mengembalikan kesalahan (${apiResponse.status})`;
   try {
     const errBody = await apiResponse.json();
     if (errBody && errBody.error && errBody.error.message) errorMessage = errBody.error.message;
+    else if (errBody && typeof errBody.error === 'string') errorMessage = errBody.error;
   } catch (err) {
     /* body bukan JSON, gunakan pesan default */
   }
@@ -215,7 +239,12 @@ router.post('/query', asyncHandler(async (req, res) => {
 
   const settings = await getAiSettings();
   const apiKey = await getDecryptedApiKey();
-  if (!apiKey) {
+  const ollamaApiKey = await getDecryptedOllamaApiKey();
+  const ollamaBaseUrl = settings.ollama_base_url;
+  const ollamaModel = settings.ollama_model;
+  const ollamaConfigured = !!(ollamaBaseUrl && ollamaModel);
+
+  if (!apiKey && !ollamaConfigured) {
     return res.status(400).json({
       error: 'API key AI belum dikonfigurasi. Silakan atur di menu Konfigurasi AI terlebih dahulu.',
     });
@@ -230,47 +259,92 @@ router.post('/query', asyncHandler(async (req, res) => {
     { role: 'user', content: message.trim() },
   ];
 
-  // Loop tool-use manual (format OpenAI-compatible, sesuai OpenRouter):
-  // kalau model memanggil tool "cari_tamu", hasilnya dimasukkan kembali ke
-  // percakapan lalu model dipanggil ULANG untuk merangkai jawaban akhirnya
-  // berdasarkan data sungguhan -- bukan cuma ringkasan statistik.
+  // Dua penyedia model yang mungkin dipakai: OpenRouter (utama, kalau API
+  // key-nya diisi) atau Ollama lokal (dipakai langsung sebagai utama kalau
+  // OpenRouter belum dikonfigurasi sama sekali). Selama permintaan ini
+  // berjalan, begitu beralih ke Ollama (lihat alasan di bawah), sisa
+  // putaran tool-calling tetap memakai Ollama -- tidak bolak-balik.
+  let provider = apiKey ? 'openrouter' : 'ollama';
+  let switchedToLocal = provider === 'ollama';
+
+  // Loop tool-use manual (format OpenAI-compatible, dipakai sama persis
+  // oleh OpenRouter maupun endpoint kompatibel-OpenAI Ollama): kalau model
+  // memanggil tool "cari_tamu", hasilnya dimasukkan kembali ke percakapan
+  // lalu model dipanggil ULANG untuk merangkai jawaban akhirnya berdasarkan
+  // data sungguhan -- bukan cuma ringkasan statistik.
   let toolsEnabled = true;
   let finalReply = '';
-  let usedModel = settings.model;
+  let usedModel = provider === 'openrouter' ? settings.model : ollamaModel;
   let toolsUsed = 0;
+  let providerAttempts = 0;
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
     let apiResponse;
     try {
-      apiResponse = await callOpenRouter(apiKey, settings.model, messages, toolsEnabled);
+      apiResponse = provider === 'openrouter'
+        ? await callOpenRouter(apiKey, settings.model, messages, toolsEnabled)
+        : await callOllama(ollamaBaseUrl, ollamaApiKey, ollamaModel, messages, toolsEnabled);
     } catch (err) {
-      return res.status(502).json({ error: 'Gagal menghubungi OpenRouter. Periksa koneksi server.' });
+      // OpenRouter tidak terhubung sama sekali (bukan cuma error terstruktur)
+      // -- kalau AI lokal tersedia dan belum pernah dicoba, alihkan juga,
+      // sama seperti alasan kuota habis di bawah.
+      if (provider === 'openrouter' && ollamaConfigured && !switchedToLocal) {
+        provider = 'ollama';
+        switchedToLocal = true;
+        toolsEnabled = true;
+        providerAttempts = 0;
+        continue;
+      }
+      return res.status(502).json({
+        error: provider === 'openrouter'
+          ? 'Gagal menghubungi OpenRouter. Periksa koneksi server.'
+          : 'Gagal menghubungi AI lokal (Ollama). Periksa apakah server Ollama aktif dan dapat diakses dari server aplikasi.',
+      });
     }
 
     if (!apiResponse.ok) {
-      // Sebagian model tidak mendukung tool-calling -- kalau gagal di
-      // percobaan PERTAMA selagi tools masih aktif, coba sekali lagi tanpa
-      // tools (fallback ke perilaku lama: jawab dari ringkasan statistik
-      // saja) alih-alih langsung gagal total ke pengguna.
-      if (round === 0 && toolsEnabled) {
-        toolsEnabled = false;
+      // Kredit/kuota OpenRouter habis (402) atau terlalu banyak permintaan
+      // (429) -- kalau AI lokal (Ollama) sudah dikonfigurasi dan belum
+      // pernah dicoba di permintaan ini, alihkan otomatis ke sana alih-alih
+      // langsung gagal ke pengguna. Inilah mekanisme "cadangan otomatis".
+      const isQuotaIssue = provider === 'openrouter' && (apiResponse.status === 402 || apiResponse.status === 429);
+      if (isQuotaIssue && ollamaConfigured && !switchedToLocal) {
+        provider = 'ollama';
+        switchedToLocal = true;
+        toolsEnabled = true;
+        providerAttempts = 0;
         continue;
       }
-      const errorMessage = await parseOpenRouterError(apiResponse);
-      if (apiResponse.status === 401) {
-        return res.status(400).json({ error: 'API key OpenRouter tidak valid. Periksa kembali di menu Konfigurasi AI.' });
+
+      // Sebagian model tidak mendukung tool-calling -- kalau gagal di
+      // percobaan PERTAMA pada penyedia ini selagi tools masih aktif, coba
+      // sekali lagi tanpa tools (fallback ke perilaku lama: jawab dari
+      // ringkasan statistik saja) alih-alih langsung gagal total.
+      if (providerAttempts === 0 && toolsEnabled) {
+        toolsEnabled = false;
+        providerAttempts += 1;
+        continue;
       }
-      if (apiResponse.status === 402) {
-        return res.status(400).json({ error: 'Kredit OpenRouter tidak mencukupi untuk memproses permintaan ini.' });
+
+      if (provider === 'openrouter') {
+        const errorMessage = await parseApiError(apiResponse, 'OpenRouter');
+        if (apiResponse.status === 401) {
+          return res.status(400).json({ error: 'API key OpenRouter tidak valid. Periksa kembali di menu Konfigurasi AI.' });
+        }
+        if (apiResponse.status === 402) {
+          return res.status(400).json({ error: 'Kredit OpenRouter tidak mencukupi untuk memproses permintaan ini, dan AI lokal cadangan belum diatur di menu Konfigurasi AI.' });
+        }
+        if (apiResponse.status === 429) {
+          return res.status(429).json({ error: 'Terlalu banyak permintaan ke OpenRouter. Coba lagi sesaat lagi.' });
+        }
+        return res.status(502).json({ error: `Layanan AI mengembalikan kesalahan: ${errorMessage}` });
       }
-      if (apiResponse.status === 429) {
-        return res.status(429).json({ error: 'Terlalu banyak permintaan ke OpenRouter. Coba lagi sesaat lagi.' });
-      }
-      return res.status(502).json({ error: `Layanan AI mengembalikan kesalahan: ${errorMessage}` });
+      const errorMessage = await parseApiError(apiResponse, 'AI lokal (Ollama)');
+      return res.status(502).json({ error: `AI lokal (Ollama) mengembalikan kesalahan: ${errorMessage}` });
     }
 
     const body = await apiResponse.json();
-    usedModel = body.model || settings.model;
+    usedModel = body.model || (provider === 'openrouter' ? settings.model : ollamaModel);
     const choice = body.choices && body.choices[0];
     const msg = choice && choice.message;
     const toolCalls = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : [];
@@ -307,10 +381,10 @@ router.post('/query', asyncHandler(async (req, res) => {
   }
 
   await logAudit(req.user.sub, 'ai_chat_query', 'ai_chat', null, {
-    message: message.trim().slice(0, 500), model: settings.model, used_tool: toolsUsed > 0,
+    message: message.trim().slice(0, 500), model: usedModel, provider, fallback_used: switchedToLocal, used_tool: toolsUsed > 0,
   });
 
-  res.json({ data: { reply: finalReply, model: usedModel } });
+  res.json({ data: { reply: finalReply, model: usedModel, provider, fallback_used: switchedToLocal } });
 }));
 
 module.exports = router;

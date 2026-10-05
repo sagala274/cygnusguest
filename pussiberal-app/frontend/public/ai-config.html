@@ -113,6 +113,44 @@
           </form>
         </div>
       </div>
+
+      <div class="form-card">
+        <div class="section">
+          <h2 class="section-title">AI Lokal (Ollama) -- Cadangan Otomatis</h2>
+          <p class="page-description">
+            Server <a class="link" href="https://ollama.com/" target="_blank" rel="noopener">Ollama</a> yang dijalankan sendiri (lokal/on-premise), dipakai sebagai
+            <strong>cadangan otomatis</strong>: kalau kredit/kuota OpenRouter di atas habis atau OpenRouter sedang bermasalah, AI Chat otomatis beralih memakai
+            model lokal ini untuk permintaan tersebut, tanpa perlu diubah manual. Opsional -- jika kosong, AI Chat hanya memakai OpenRouter seperti biasa.
+          </p>
+
+          <div class="callout" id="ollamaStatusCallout">
+            <span class="callout-label" id="ollamaStatusLabel">Memuat status...</span>
+            <p id="ollamaStatusText"></p>
+          </div>
+
+          <form id="ollamaForm" class="grid">
+            <div class="field full">
+              <label for="ollamaBaseUrl">URL SERVER OLLAMA</label>
+              <input id="ollamaBaseUrl" placeholder="mis. http://localhost:11434 atau http://192.168.1.10:11434" autocomplete="off">
+            </div>
+
+            <div class="field full">
+              <label for="ollamaModel">NAMA MODEL</label>
+              <input id="ollamaModel" placeholder="mis. llama3.1 atau qwen2.5" autocomplete="off">
+            </div>
+
+            <div class="field full">
+              <label for="ollamaApiKey">TOKEN/API KEY <span class="label-note">Opsional, isi hanya jika server Ollama dilindungi token</span></label>
+              <input id="ollamaApiKey" type="password" placeholder="Kosongkan jika server tidak memakai token">
+            </div>
+
+            <div class="full" style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button type="submit" class="btn btn-primary">Simpan AI Lokal</button>
+              <button type="button" class="btn btn-outline-accent" id="removeOllamaBtn">Hapus Konfigurasi</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </section>
   </main>
 </div>

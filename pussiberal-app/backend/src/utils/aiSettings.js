@@ -45,6 +45,19 @@ async function ensureAiSettingsTable() {
   if (!(await columnExists('ai_settings', 'google_search_cx'))) {
     await pool.query('ALTER TABLE ai_settings ADD COLUMN google_search_cx VARCHAR(100) NULL AFTER google_search_api_key_encrypted');
   }
+
+  // Konfigurasi AI lokal (Ollama) -- dipakai sebagai CADANGAN OTOMATIS saat
+  // OpenRouter kehabisan kredit/kuota (lihat logika routing di aiChat.js).
+  // Tidak wajib diisi; kalau kosong, sistem tetap hanya memakai OpenRouter.
+  if (!(await columnExists('ai_settings', 'ollama_base_url'))) {
+    await pool.query('ALTER TABLE ai_settings ADD COLUMN ollama_base_url VARCHAR(255) NULL AFTER google_search_cx');
+  }
+  if (!(await columnExists('ai_settings', 'ollama_model'))) {
+    await pool.query('ALTER TABLE ai_settings ADD COLUMN ollama_model VARCHAR(150) NULL AFTER ollama_base_url');
+  }
+  if (!(await columnExists('ai_settings', 'ollama_api_key_encrypted'))) {
+    await pool.query('ALTER TABLE ai_settings ADD COLUMN ollama_api_key_encrypted TEXT NULL AFTER ollama_model');
+  }
 }
 
 async function getAiSettings() {
@@ -64,11 +77,18 @@ async function getDecryptedGoogleSearchApiKey() {
   return decrypt(settings.google_search_api_key_encrypted);
 }
 
+async function getDecryptedOllamaApiKey() {
+  const settings = await getAiSettings();
+  if (!settings || !settings.ollama_api_key_encrypted) return null;
+  return decrypt(settings.ollama_api_key_encrypted);
+}
+
 module.exports = {
   ensureAiSettingsTable,
   getAiSettings,
   getDecryptedApiKey,
   getDecryptedGoogleSearchApiKey,
+  getDecryptedOllamaApiKey,
   encrypt,
   DEFAULT_MODEL,
 };
