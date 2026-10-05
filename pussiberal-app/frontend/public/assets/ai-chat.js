@@ -8,9 +8,44 @@ const chatEmpty = document.getElementById('chatEmpty');
 const chatForm = document.getElementById('chatForm');
 const chatInput = document.getElementById('chatInput');
 const chatSendBtn = document.getElementById('chatSendBtn');
+const routingSwitch = document.getElementById('routingSwitch');
+const routingButtons = routingSwitch.querySelectorAll('.routing-switch-btn');
 
 const history = [];
 let sending = false;
+
+function setActiveRoutingButton(mode) {
+  routingButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.mode === mode));
+}
+
+async function loadRoutingStatus() {
+  try {
+    const res = await api('/ai-settings');
+    setActiveRoutingButton(res.data.routing_mode || 'auto');
+    const ollamaReady = !!(res.data.ollama_enabled && res.data.ollama_base_url && res.data.ollama_model);
+    routingSwitch.querySelector('[data-mode="openrouter"]').disabled = !res.data.has_api_key;
+    routingSwitch.querySelector('[data-mode="ollama"]').disabled = !ollamaReady;
+  } catch (err) {
+    /* kalau gagal memuat, biarkan tombol tetap aktif -- jangan blokir chat gara-gara ini */
+  }
+}
+
+routingButtons.forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    if (btn.disabled || btn.classList.contains('active')) return;
+    const mode = btn.dataset.mode;
+    routingButtons.forEach((b) => { b.disabled = true; });
+    try {
+      const res = await api('/ai-settings', { method: 'PUT', body: JSON.stringify({ routing_mode: mode }) });
+      setActiveRoutingButton(res.data.routing_mode);
+      showMessage(`Sumber model diubah ke "${btn.textContent}".`, false);
+    } catch (err) {
+      showMessage(err.message, true);
+    } finally {
+      await loadRoutingStatus();
+    }
+  });
+});
 
 function showMessage(message, isError) {
   resultBox.style.display = 'block';
@@ -70,7 +105,12 @@ async function sendMessage(text) {
       body: JSON.stringify({ message: text.trim(), history }),
     });
     removeTyping();
-    const note = res.data.fallback_used ? `Dijawab oleh AI lokal (${res.data.model}) -- kredit OpenRouter sedang habis/bermasalah` : '';
+    let note = '';
+    if (res.data.fallback_used) {
+      note = `Dijawab oleh AI lokal (${res.data.model}) -- kredit OpenRouter sedang habis/bermasalah`;
+    } else if (res.data.provider === 'ollama') {
+      note = `Dijawab oleh AI lokal (${res.data.model})`;
+    }
     appendBubble('assistant', res.data.reply, false, note);
     history.push({ role: 'user', content: text.trim() });
     history.push({ role: 'assistant', content: res.data.reply });
@@ -106,3 +146,5 @@ chatInput.addEventListener('input', () => {
 document.querySelectorAll('.chat-suggestion-btn').forEach((btn) => {
   btn.addEventListener('click', () => sendMessage(btn.dataset.q));
 });
+
+loadRoutingStatus();

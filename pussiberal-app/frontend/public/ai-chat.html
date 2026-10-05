@@ -47,6 +47,15 @@
 
       <div id="resultBox" class="result-box" style="display:none;"></div>
 
+      <div class="routing-switch-row">
+        <span class="routing-switch-label">Sumber Model:</span>
+        <div class="routing-switch" id="routingSwitch">
+          <button type="button" class="routing-switch-btn" data-mode="auto">Otomatis</button>
+          <button type="button" class="routing-switch-btn" data-mode="openrouter">OpenRouter</button>
+          <button type="button" class="routing-switch-btn" data-mode="ollama">AI Lokal</button>
+        </div>
+      </div>
+
       <div class="chat-suggestions" id="chatSuggestions">
         <button type="button" class="chat-suggestion-btn" data-q="Berapa total tamu terdaftar dan berapa yang sedang berkunjung hari ini?">Ringkasan kunjungan hari ini</button>
         <button type="button" class="chat-suggestion-btn" data-q="Bagaimana distribusi kategori keamanan personel saat ini? Apakah ada yang perlu penanganan khusus?">Distribusi kategori keamanan</button>

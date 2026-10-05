@@ -1097,6 +1097,17 @@ a.link:hover { text-decoration: underline; }
 .switch input:checked + .switch-track { background: var(--accent); }
 .switch input:checked + .switch-track::before { transform: translateX(18px); }
 
+.routing-switch-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.routing-switch-label { font-size: 12px; font-weight: 700; color: #667085; text-transform: uppercase; letter-spacing: .03em; }
+.routing-switch { display: inline-flex; background: #f2f3f7; border-radius: 999px; padding: 3px; gap: 2px; }
+.routing-switch-btn {
+  border: none; background: transparent; padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+  color: #667085; cursor: pointer; transition: background .15s, color .15s;
+}
+.routing-switch-btn:hover:not(.active):not(:disabled) { color: var(--text); }
+.routing-switch-btn.active { background: var(--navy); color: #fff; }
+.routing-switch-btn:disabled { opacity: .4; cursor: not-allowed; }
+
 .chat-typing { display: flex; gap: 4px; padding: 4px 0; }
 .chat-typing span {
   width: 6px; height: 6px; border-radius: 50%; background: #98a2b3;
