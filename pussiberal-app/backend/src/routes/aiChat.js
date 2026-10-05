@@ -21,6 +21,23 @@ function isValidDateStr(value) {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(Date.parse(value));
 }
 
+// Model lokal yang kecil (mis. qwen2.5:1.5b) sering mengabaikan tools saat
+// tool_choice "auto" -- alih-alih mencoba memahami kapan harus memanggil
+// tool (kemampuan yang lemah di model kecil), di sini cukup dideteksi
+// dengan kata kunci sederhana: kalau terdeteksi, tool_choice DIPAKSA
+// (bukan "auto") supaya model wajib memanggil cari_tamu, bukan mengarang
+// jawaban sendiri. Hanya dipakai untuk provider Ollama -- OpenRouter sudah
+// cukup andal dengan "auto".
+const GUEST_QUERY_KEYWORDS = [
+  'tamu', 'biodata', 'nik', 'no. hp', 'nomor hp', 'nomor telepon',
+  'jabatan', 'perusahaan', 'instansi', 'siapa saja', 'siapa yang',
+  'daftar nama', 'data nama', 'cek data', 'registrasi', 'pendaftaran',
+];
+function looksLikeGuestQuery(message) {
+  const lower = message.toLowerCase();
+  return GUEST_QUERY_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 // Satu-satunya "tool" yang boleh dipanggil model -- READ-ONLY, query
 // ter-parameterisasi (bukan model menulis SQL bebas), supaya pertanyaan
 // seperti "siapa saja tamu tanggal 29 September" bisa dijawab dengan data
@@ -170,7 +187,7 @@ Aturan:
   return [base, customPrompt || '', context].filter(Boolean).join('\n\n');
 }
 
-async function callOpenRouter(apiKey, model, messages, useTools) {
+async function callOpenRouter(apiKey, model, messages, toolChoice) {
   return fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -182,7 +199,7 @@ async function callOpenRouter(apiKey, model, messages, useTools) {
       model,
       max_tokens: 8000,
       messages,
-      ...(useTools ? { tools: TOOLS, tool_choice: 'auto' } : {}),
+      ...(toolChoice ? { tools: TOOLS, tool_choice: toolChoice } : {}),
     }),
   });
 }
@@ -191,7 +208,7 @@ async function callOpenRouter(apiKey, model, messages, useTools) {
 // kompatibel-OpenAI bawaannya (/v1/chat/completions) supaya bisa memakai
 // format request/response yang sama persis dengan OpenRouter di atas --
 // termasuk tool-calling, kalau model lokalnya mendukung.
-async function callOllama(baseUrl, apiKey, model, messages, useTools) {
+async function callOllama(baseUrl, apiKey, model, messages, toolChoice) {
   return fetch(`${baseUrl}/v1/chat/completions`, {
     method: 'POST',
     headers: {
@@ -202,7 +219,7 @@ async function callOllama(baseUrl, apiKey, model, messages, useTools) {
       model,
       max_tokens: 8000,
       messages,
-      ...(useTools ? { tools: TOOLS, tool_choice: 'auto' } : {}),
+      ...(toolChoice ? { tools: TOOLS, tool_choice: toolChoice } : {}),
     }),
   });
 }
@@ -298,13 +315,23 @@ router.post('/query', asyncHandler(async (req, res) => {
   let usedModel = provider === 'openrouter' ? settings.model : ollamaModel;
   let toolsUsed = 0;
   let providerAttempts = 0;
+  // Lihat looksLikeGuestQuery() di atas -- hanya dipakai untuk memaksa
+  // panggilan PERTAMA (toolsUsed === 0) di provider Ollama, supaya model
+  // kecil tidak sempat "mengarang" jawaban sebelum sempat mencoba tool-nya.
+  const forceGuestTool = looksLikeGuestQuery(message.trim());
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
+    const toolChoice = !toolsEnabled
+      ? undefined
+      : (provider === 'ollama' && forceGuestTool && toolsUsed === 0)
+        ? { type: 'function', function: { name: 'cari_tamu' } }
+        : 'auto';
+
     let apiResponse;
     try {
       apiResponse = provider === 'openrouter'
-        ? await callOpenRouter(apiKey, settings.model, messages, toolsEnabled)
-        : await callOllama(ollamaBaseUrl, ollamaApiKey, ollamaModel, messages, toolsEnabled);
+        ? await callOpenRouter(apiKey, settings.model, messages, toolChoice)
+        : await callOllama(ollamaBaseUrl, ollamaApiKey, ollamaModel, messages, toolChoice);
     } catch (err) {
       // OpenRouter tidak terhubung sama sekali (bukan cuma error terstruktur)
       // -- kalau AI lokal tersedia dan belum pernah dicoba, alihkan juga,
@@ -375,6 +402,15 @@ router.post('/query', asyncHandler(async (req, res) => {
     const choice = body.choices && body.choices[0];
     const msg = choice && choice.message;
     const toolCalls = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : [];
+
+    // Model lokal kecil kadang tetap mengabaikan tool_choice yang DIPAKSA dan
+    // malah mengarang jawaban dalam bentuk teks biasa (halusinasi) alih-alih
+    // benar-benar memanggil cari_tamu. Daripada menampilkan karangan itu
+    // seolah-olah data sungguhan, lebih baik mengaku jujur tidak bisa.
+    if (provider === 'ollama' && forceGuestTool && toolsUsed === 0 && !toolCalls.length) {
+      finalReply = 'Maaf, AI Lokal saat ini belum bisa memproses pencarian data tamu dengan andal (model terlalu kecil untuk memanggil fungsi pencarian database). Silakan coba lagi memakai mode "OpenRouter" atau "Otomatis" di atas, atau buka menu Pencarian Tamu/Absensi secara langsung.';
+      break;
+    }
 
     if (toolCalls.length && toolsUsed < MAX_TOOL_ROUNDS - 1) {
       messages.push({ role: 'assistant', content: msg.content || null, tool_calls: toolCalls });
