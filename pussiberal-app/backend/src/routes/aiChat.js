@@ -5,12 +5,101 @@ const asyncHandler = require('../utils/asyncHandler');
 const { logAudit } = require('../utils/audit');
 const { getAiSettings, getDecryptedApiKey } = require('../utils/aiSettings');
 const { formatJakartaDate, todayJakarta } = require('../utils/datetime');
+const { maskNik } = require('../utils/validators');
 
 const router = express.Router();
 router.use(authenticate, requireRole('admin'));
 
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_HISTORY_TURNS = 20;
+const MAX_TOOL_ROUNDS = 4;
+
+function isValidDateStr(value) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(Date.parse(value));
+}
+
+// Satu-satunya "tool" yang boleh dipanggil model -- READ-ONLY, query
+// ter-parameterisasi (bukan model menulis SQL bebas), supaya pertanyaan
+// seperti "siapa saja tamu tanggal 29 September" bisa dijawab dengan data
+// sungguhan, bukan cuma ringkasan angka agregat di buildPlatformContext().
+const TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'cari_tamu',
+      description:
+        'Mencari data tamu (nama & biodata) yang TERDAFTAR di PUSSIBERAL, difilter berdasarkan rentang tanggal pendaftaran dan/atau nama/perusahaan. ' +
+        'Pakai tool ini setiap kali pengguna meminta nama, biodata, atau daftar tamu tertentu (bukan cuma angka statistik) -- baik untuk tanggal baru maupun lama. ' +
+        'Semua parameter opsional; kosongkan yang tidak relevan.',
+      parameters: {
+        type: 'object',
+        properties: {
+          tanggal_mulai: { type: 'string', description: 'Tanggal pendaftaran paling awal, format YYYY-MM-DD.' },
+          tanggal_selesai: { type: 'string', description: 'Tanggal pendaftaran paling akhir, format YYYY-MM-DD.' },
+          nama: { type: 'string', description: 'Potongan nama tamu yang dicari.' },
+          perusahaan: { type: 'string', description: 'Potongan nama perusahaan/instansi asal tamu.' },
+          limit: { type: 'integer', description: 'Jumlah maksimal hasil, default 20, maksimal 50.' },
+        },
+      },
+    },
+  },
+];
+
+async function runCariTamu(args = {}) {
+  const limit = Math.min(Math.max(parseInt(args.limit, 10) || 20, 1), 50);
+  const where = [];
+  const params = {};
+  if (isValidDateStr(args.tanggal_mulai)) {
+    where.push('DATE(g.created_at) >= :tanggal_mulai');
+    params.tanggal_mulai = args.tanggal_mulai;
+  }
+  if (isValidDateStr(args.tanggal_selesai)) {
+    where.push('DATE(g.created_at) <= :tanggal_selesai');
+    params.tanggal_selesai = args.tanggal_selesai;
+  }
+  if (args.nama && String(args.nama).trim()) {
+    where.push('gm.full_name LIKE :nama');
+    params.nama = `%${String(args.nama).trim()}%`;
+  }
+  if (args.perusahaan && String(args.perusahaan).trim()) {
+    where.push('g.company LIKE :perusahaan');
+    params.perusahaan = `%${String(args.perusahaan).trim()}%`;
+  }
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  const [rows] = await pool.query(
+    `SELECT g.registration_number, g.company, g.purpose, g.status, g.created_at,
+            gm.full_name, gm.nik, gm.phone_number, gm.position
+     FROM guests g
+     JOIN guest_members gm ON gm.guest_id = g.id
+     ${whereSql}
+     ORDER BY g.created_at DESC
+     LIMIT ${limit}`,
+    params
+  );
+
+  if (!rows.length) return { jumlah: 0, catatan: 'Tidak ada tamu yang cocok dengan kriteria pencarian ini.' };
+
+  // NIK disamarkan sebelum dikirim ke model AI pihak ketiga (lewat
+  // OpenRouter, bisa diteruskan ke penyedia model mana pun) -- berbeda
+  // dengan tampilan di aplikasi sendiri (mis. Bank Data) yang memang boleh
+  // menampilkan NIK penuh ke Admin, data yang keluar dari infrastruktur
+  // sendiri menuju pihak ketiga sengaja dibuat lebih hati-hati.
+  return {
+    jumlah: rows.length,
+    tamu: rows.map((r) => ({
+      nama: r.full_name,
+      nik: maskNik(r.nik),
+      no_hp: r.phone_number,
+      jabatan: r.position,
+      perusahaan: r.company,
+      tujuan_kunjungan: r.purpose,
+      status_pendaftaran: r.status,
+      no_registrasi: r.registration_number,
+      tanggal_daftar: formatJakartaDate(r.created_at, { day: '2-digit', month: 'long', year: 'numeric' }),
+    })),
+  };
+}
 
 async function buildPlatformContext() {
   const todayStr = todayJakarta();
@@ -64,13 +153,47 @@ async function buildPlatformContext() {
   return lines.join('\n');
 }
 
-const BASE_SYSTEM_PROMPT = `Anda adalah asisten analisa data untuk PUSSIBERAL Guest Management, sebuah sistem manajemen tamu dan keamanan fasilitas.
+function buildSystemPrompt(context, customPrompt) {
+  const base = `Anda adalah asisten analisa data untuk PUSSIBERAL Guest Management, sebuah sistem manajemen tamu dan keamanan fasilitas.
 Tugas Anda adalah membantu Administrator menganalisa dan memahami data pada platform ini (statistik kunjungan tamu, kategori keamanan personel, bank data, aktivitas pengguna, dsb).
+Hari ini: ${formatJakartaDate(new Date(), { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })} (pakai ini untuk menafsirkan tanggal relatif seperti "kemarin"/"minggu lalu").
+
 Aturan:
 - Jawab dalam Bahasa Indonesia, singkat dan langsung ke inti, kecuali diminta lebih detail.
-- Gunakan HANYA data pada bagian "RINGKASAN DATA PLATFORM" di bawah sebagai sumber angka/statistik. Jangan mengarang angka yang tidak ada di sana.
-- Jika pertanyaan memerlukan data yang tidak tersedia dalam ringkasan, katakan dengan jujur bahwa data tersebut tidak tersedia dalam ringkasan ini, dan sarankan menu yang relevan (mis. Bank Data, Laporan, Log Aktivitas).
+- Untuk angka/statistik agregat, gunakan HANYA data pada bagian "RINGKASAN DATA PLATFORM" di bawah. Jangan mengarang angka yang tidak ada di sana.
+- Kalau pengguna meminta NAMA, BIODATA, atau DAFTAR TAMU tertentu (baik tanggal lama maupun baru) -- bukan cuma angka -- WAJIB panggil tool "cari_tamu" untuk mengambil datanya langsung dari database, jangan menjawab "tidak tersedia" tanpa mencoba tool ini dulu. NIK yang dikembalikan tool sudah sengaja disamarkan sebagian untuk privasi.
+- Kalau hasil tool kosong atau pertanyaan di luar cakupan tool ini (mis. butuh data personel internal, bukan tamu), katakan jujur data itu tidak tersedia lewat chat ini, dan sarankan menu yang relevan (mis. Absensi Personel, Bank Data, Laporan, Log Aktivitas).
 - Anda tidak dapat mengubah data apapun di sistem, hanya menjawab pertanyaan dan memberi analisa/insight.`;
+  return [base, customPrompt || '', context].filter(Boolean).join('\n\n');
+}
+
+async function callOpenRouter(apiKey, model, messages, useTools) {
+  return fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+      'X-Title': 'PUSSIBERAL Guest Management - AI Chat',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 8000,
+      messages,
+      ...(useTools ? { tools: TOOLS, tool_choice: 'auto' } : {}),
+    }),
+  });
+}
+
+async function parseOpenRouterError(apiResponse) {
+  let errorMessage = `OpenRouter mengembalikan kesalahan (${apiResponse.status})`;
+  try {
+    const errBody = await apiResponse.json();
+    if (errBody && errBody.error && errBody.error.message) errorMessage = errBody.error.message;
+  } catch (err) {
+    /* body bukan JSON, gunakan pesan default */
+  }
+  return errorMessage;
+}
 
 router.post('/query', asyncHandler(async (req, res) => {
   const { message, history } = req.body || {};
@@ -99,56 +222,82 @@ router.post('/query', asyncHandler(async (req, res) => {
   }
 
   const context = await buildPlatformContext();
-  const systemPrompt = [BASE_SYSTEM_PROMPT, settings.system_prompt || '', context].filter(Boolean).join('\n\n');
+  const systemPrompt = buildSystemPrompt(context, settings.system_prompt);
 
-  let apiResponse;
-  try {
-    apiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-        'X-Title': 'PUSSIBERAL Guest Management - AI Chat',
-      },
-      body: JSON.stringify({
-        model: settings.model,
-        max_tokens: 8000,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...safeHistory,
-          { role: 'user', content: message.trim() },
-        ],
-      }),
-    });
-  } catch (err) {
-    return res.status(502).json({ error: 'Gagal menghubungi OpenRouter. Periksa koneksi server.' });
-  }
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...safeHistory,
+    { role: 'user', content: message.trim() },
+  ];
 
-  if (!apiResponse.ok) {
-    let errorMessage = `OpenRouter mengembalikan kesalahan (${apiResponse.status})`;
+  // Loop tool-use manual (format OpenAI-compatible, sesuai OpenRouter):
+  // kalau model memanggil tool "cari_tamu", hasilnya dimasukkan kembali ke
+  // percakapan lalu model dipanggil ULANG untuk merangkai jawaban akhirnya
+  // berdasarkan data sungguhan -- bukan cuma ringkasan statistik.
+  let toolsEnabled = true;
+  let finalReply = '';
+  let usedModel = settings.model;
+  let toolsUsed = 0;
+
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
+    let apiResponse;
     try {
-      const errBody = await apiResponse.json();
-      if (errBody && errBody.error && errBody.error.message) errorMessage = errBody.error.message;
+      apiResponse = await callOpenRouter(apiKey, settings.model, messages, toolsEnabled);
     } catch (err) {
-      /* body bukan JSON, gunakan pesan default */
+      return res.status(502).json({ error: 'Gagal menghubungi OpenRouter. Periksa koneksi server.' });
     }
 
-    if (apiResponse.status === 401) {
-      return res.status(400).json({ error: 'API key OpenRouter tidak valid. Periksa kembali di menu Konfigurasi AI.' });
+    if (!apiResponse.ok) {
+      // Sebagian model tidak mendukung tool-calling -- kalau gagal di
+      // percobaan PERTAMA selagi tools masih aktif, coba sekali lagi tanpa
+      // tools (fallback ke perilaku lama: jawab dari ringkasan statistik
+      // saja) alih-alih langsung gagal total ke pengguna.
+      if (round === 0 && toolsEnabled) {
+        toolsEnabled = false;
+        continue;
+      }
+      const errorMessage = await parseOpenRouterError(apiResponse);
+      if (apiResponse.status === 401) {
+        return res.status(400).json({ error: 'API key OpenRouter tidak valid. Periksa kembali di menu Konfigurasi AI.' });
+      }
+      if (apiResponse.status === 402) {
+        return res.status(400).json({ error: 'Kredit OpenRouter tidak mencukupi untuk memproses permintaan ini.' });
+      }
+      if (apiResponse.status === 429) {
+        return res.status(429).json({ error: 'Terlalu banyak permintaan ke OpenRouter. Coba lagi sesaat lagi.' });
+      }
+      return res.status(502).json({ error: `Layanan AI mengembalikan kesalahan: ${errorMessage}` });
     }
-    if (apiResponse.status === 402) {
-      return res.status(400).json({ error: 'Kredit OpenRouter tidak mencukupi untuk memproses permintaan ini.' });
+
+    const body = await apiResponse.json();
+    usedModel = body.model || settings.model;
+    const choice = body.choices && body.choices[0];
+    const msg = choice && choice.message;
+    const toolCalls = msg && Array.isArray(msg.tool_calls) ? msg.tool_calls : [];
+
+    if (toolCalls.length && toolsUsed < MAX_TOOL_ROUNDS - 1) {
+      messages.push({ role: 'assistant', content: msg.content || null, tool_calls: toolCalls });
+      for (const call of toolCalls) {
+        let result;
+        try {
+          const args = call.function && call.function.arguments ? JSON.parse(call.function.arguments) : {};
+          result = call.function && call.function.name === 'cari_tamu'
+            ? await runCariTamu(args)
+            : { error: 'Tool tidak dikenal' };
+        } catch (err) {
+          result = { error: `Gagal memproses permintaan tool: ${err.message}` };
+        }
+        messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result) });
+      }
+      toolsUsed += 1;
+      continue;
     }
-    if (apiResponse.status === 429) {
-      return res.status(429).json({ error: 'Terlalu banyak permintaan ke OpenRouter. Coba lagi sesaat lagi.' });
-    }
-    return res.status(502).json({ error: `Layanan AI mengembalikan kesalahan: ${errorMessage}` });
+
+    finalReply = (msg && msg.content || '').trim();
+    break;
   }
 
-  const body = await apiResponse.json();
-  const reply = (body.choices && body.choices[0] && body.choices[0].message && body.choices[0].message.content || '').trim();
-
-  if (!reply) {
+  if (!finalReply) {
     // Beberapa model (terutama tier gratis) kadang mengembalikan HTTP 200 tanpa
     // isi balasan yang valid saat sedang sibuk/tidak stabil -- jangan tampilkan
     // bubble kosong, beri tahu penggunanya secara eksplisit.
@@ -157,9 +306,11 @@ router.post('/query', asyncHandler(async (req, res) => {
     });
   }
 
-  await logAudit(req.user.sub, 'ai_chat_query', 'ai_chat', null, { message: message.trim().slice(0, 500), model: settings.model });
+  await logAudit(req.user.sub, 'ai_chat_query', 'ai_chat', null, {
+    message: message.trim().slice(0, 500), model: settings.model, used_tool: toolsUsed > 0,
+  });
 
-  res.json({ data: { reply, model: body.model || settings.model } });
+  res.json({ data: { reply: finalReply, model: usedModel } });
 }));
 
 module.exports = router;
