@@ -242,9 +242,25 @@ router.post('/query', asyncHandler(async (req, res) => {
   const ollamaApiKey = await getDecryptedOllamaApiKey();
   const ollamaBaseUrl = settings.ollama_base_url;
   const ollamaModel = settings.ollama_model;
-  const ollamaConfigured = !!(ollamaBaseUrl && ollamaModel);
+  const ollamaConfigured = !!(settings.ollama_enabled && ollamaBaseUrl && ollamaModel);
+  const routingMode = settings.routing_mode || 'auto';
 
-  if (!apiKey && !ollamaConfigured) {
+  // Mode routing dipilih admin di Konfigurasi AI:
+  // - "openrouter": paksa OpenRouter, tidak pernah beralih ke AI lokal.
+  // - "ollama": paksa AI lokal, OpenRouter tidak dipanggil sama sekali.
+  // - "auto" (default): OpenRouter utama, otomatis beralih ke AI lokal
+  //   kalau kredit/kuota habis atau tidak bisa dihubungi.
+  if (routingMode === 'openrouter' && !apiKey) {
+    return res.status(400).json({
+      error: 'Mode routing diatur ke "Hanya OpenRouter" tapi API key OpenRouter belum diisi. Atur di menu Konfigurasi AI.',
+    });
+  }
+  if (routingMode === 'ollama' && !ollamaConfigured) {
+    return res.status(400).json({
+      error: 'Mode routing diatur ke "Hanya AI Lokal" tapi AI lokal (Ollama) belum diisi/nonaktif. Atur di menu Konfigurasi AI.',
+    });
+  }
+  if (routingMode === 'auto' && !apiKey && !ollamaConfigured) {
     return res.status(400).json({
       error: 'API key AI belum dikonfigurasi. Silakan atur di menu Konfigurasi AI terlebih dahulu.',
     });
@@ -259,13 +275,18 @@ router.post('/query', asyncHandler(async (req, res) => {
     { role: 'user', content: message.trim() },
   ];
 
-  // Dua penyedia model yang mungkin dipakai: OpenRouter (utama, kalau API
-  // key-nya diisi) atau Ollama lokal (dipakai langsung sebagai utama kalau
-  // OpenRouter belum dikonfigurasi sama sekali). Selama permintaan ini
-  // berjalan, begitu beralih ke Ollama (lihat alasan di bawah), sisa
-  // putaran tool-calling tetap memakai Ollama -- tidak bolak-balik.
-  let provider = apiKey ? 'openrouter' : 'ollama';
+  // Boleh beralih provider di tengah jalan HANYA kalau mode routing "auto"
+  // -- mode manual (openrouter/ollama) dipaksa tetap di provider itu saja
+  // sepanjang permintaan ini, biar sesuai pilihan admin walau gagal.
+  const allowFallback = routingMode === 'auto';
+  let provider = routingMode === 'ollama' ? 'ollama' : (apiKey ? 'openrouter' : 'ollama');
   let switchedToLocal = provider === 'ollama';
+  // Beda dengan switchedToLocal (dipakai mengunci provider dalam loop):
+  // ini HANYA true kalau peralihan benar-benar terjadi saat berjalan
+  // (OpenRouter gagal di tengah permintaan) -- bukan karena memang dari
+  // awal provider-nya sudah Ollama (mode manual atau OpenRouter belum
+  // dikonfigurasi). Dipakai untuk catatan "beralih ke AI lokal" di UI.
+  let fallbackTriggered = false;
 
   // Loop tool-use manual (format OpenAI-compatible, dipakai sama persis
   // oleh OpenRouter maupun endpoint kompatibel-OpenAI Ollama): kalau model
@@ -287,10 +308,11 @@ router.post('/query', asyncHandler(async (req, res) => {
     } catch (err) {
       // OpenRouter tidak terhubung sama sekali (bukan cuma error terstruktur)
       // -- kalau AI lokal tersedia dan belum pernah dicoba, alihkan juga,
-      // sama seperti alasan kuota habis di bawah.
-      if (provider === 'openrouter' && ollamaConfigured && !switchedToLocal) {
+      // sama seperti alasan kuota habis di bawah. Hanya terjadi di mode "auto".
+      if (allowFallback && provider === 'openrouter' && ollamaConfigured && !switchedToLocal) {
         provider = 'ollama';
         switchedToLocal = true;
+        fallbackTriggered = true;
         toolsEnabled = true;
         providerAttempts = 0;
         continue;
@@ -308,9 +330,10 @@ router.post('/query', asyncHandler(async (req, res) => {
       // pernah dicoba di permintaan ini, alihkan otomatis ke sana alih-alih
       // langsung gagal ke pengguna. Inilah mekanisme "cadangan otomatis".
       const isQuotaIssue = provider === 'openrouter' && (apiResponse.status === 402 || apiResponse.status === 429);
-      if (isQuotaIssue && ollamaConfigured && !switchedToLocal) {
+      if (allowFallback && isQuotaIssue && ollamaConfigured && !switchedToLocal) {
         provider = 'ollama';
         switchedToLocal = true;
+        fallbackTriggered = true;
         toolsEnabled = true;
         providerAttempts = 0;
         continue;
@@ -332,7 +355,11 @@ router.post('/query', asyncHandler(async (req, res) => {
           return res.status(400).json({ error: 'API key OpenRouter tidak valid. Periksa kembali di menu Konfigurasi AI.' });
         }
         if (apiResponse.status === 402) {
-          return res.status(400).json({ error: 'Kredit OpenRouter tidak mencukupi untuk memproses permintaan ini, dan AI lokal cadangan belum diatur di menu Konfigurasi AI.' });
+          return res.status(400).json({
+            error: allowFallback
+              ? 'Kredit OpenRouter tidak mencukupi untuk memproses permintaan ini, dan AI lokal cadangan belum diatur di menu Konfigurasi AI.'
+              : 'Kredit OpenRouter tidak mencukupi untuk memproses permintaan ini. Mode routing sedang dipaksa "Hanya OpenRouter" -- ganti ke mode "Otomatis" di Konfigurasi AI agar bisa beralih ke AI lokal.',
+          });
         }
         if (apiResponse.status === 429) {
           return res.status(429).json({ error: 'Terlalu banyak permintaan ke OpenRouter. Coba lagi sesaat lagi.' });
@@ -381,10 +408,10 @@ router.post('/query', asyncHandler(async (req, res) => {
   }
 
   await logAudit(req.user.sub, 'ai_chat_query', 'ai_chat', null, {
-    message: message.trim().slice(0, 500), model: usedModel, provider, fallback_used: switchedToLocal, used_tool: toolsUsed > 0,
+    message: message.trim().slice(0, 500), model: usedModel, provider, routing_mode: routingMode, fallback_used: fallbackTriggered, used_tool: toolsUsed > 0,
   });
 
-  res.json({ data: { reply: finalReply, model: usedModel, provider, fallback_used: switchedToLocal } });
+  res.json({ data: { reply: finalReply, model: usedModel, provider, fallback_used: fallbackTriggered } });
 }));
 
 module.exports = router;

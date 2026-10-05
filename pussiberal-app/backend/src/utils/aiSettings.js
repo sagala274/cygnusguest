@@ -58,6 +58,17 @@ async function ensureAiSettingsTable() {
   if (!(await columnExists('ai_settings', 'ollama_api_key_encrypted'))) {
     await pool.query('ALTER TABLE ai_settings ADD COLUMN ollama_api_key_encrypted TEXT NULL AFTER ollama_model');
   }
+  // Saklar aktif/nonaktif AI lokal -- terpisah dari isi URL/model, supaya
+  // admin bisa mematikan sementara tanpa menghapus konfigurasinya.
+  if (!(await columnExists('ai_settings', 'ollama_enabled'))) {
+    await pool.query('ALTER TABLE ai_settings ADD COLUMN ollama_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER ollama_api_key_encrypted');
+  }
+  // Mode routing: 'auto' (default, otomatis beralih ke AI lokal saat kredit
+  // OpenRouter habis), 'openrouter' (paksa OpenRouter saja, tidak pernah
+  // beralih), 'ollama' (paksa AI lokal saja, OpenRouter tidak dipanggil).
+  if (!(await columnExists('ai_settings', 'routing_mode'))) {
+    await pool.query("ALTER TABLE ai_settings ADD COLUMN routing_mode ENUM('auto','openrouter','ollama') NOT NULL DEFAULT 'auto' AFTER ollama_enabled");
+  }
 }
 
 async function getAiSettings() {

@@ -23,6 +23,8 @@ const ollamaStatusText = document.getElementById('ollamaStatusText');
 const ollamaBaseUrlInput = document.getElementById('ollamaBaseUrl');
 const ollamaModelInput = document.getElementById('ollamaModel');
 const removeOllamaBtn = document.getElementById('removeOllamaBtn');
+const ollamaEnabledToggle = document.getElementById('ollamaEnabledToggle');
+const routingModeGrid = document.getElementById('routingModeGrid');
 
 let models = [];
 
@@ -49,13 +51,26 @@ function renderSearchKeyStatus(hasKey, cx) {
     : 'Isi API key dan Search Engine ID (cx) di bawah untuk mengaktifkan fitur pencarian profil publik.';
 }
 
-function renderOllamaStatus(baseUrl, model) {
-  const ready = !!baseUrl && !!model;
+function renderOllamaStatus(baseUrl, model, enabled) {
+  const configured = !!baseUrl && !!model;
+  const ready = configured && enabled;
   ollamaStatusCallout.classList.toggle('warn', !ready);
-  ollamaStatusLabel.textContent = ready ? 'Cadangan AI Lokal Aktif' : 'Cadangan AI Lokal Belum Diatur';
-  ollamaStatusText.textContent = ready
-    ? `AI Chat otomatis beralih ke "${model}" di ${baseUrl} kalau kredit OpenRouter habis. Isi field di bawah hanya jika ingin menggantinya.`
-    : 'Isi URL server dan nama model di bawah untuk mengaktifkan cadangan otomatis saat kredit OpenRouter habis.';
+  if (!configured) {
+    ollamaStatusLabel.textContent = 'AI Lokal Belum Diatur';
+    ollamaStatusText.textContent = 'Isi URL server dan nama model di bawah, lalu pastikan saklar "Aktifkan AI Lokal" menyala.';
+  } else if (!enabled) {
+    ollamaStatusLabel.textContent = 'AI Lokal Nonaktif (Dimatikan Sementara)';
+    ollamaStatusText.textContent = `Konfigurasi "${model}" di ${baseUrl} tersimpan tapi sedang dimatikan lewat saklar di atas.`;
+  } else {
+    ollamaStatusLabel.textContent = 'AI Lokal Siap Dipakai';
+    ollamaStatusText.textContent = `Memakai model "${model}" di ${baseUrl}. Isi field di bawah hanya jika ingin menggantinya.`;
+  }
+}
+
+function renderRoutingMode(mode) {
+  routingModeGrid.querySelectorAll('input[name="routingMode"]').forEach((input) => {
+    input.checked = input.value === (mode || 'auto');
+  });
 }
 
 function formatPrice(value) {
@@ -101,9 +116,11 @@ async function load() {
     renderApiKeyStatus(res.data.has_api_key);
     renderSearchKeyStatus(res.data.has_google_search_api_key, res.data.google_search_cx);
     googleSearchCxInput.value = res.data.google_search_cx || '';
-    renderOllamaStatus(res.data.ollama_base_url, res.data.ollama_model);
+    renderOllamaStatus(res.data.ollama_base_url, res.data.ollama_model, res.data.ollama_enabled);
     ollamaBaseUrlInput.value = res.data.ollama_base_url || '';
     ollamaModelInput.value = res.data.ollama_model || '';
+    ollamaEnabledToggle.checked = !!res.data.ollama_enabled;
+    renderRoutingMode(res.data.routing_mode);
     updateModelHint();
   } catch (err) {
     showMessage(err.message, true);
@@ -193,7 +210,7 @@ ollamaForm.addEventListener('submit', async (e) => {
   try {
     const res = await api('/ai-settings', { method: 'PUT', body: JSON.stringify(payload) });
     document.getElementById('ollamaApiKey').value = '';
-    renderOllamaStatus(res.data.ollama_base_url, res.data.ollama_model);
+    renderOllamaStatus(res.data.ollama_base_url, res.data.ollama_model, res.data.ollama_enabled);
     showMessage('Konfigurasi AI lokal berhasil disimpan.', false);
   } catch (err) {
     showMessage(err.message, true);
@@ -212,13 +229,49 @@ removeOllamaBtn.addEventListener('click', async () => {
     document.getElementById('ollamaApiKey').value = '';
     ollamaBaseUrlInput.value = '';
     ollamaModelInput.value = '';
-    renderOllamaStatus(res.data.ollama_base_url, res.data.ollama_model);
+    renderOllamaStatus(res.data.ollama_base_url, res.data.ollama_model, res.data.ollama_enabled);
+    renderRoutingMode(res.data.routing_mode);
     showMessage('Konfigurasi AI lokal berhasil dihapus.', false);
   } catch (err) {
     showMessage(err.message, true);
   } finally {
     removeOllamaBtn.disabled = false;
   }
+});
+
+ollamaEnabledToggle.addEventListener('change', async () => {
+  resultBox.style.display = 'none';
+  const enabled = ollamaEnabledToggle.checked;
+  ollamaEnabledToggle.disabled = true;
+  try {
+    const res = await api('/ai-settings', { method: 'PUT', body: JSON.stringify({ ollama_enabled: enabled }) });
+    renderOllamaStatus(res.data.ollama_base_url, res.data.ollama_model, res.data.ollama_enabled);
+    showMessage(enabled ? 'AI Lokal diaktifkan.' : 'AI Lokal dinonaktifkan sementara.', false);
+  } catch (err) {
+    ollamaEnabledToggle.checked = !enabled;
+    showMessage(err.message, true);
+  } finally {
+    ollamaEnabledToggle.disabled = false;
+  }
+});
+
+routingModeGrid.querySelectorAll('input[name="routingMode"]').forEach((input) => {
+  input.addEventListener('change', async () => {
+    if (!input.checked) return;
+    resultBox.style.display = 'none';
+    const mode = input.value;
+    routingModeGrid.querySelectorAll('input[name="routingMode"]').forEach((i) => { i.disabled = true; });
+    try {
+      const res = await api('/ai-settings', { method: 'PUT', body: JSON.stringify({ routing_mode: mode }) });
+      renderRoutingMode(res.data.routing_mode);
+      showMessage('Mode routing AI berhasil diubah.', false);
+    } catch (err) {
+      showMessage(err.message, true);
+      load();
+    } finally {
+      routingModeGrid.querySelectorAll('input[name="routingMode"]').forEach((i) => { i.disabled = false; });
+    }
+  });
 });
 
 loadModels();

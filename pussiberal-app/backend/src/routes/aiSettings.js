@@ -22,9 +22,13 @@ function toPublicSettings(settings) {
     ollama_base_url: settings.ollama_base_url || '',
     ollama_model: settings.ollama_model || '',
     has_ollama_api_key: !!settings.ollama_api_key_encrypted,
+    ollama_enabled: !!settings.ollama_enabled,
+    routing_mode: settings.routing_mode || 'auto',
     updated_at: settings.updated_at,
   };
 }
+
+const ROUTING_MODES = ['auto', 'openrouter', 'ollama'];
 
 router.get('/', asyncHandler(async (req, res) => {
   const settings = await getAiSettings();
@@ -36,7 +40,7 @@ const OLLAMA_URL_PATTERN = /^https?:\/\/.+/i;
 router.put('/', asyncHandler(async (req, res) => {
   const {
     model, system_prompt, api_key, google_search_api_key, google_search_cx,
-    ollama_base_url, ollama_model, ollama_api_key,
+    ollama_base_url, ollama_model, ollama_api_key, ollama_enabled, routing_mode,
   } = req.body || {};
 
   if (model !== undefined && (typeof model !== 'string' || !MODEL_ID_PATTERN.test(model.trim()))) {
@@ -47,6 +51,9 @@ router.put('/', asyncHandler(async (req, res) => {
   }
   if (ollama_base_url !== undefined && typeof ollama_base_url === 'string' && ollama_base_url.trim() && !OLLAMA_URL_PATTERN.test(ollama_base_url.trim())) {
     return res.status(400).json({ error: 'URL server Ollama tidak valid. Harus diawali http:// atau https://.' });
+  }
+  if (routing_mode !== undefined && !ROUTING_MODES.includes(routing_mode)) {
+    return res.status(400).json({ error: 'Mode routing AI tidak valid.' });
   }
 
   const fields = [];
@@ -77,6 +84,14 @@ router.put('/', asyncHandler(async (req, res) => {
     fields.push('ollama_api_key_encrypted = :ollama_api_key_encrypted');
     params.ollama_api_key_encrypted = encrypt(ollama_api_key.trim());
   }
+  if (ollama_enabled !== undefined) {
+    fields.push('ollama_enabled = :ollama_enabled');
+    params.ollama_enabled = ollama_enabled ? 1 : 0;
+  }
+  if (routing_mode !== undefined) {
+    fields.push('routing_mode = :routing_mode');
+    params.routing_mode = routing_mode;
+  }
   fields.push('updated_by = :updated_by');
   params.updated_by = req.user.sub;
 
@@ -90,6 +105,8 @@ router.put('/', asyncHandler(async (req, res) => {
     ollama_base_url_changed: ollama_base_url !== undefined,
     ollama_model_changed: ollama_model !== undefined,
     ollama_api_key_changed: typeof ollama_api_key === 'string' && !!ollama_api_key.trim(),
+    ollama_enabled_changed: ollama_enabled !== undefined,
+    routing_mode_changed: routing_mode !== undefined,
   });
 
   const settings = await getAiSettings();
@@ -108,8 +125,14 @@ router.delete('/google-search', asyncHandler(async (req, res) => {
 }));
 
 router.delete('/ollama', asyncHandler(async (req, res) => {
+  // Kalau mode routing sedang dipaksa "ollama", turunkan ke "auto" dulu --
+  // kalau tidak, AI Chat akan berhenti total begitu konfigurasinya dihapus.
   await pool.execute(
-    `UPDATE ai_settings SET ollama_base_url = NULL, ollama_model = NULL, ollama_api_key_encrypted = NULL, updated_by = :updated_by WHERE id = 1`,
+    `UPDATE ai_settings SET
+       ollama_base_url = NULL, ollama_model = NULL, ollama_api_key_encrypted = NULL,
+       routing_mode = IF(routing_mode = 'ollama', 'auto', routing_mode),
+       updated_by = :updated_by
+     WHERE id = 1`,
     { updated_by: req.user.sub }
   );
   await logAudit(req.user.sub, 'clear_ai_ollama_settings', 'ai_settings', null, {});
