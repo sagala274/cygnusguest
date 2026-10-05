@@ -214,40 +214,51 @@ router.get('/export', requireRole('admin', 'verifikator', 'pimpinan'), asyncHand
 
   const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
   const noW = 20;
-  const namaW = 110;
-  const jabatanW = 85;
+  const namaW = 130;
+  const jabatanW = 110;
   const ketW = Math.max(90, pageWidth - noW - namaW - jabatanW - dateList.length * 22);
   const dayW = (pageWidth - noW - namaW - jabatanW - ketW) / dateList.length;
   const colWidths = [noW, namaW, jabatanW, ...dateList.map(() => dayW), ketW];
   const headers = ['No', 'Nama', 'Jabatan', ...dateList.map((dateKey) => formatJakartaDate(dateKey, { day: '2-digit', month: '2-digit' })), 'Keterangan'];
 
   const startX = doc.page.margins.left;
+  const rowHeight = 14;
   let y = doc.y;
 
   function checkPageBreak() {
-    if (y > doc.page.height - doc.page.margins.bottom) {
+    if (y > doc.page.height - doc.page.margins.bottom - rowHeight) {
       doc.addPage();
       y = doc.page.margins.top;
       drawRow(headers, { bold: true });
     }
   }
 
+  // height + lineBreak:false MEMAKSA tiap sel satu baris saja (dipotong
+  // "..." lewat ellipsis kalau teksnya kepanjangan, mis. nama jabatan yang
+  // panjang) -- tanpa ini, teks yang kepanjangan melebar ke beberapa baris
+  // dan tumpang tindih dengan baris berikutnya, sekaligus memicu PDFKit
+  // menyisipkan halaman baru otomatis secara acak (di luar kendali
+  // checkPageBreak() di atas) begitu teksnya "meluber" dari batas halaman.
   function drawRow(values, opts = {}) {
     let x = startX;
     doc.font(opts.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(opts.fontSize || 7.5);
     values.forEach((v, i) => {
-      doc.text(String(v === null || v === undefined || v === '' ? '-' : v), x, y, { width: colWidths[i], ellipsis: true });
+      doc.text(String(v === null || v === undefined || v === '' ? '-' : v), x, y, {
+        width: colWidths[i], height: rowHeight - 3, ellipsis: true, lineBreak: false,
+      });
       x += colWidths[i];
     });
-    y += 14;
+    y += rowHeight;
     checkPageBreak();
   }
 
   // Baris nama kategori/satuan -- teks penuh selebar tabel (bukan masuk ke
   // kolom pertama saja seperti drawRow biasa), jadi dipisah fungsinya sendiri.
   function drawCategoryRow(name) {
-    doc.font('Helvetica-Bold').fontSize(8).text(name, startX, y, { width: pageWidth });
-    y += 14;
+    doc.font('Helvetica-Bold').fontSize(8).text(name, startX, y, {
+      width: pageWidth, height: rowHeight - 3, ellipsis: true, lineBreak: false,
+    });
+    y += rowHeight;
     checkPageBreak();
   }
 
