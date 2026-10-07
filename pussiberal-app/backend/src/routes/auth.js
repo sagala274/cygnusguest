@@ -107,6 +107,41 @@ router.get('/me', authenticate, (req, res) => {
   res.json({ user: req.user });
 });
 
+// Verifikasi ulang password -- dipakai sebagai lapis keamanan TAMBAHAN
+// (step-up auth) sebelum masuk ke halaman sensitif seperti Bank Data,
+// terpisah dari sesi login JWT yang sudah berjalan. Dibatasi dengan rate
+// limiter sendiri (bukan memakai failed_login_attempts/locked_until milik
+// /login, supaya percobaan di sini tidak sampai mengunci akun dari login
+// biasa).
+const verifyPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  message: { error: 'Terlalu banyak percobaan verifikasi. Coba lagi dalam beberapa menit.' },
+});
+
+router.post('/verify-password', authenticate, verifyPasswordLimiter, asyncHandler(async (req, res) => {
+  const { password } = req.body || {};
+  if (!password) {
+    return res.status(400).json({ error: 'Password wajib diisi' });
+  }
+
+  const [rows] = await pool.execute(
+    'SELECT password_hash FROM users WHERE id = :id AND is_active = 1',
+    { id: req.user.sub }
+  );
+  const user = rows[0];
+  const match = user && (await bcrypt.compare(password, user.password_hash));
+  if (!match) {
+    return res.status(401).json({ error: 'Password salah' });
+  }
+
+  await logAudit(req.user.sub, 'step_up_verify', 'user', req.user.sub, { username: req.user.username });
+  res.json({ data: { ok: true } });
+}));
+
 router.post('/logout', authenticate, asyncHandler(async (req, res) => {
   await logAudit(req.user.sub, 'logout', 'user', req.user.sub, { username: req.user.username });
   notifyLogout({ username: req.user.username, fullName: req.user.name, role: req.user.role }).catch(() => {});

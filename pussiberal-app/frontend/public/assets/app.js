@@ -454,6 +454,71 @@ function initPhotoWidget(root, facingMode) {
   return { getValue: () => capturedPhoto, setValue, reset, stopCamera };
 }
 
+/* Lapis keamanan tambahan (step-up auth): meminta verifikasi ulang
+   password akun sebelum masuk ke halaman sensitif seperti Bank Data --
+   terpisah dari sesi login JWT yang sudah berjalan. Status terverifikasi
+   disimpan di sessionStorage (hilang saat tab ditutup) dengan masa
+   berlaku singkat, supaya tidak menanyakan ulang di setiap klik selama
+   satu kunjungan aktif, tapi tetap meminta ulang kalau sudah lama idle
+   atau membuka tab/sesi baru. Butuh markup "#stepUpGateOverlay" berisi
+   "#stepUpGateForm" > "#stepUpGatePassword" + "#stepUpGateError", dan
+   elemen konten halaman diberi id "pageContent" supaya disembunyikan
+   sampai lolos verifikasi. */
+const STEP_UP_TTL_MS = 15 * 60 * 1000;
+
+function isStepUpVerified(sectionKey) {
+  const raw = sessionStorage.getItem(`stepup_${sectionKey}`);
+  if (!raw) return false;
+  const ts = Number(raw);
+  return !!ts && Date.now() - ts <= STEP_UP_TTL_MS;
+}
+
+function markStepUpVerified(sectionKey) {
+  sessionStorage.setItem(`stepup_${sectionKey}`, String(Date.now()));
+}
+
+function requireStepUpAuth(sectionKey, onVerified) {
+  const content = document.getElementById('pageContent');
+  const overlay = document.getElementById('stepUpGateOverlay');
+
+  if (isStepUpVerified(sectionKey) || !overlay) {
+    if (content) content.style.display = 'block';
+    onVerified();
+    return;
+  }
+
+  const form = document.getElementById('stepUpGateForm');
+  const passwordInput = document.getElementById('stepUpGatePassword');
+  const errorBox = document.getElementById('stepUpGateError');
+
+  if (content) content.style.display = 'none';
+  overlay.classList.add('open');
+  passwordInput.value = '';
+  errorBox.style.display = 'none';
+  setTimeout(() => passwordInput.focus(), 50);
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    errorBox.style.display = 'none';
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    try {
+      await api('/auth/verify-password', { method: 'POST', body: JSON.stringify({ password: passwordInput.value }) });
+      markStepUpVerified(sectionKey);
+      overlay.classList.remove('open');
+      if (content) content.style.display = 'block';
+      onVerified();
+    } catch (err) {
+      errorBox.textContent = err.message;
+      errorBox.style.display = 'block';
+      passwordInput.value = '';
+      passwordInput.focus();
+    } finally {
+      submitBtn.disabled = false;
+    }
+  };
+}
+
 function timeAgo(value) {
   if (!value) return '-';
   const d = new Date(value);

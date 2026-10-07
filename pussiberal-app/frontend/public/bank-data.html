@@ -38,7 +38,7 @@
       </div>
     </header>
 
-    <section class="content" style="max-width: 1160px;">
+    <section class="content" id="pageContent" style="max-width: 1160px; display:none;">
       <h1 class="page-title">Bank Data Personel Tamu</h1>
       <p class="page-description">
         Rekap personel tamu yang tercatat dari seluruh pendaftaran, dikelompokkan berdasarkan perusahaan/instansi.
@@ -117,6 +117,27 @@
       </div>
     </section>
   </main>
+</div>
+
+<div class="modal-overlay" id="stepUpGateOverlay">
+  <div class="modal-card" style="max-width: 400px;">
+    <div class="modal-head">
+      <h2>Verifikasi Ulang Diperlukan</h2>
+    </div>
+    <div class="modal-body">
+      <p class="page-description" style="margin-top:0;">Bank Data berisi data personel yang sensitif. Masukkan kembali password akun Anda untuk melanjutkan.</p>
+      <form id="stepUpGateForm" class="grid">
+        <div class="field full">
+          <label for="stepUpGatePassword">PASSWORD</label>
+          <input id="stepUpGatePassword" type="password" required autocomplete="current-password">
+        </div>
+        <div id="stepUpGateError" class="result-box error-box" style="display:none;"></div>
+        <div class="full">
+          <button type="submit" class="btn btn-accent" style="width:100%;">Verifikasi</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script src="assets/app.js"></script>
