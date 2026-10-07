@@ -275,4 +275,4 @@ analysisForm.addEventListener('submit', async (e) => {
   }
 });
 
-load();
+requireStepUpAuth('sensitive-data', load);

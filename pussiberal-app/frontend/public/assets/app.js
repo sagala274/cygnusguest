@@ -454,15 +454,17 @@ function initPhotoWidget(root, facingMode) {
   return { getValue: () => capturedPhoto, setValue, reset, stopCamera };
 }
 
-/* Lapis keamanan tambahan (step-up auth): meminta verifikasi ulang
-   password akun sebelum masuk ke halaman sensitif seperti Bank Data --
-   terpisah dari sesi login JWT yang sudah berjalan. Status terverifikasi
-   disimpan di sessionStorage (hilang saat tab ditutup) dengan masa
-   berlaku singkat, supaya tidak menanyakan ulang di setiap klik selama
-   satu kunjungan aktif, tapi tetap meminta ulang kalau sudah lama idle
-   atau membuka tab/sesi baru. Butuh markup "#stepUpGateOverlay" berisi
-   "#stepUpGateForm" > "#stepUpGatePassword" + "#stepUpGateError", dan
-   elemen konten halaman diberi id "pageContent" supaya disembunyikan
+/* Lapis keamanan tambahan (step-up auth): meminta verifikasi password
+   sebelum masuk ke halaman sensitif seperti Bank Data & Data Personel.
+   Defaultnya memakai "password tambahan" yang SENGAJA terpisah dari
+   password login (lihat /auth/verify-secondary-password) -- supaya
+   kompromi salah satu tidak otomatis membuka yang lain. Status
+   terverifikasi disimpan di sessionStorage (hilang saat tab ditutup)
+   dengan masa berlaku singkat, supaya tidak menanyakan ulang di setiap
+   klik selama satu kunjungan aktif, tapi tetap meminta ulang kalau sudah
+   lama idle atau membuka tab/sesi baru. Butuh markup "#stepUpGateOverlay"
+   berisi "#stepUpGateForm" > "#stepUpGatePassword" + "#stepUpGateError",
+   dan elemen konten halaman diberi id "pageContent" supaya disembunyikan
    sampai lolos verifikasi. */
 const STEP_UP_TTL_MS = 15 * 60 * 1000;
 
@@ -477,7 +479,8 @@ function markStepUpVerified(sectionKey) {
   sessionStorage.setItem(`stepup_${sectionKey}`, String(Date.now()));
 }
 
-function requireStepUpAuth(sectionKey, onVerified) {
+function requireStepUpAuth(sectionKey, onVerified, verifyEndpoint) {
+  const endpoint = verifyEndpoint || '/auth/verify-secondary-password';
   const content = document.getElementById('pageContent');
   const overlay = document.getElementById('stepUpGateOverlay');
 
@@ -503,7 +506,7 @@ function requireStepUpAuth(sectionKey, onVerified) {
     const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
     try {
-      await api('/auth/verify-password', { method: 'POST', body: JSON.stringify({ password: passwordInput.value }) });
+      await api(endpoint, { method: 'POST', body: JSON.stringify({ password: passwordInput.value }) });
       markStepUpVerified(sectionKey);
       overlay.classList.remove('open');
       if (content) content.style.display = 'block';

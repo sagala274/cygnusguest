@@ -19,6 +19,8 @@ const formUsername = document.getElementById('formUsername');
 const formFullName = document.getElementById('formFullName');
 const formPassword = document.getElementById('formPassword');
 const passwordLabel = document.getElementById('passwordLabel');
+const formSecondaryPassword = document.getElementById('formSecondaryPassword');
+const secondaryPasswordHint = document.getElementById('secondaryPasswordHint');
 const formRole = document.getElementById('formRole');
 const modalSubmitBtn = document.getElementById('modalSubmitBtn');
 
@@ -127,7 +129,7 @@ function render() {
         <td>${statusBadgeHtml(!!u.is_active)}</td>
         <td>
           <div class="action-btn-group">
-            <button class="action-btn edit-user" data-id="${u.id}" data-username="${escapeHtml(u.username)}" data-fullname="${escapeHtml(u.full_name)}" data-role="${u.role}">${icon('pencil')}<span>Edit</span></button>
+            <button class="action-btn edit-user" data-id="${u.id}" data-username="${escapeHtml(u.username)}" data-fullname="${escapeHtml(u.full_name)}" data-role="${u.role}" data-has-secondary="${u.has_secondary_password ? 1 : 0}">${icon('pencil')}<span>Edit</span></button>
             ${
               isSelf
                 ? ''
@@ -259,6 +261,7 @@ function openModal(mode, data) {
     passwordLabel.innerHTML = 'PASSWORD <span class="required">*</span>';
     formPassword.required = true;
     formRole.value = 'pos_depan';
+    secondaryPasswordHint.textContent = 'Opsional -- isi kalau pengguna ini akan butuh akses Bank Data/Data Personel.';
   } else {
     editingId = data.id;
     modalTitle.textContent = `Edit Pengguna: ${data.username}`;
@@ -269,6 +272,9 @@ function openModal(mode, data) {
     formRole.value = data.role;
     passwordLabel.innerHTML = 'PASSWORD BARU <span class="label-note">Kosongkan jika tidak diubah</span>';
     formPassword.required = false;
+    secondaryPasswordHint.textContent = data.hasSecondary === '1'
+      ? 'Sudah diatur. Kosongkan kalau tidak ingin menggantinya.'
+      : 'Belum diatur -- pengguna ini belum bisa mengakses Bank Data/Data Personel.';
   }
   modal.classList.add('open');
 }
@@ -297,6 +303,7 @@ userForm.addEventListener('submit', async (e) => {
         password: formPassword.value,
         role: formRole.value,
       };
+      if (formSecondaryPassword.value) payload.secondary_password = formSecondaryPassword.value;
       await api('/users', { method: 'POST', body: JSON.stringify(payload) });
       showMessage(`Pengguna "${payload.username}" berhasil dibuat.`, false);
     } else {
@@ -305,6 +312,7 @@ userForm.addEventListener('submit', async (e) => {
         role: formRole.value,
       };
       if (formPassword.value) payload.password = formPassword.value;
+      if (formSecondaryPassword.value) payload.secondary_password = formSecondaryPassword.value;
       await api(`/users/${editingId}`, { method: 'PUT', body: JSON.stringify(payload) });
       showMessage('Perubahan berhasil disimpan.', false);
     }

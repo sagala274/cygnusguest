@@ -18,13 +18,13 @@ router.use(authenticate, requireRole('admin'));
 
 router.get('/', asyncHandler(async (req, res) => {
   const [rows] = await pool.query(
-    'SELECT id, username, full_name, avatar_url, role, is_active, created_at FROM users ORDER BY created_at DESC'
+    'SELECT id, username, full_name, avatar_url, role, is_active, created_at, (secondary_password_hash IS NOT NULL) AS has_secondary_password FROM users ORDER BY created_at DESC'
   );
-  res.json({ data: rows });
+  res.json({ data: rows.map((r) => ({ ...r, has_secondary_password: !!r.has_secondary_password })) });
 }));
 
 router.post('/', asyncHandler(async (req, res) => {
-  const { username, password, full_name, role } = req.body || {};
+  const { username, password, secondary_password, full_name, role } = req.body || {};
   if (!username || !password || !full_name || !role) {
     return res.status(400).json({ error: 'Semua field wajib diisi' });
   }
@@ -37,12 +37,16 @@ router.post('/', asyncHandler(async (req, res) => {
   if (password.length < 8) {
     return res.status(400).json({ error: 'Password minimal 8 karakter' });
   }
+  if (secondary_password && secondary_password.length < 4) {
+    return res.status(400).json({ error: 'Password tambahan minimal 4 karakter' });
+  }
 
   const hash = await bcrypt.hash(password, 10);
+  const secondaryHash = secondary_password ? await bcrypt.hash(secondary_password, 10) : null;
   try {
     const [result] = await pool.execute(
-      'INSERT INTO users (username, password_hash, full_name, role) VALUES (:username, :hash, :full_name, :role)',
-      { username, hash, full_name, role }
+      'INSERT INTO users (username, password_hash, secondary_password_hash, full_name, role) VALUES (:username, :hash, :secondaryHash, :full_name, :role)',
+      { username, hash, secondaryHash, full_name, role }
     );
     await logAudit(req.user.sub, 'create_user', 'user', result.insertId, { username, role });
     res.status(201).json({ data: { id: result.insertId, username, full_name, role } });
@@ -53,7 +57,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 router.put('/:id', asyncHandler(async (req, res) => {
-  const { full_name, role, is_active, password, avatar_url } = req.body || {};
+  const { full_name, role, is_active, password, secondary_password, avatar_url } = req.body || {};
   const id = req.params.id;
 
   if (role !== undefined && !VALID_ROLES.includes(role)) {
@@ -64,6 +68,9 @@ router.put('/:id', asyncHandler(async (req, res) => {
   }
   if (password && password.length < 8) {
     return res.status(400).json({ error: 'Password minimal 8 karakter' });
+  }
+  if (secondary_password && secondary_password.length < 4) {
+    return res.status(400).json({ error: 'Password tambahan minimal 4 karakter' });
   }
   if (Number(id) === req.user.sub && is_active === false) {
     return res.status(400).json({ error: 'Tidak dapat menonaktifkan akun yang sedang digunakan' });
@@ -82,6 +89,10 @@ router.put('/:id', asyncHandler(async (req, res) => {
     fields.push('password_hash = :password_hash');
     params.password_hash = await bcrypt.hash(password, 10);
   }
+  if (secondary_password) {
+    fields.push('secondary_password_hash = :secondary_password_hash');
+    params.secondary_password_hash = await bcrypt.hash(secondary_password, 10);
+  }
 
   if (fields.length) {
     const [result] = await pool.execute(`UPDATE users SET ${fields.join(', ')} WHERE id = :id`, params);
@@ -90,7 +101,9 @@ router.put('/:id', asyncHandler(async (req, res) => {
     }
   }
 
-  await logAudit(req.user.sub, 'update_user', 'user', id, { full_name, role, is_active });
+  await logAudit(req.user.sub, 'update_user', 'user', id, {
+    full_name, role, is_active, secondary_password_changed: !!secondary_password,
+  });
   res.json({ data: { id: Number(id) } });
 }));
 

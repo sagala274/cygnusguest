@@ -142,6 +142,33 @@ router.post('/verify-password', authenticate, verifyPasswordLimiter, asyncHandle
   res.json({ data: { ok: true } });
 }));
 
+// Verifikasi "password tambahan" -- SENGAJA terpisah total dari password
+// login (lihat utils/userAvatar.js). Dipakai sebagai gerbang masuk ke
+// halaman data paling sensitif (Bank Data, Data Personel): kompromi
+// password login tidak otomatis membuka data ini, dan sebaliknya.
+router.post('/verify-secondary-password', authenticate, verifyPasswordLimiter, asyncHandler(async (req, res) => {
+  const { password } = req.body || {};
+  if (!password) {
+    return res.status(400).json({ error: 'Password wajib diisi' });
+  }
+
+  const [rows] = await pool.execute(
+    'SELECT secondary_password_hash FROM users WHERE id = :id AND is_active = 1',
+    { id: req.user.sub }
+  );
+  const user = rows[0];
+  if (!user || !user.secondary_password_hash) {
+    return res.status(400).json({ error: 'Password tambahan belum diatur untuk akun ini. Hubungi Administrator untuk mengaturnya di menu Kelola Pengguna.' });
+  }
+  const match = await bcrypt.compare(password, user.secondary_password_hash);
+  if (!match) {
+    return res.status(401).json({ error: 'Password tambahan salah' });
+  }
+
+  await logAudit(req.user.sub, 'secondary_password_verify', 'user', req.user.sub, { username: req.user.username });
+  res.json({ data: { ok: true } });
+}));
+
 router.post('/logout', authenticate, asyncHandler(async (req, res) => {
   await logAudit(req.user.sub, 'logout', 'user', req.user.sub, { username: req.user.username });
   notifyLogout({ username: req.user.username, fullName: req.user.name, role: req.user.role }).catch(() => {});

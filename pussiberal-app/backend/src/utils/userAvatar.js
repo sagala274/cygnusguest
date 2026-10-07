@@ -1,4 +1,5 @@
 const pool = require('../db');
+const bcrypt = require('bcryptjs');
 
 async function columnExists(table, column) {
   const [rows] = await pool.query(
@@ -38,4 +39,44 @@ async function ensureUserRoleEnum() {
   await pool.query("ALTER TABLE users MODIFY COLUMN role ENUM('admin','verifikator','pos_depan','pimpinan') NOT NULL DEFAULT 'pos_depan'");
 }
 
-module.exports = { ensureUserAvatarColumn, ensureUserLockoutColumns, ensureUserRoleEnum };
+// "Password tambahan" -- lapis verifikasi KEDUA yang terpisah total dari
+// password login (password_hash), khusus dipakai sebagai gerbang masuk ke
+// halaman data sensitif (Bank Data, Data Personel). Sengaja dipisah supaya
+// kompromi salah satu (mis. password login bocor) tidak otomatis membuka
+// yang lain, dan supaya admin bisa mengatur/mereset ini lewat menu Kelola
+// Pengguna tanpa perlu akses server sama sekali.
+async function ensureSecondaryPasswordColumn() {
+  if (!(await columnExists('users', 'secondary_password_hash'))) {
+    await pool.query('ALTER TABLE users ADD COLUMN secondary_password_hash TEXT NULL AFTER password_hash');
+  }
+}
+
+// Nilai awal (default) untuk 4 akun perwira Pussiberal, sesuai NRP
+// masing-masing -- HANYA diisi kalau kolomnya masih kosong (idempoten,
+// tidak menimpa kalau sudah pernah diganti admin lewat Kelola Pengguna).
+const SECONDARY_PASSWORD_DEFAULTS = {
+  Danpussiberal: '12682',
+  Wadanpussiberal: '13365',
+  Kaurpam: '22655',
+  baurpam: '130560',
+};
+
+async function seedSecondaryPasswordDefaults() {
+  for (const [username, nrp] of Object.entries(SECONDARY_PASSWORD_DEFAULTS)) {
+    const [rows] = await pool.query(
+      'SELECT id FROM users WHERE username = :username AND secondary_password_hash IS NULL',
+      { username }
+    );
+    if (!rows.length) continue;
+    const hash = await bcrypt.hash(nrp, 10);
+    await pool.execute('UPDATE users SET secondary_password_hash = :hash WHERE id = :id', { hash, id: rows[0].id });
+  }
+}
+
+module.exports = {
+  ensureUserAvatarColumn,
+  ensureUserLockoutColumns,
+  ensureUserRoleEnum,
+  ensureSecondaryPasswordColumn,
+  seedSecondaryPasswordDefaults,
+};

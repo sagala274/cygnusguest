@@ -191,4 +191,4 @@ editForm.addEventListener('submit', async (e) => {
   }
 });
 
-requireStepUpAuth('bank-data', load);
+requireStepUpAuth('sensitive-data', load);
