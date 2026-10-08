@@ -292,10 +292,18 @@ router.get('/export', requireRole('admin', 'verifikator', 'pimpinan'), asyncHand
     { key: 'tanpa_keterangan', label: 'Tanpa Keterangan', color: '#991b1b' },
   ];
   const summaryCounts = {};
-  SUMMARY_CATEGORIES.forEach((c) => { summaryCounts[c.key] = 0; });
+  // detailsByCategory[key][full_name] = daftar tanggal (format DD/MM) --
+  // dipakai untuk mencantumkan siapa saja & kapan di bawah tiap kartu,
+  // supaya rekap di atas bisa langsung ditelusuri tanpa buka tabel detail.
+  const detailsByCategory = {};
+  SUMMARY_CATEGORIES.forEach((c) => { summaryCounts[c.key] = 0; detailsByCategory[c.key] = {}; });
   reportRows.forEach((r) => {
-    r.perDay.forEach((status) => {
-      if (summaryCounts[status] !== undefined) summaryCounts[status] += 1;
+    r.perDay.forEach((status, i) => {
+      if (summaryCounts[status] === undefined) return;
+      summaryCounts[status] += 1;
+      const byName = detailsByCategory[status];
+      if (!byName[r.personnel.full_name]) byName[r.personnel.full_name] = [];
+      byName[r.personnel.full_name].push(formatJakartaDate(dateList[i], { day: '2-digit', month: '2-digit' }));
     });
   });
 
@@ -327,7 +335,27 @@ router.get('/export', requireRole('admin', 'verifikator', 'pimpinan'), asyncHand
       .text(cat.label, cardX + 4, cardY + 38, { width: cardW - 8, align: 'center', height: 14, ellipsis: true, lineBreak: false });
   });
   doc.fillColor('black');
-  doc.y = cardY + cardH + 28;
+  doc.y = cardY + cardH + 20;
+
+  // --- Rincian per kategori: siapa saja & tanggal berapa ---
+  SUMMARY_CATEGORIES.forEach((cat) => {
+    const byName = detailsByCategory[cat.key];
+    const names = Object.keys(byName);
+    if (!names.length) return;
+    const lines = names.map((name) => `${name} (${byName[name].join(', ')})`).join('; ');
+
+    doc.fontSize(9).font('Helvetica-Bold').fillColor(cat.color)
+      .text(`${cat.label} -- ${summaryCounts[cat.key]}x, ${names.length} personel:`, startX, doc.y, { width: pageWidth });
+    doc.fontSize(8).font('Helvetica').fillColor('#333')
+      .text(lines, startX, doc.y + 1, { width: pageWidth });
+    doc.moveDown(0.7);
+  });
+  doc.fillColor('black');
+
+  // Grafik tren selalu mulai di halaman baru -- supaya tidak tabrakan
+  // dengan rincian di atas yang tingginya bervariasi tergantung berapa
+  // banyak personel yang masuk tiap kategori pada periode ini.
+  doc.addPage();
 
   // --- Tren kehadiran harian ---
   doc.fontSize(11).font('Helvetica-Bold').text('Tren Kehadiran Harian (% Hadir)', startX, doc.y, { width: pageWidth });
