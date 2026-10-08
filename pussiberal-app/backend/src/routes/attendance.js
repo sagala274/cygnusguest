@@ -337,18 +337,32 @@ router.get('/export', requireRole('admin', 'verifikator', 'pimpinan'), asyncHand
   doc.fillColor('black');
   doc.y = cardY + cardH + 20;
 
-  // --- Rincian per kategori: siapa saja & tanggal berapa ---
+  // --- Rincian per kategori: siapa saja & tanggal berapa (satu nama per
+  // baris, bukan dirangkai menyamping -- lebih mudah dibaca untuk daftar
+  // yang bisa cukup panjang). Dibagi 2 kolom supaya tidak boros halaman.
+  const detailColGap = 24;
+  const detailColW = (pageWidth - detailColGap) / 2;
   SUMMARY_CATEGORIES.forEach((cat) => {
     const byName = detailsByCategory[cat.key];
     const names = Object.keys(byName);
     if (!names.length) return;
-    const lines = names.map((name) => `${name} (${byName[name].join(', ')})`).join('; ');
 
     doc.fontSize(9).font('Helvetica-Bold').fillColor(cat.color)
       .text(`${cat.label} -- ${summaryCounts[cat.key]}x, ${names.length} personel:`, startX, doc.y, { width: pageWidth });
-    doc.fontSize(8).font('Helvetica').fillColor('#333')
-      .text(lines, startX, doc.y + 1, { width: pageWidth });
-    doc.moveDown(0.7);
+    doc.moveDown(0.2);
+
+    const sectionTop = doc.y;
+    const leftCount = Math.ceil(names.length / 2);
+    const lineH = 11;
+    doc.fontSize(8).font('Helvetica').fillColor('#333');
+    names.forEach((name, i) => {
+      const inLeftCol = i < leftCount;
+      const colX = inLeftCol ? startX : startX + detailColW + detailColGap;
+      const rowY = sectionTop + (inLeftCol ? i : i - leftCount) * lineH;
+      doc.text(`- ${name} (${byName[name].join(', ')})`, colX, rowY, { width: detailColW, height: lineH, ellipsis: true, lineBreak: false });
+    });
+    doc.y = sectionTop + leftCount * lineH;
+    doc.moveDown(0.5);
   });
   doc.fillColor('black');
 
