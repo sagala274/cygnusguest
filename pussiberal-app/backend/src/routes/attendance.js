@@ -280,6 +280,99 @@ router.get('/export', requireRole('admin', 'verifikator', 'pimpinan'), asyncHand
     ]);
   });
 
+  // Halaman rekapitulasi -- dihitung dari reportRows yang sama persis
+  // dengan tabel detail (perDay sudah merekonsiliasi Sabtu/Minggu kosong
+  // jadi "libur"), supaya angkanya selalu konsisten dengan apa yang
+  // ditampilkan di tabel sebelumnya.
+  const SUMMARY_CATEGORIES = [
+    { key: 'sakit', label: 'Sakit', color: '#d97706' },
+    { key: 'terlambat', label: 'Terlambat', color: '#dc2626' },
+    { key: 'dinas_luar', label: 'Dinas Luar', color: '#2563eb' },
+    { key: 'pendidikan', label: 'Pendidikan', color: '#7c3aed' },
+    { key: 'tanpa_keterangan', label: 'Tanpa Keterangan', color: '#991b1b' },
+  ];
+  const summaryCounts = {};
+  SUMMARY_CATEGORIES.forEach((c) => { summaryCounts[c.key] = 0; });
+  reportRows.forEach((r) => {
+    r.perDay.forEach((status) => {
+      if (summaryCounts[status] !== undefined) summaryCounts[status] += 1;
+    });
+  });
+
+  const totalPersonnelActive = personnelRows.length;
+  const dailyHadirCounts = dateList.map((_, i) => reportRows.reduce((acc, r) => acc + (r.perDay[i] === 'hadir' ? 1 : 0), 0));
+  const dailyHadirPct = dailyHadirCounts.map((c) => (totalPersonnelActive ? (c / totalPersonnelActive) * 100 : 0));
+  const avgHadirPct = dailyHadirPct.length ? dailyHadirPct.reduce((a, b) => a + b, 0) / dailyHadirPct.length : 0;
+
+  doc.addPage();
+  doc.fontSize(14).font('Helvetica-Bold').text('Rekapitulasi Mingguan - PUSSIBERAL', { align: 'center' });
+  doc.fontSize(9).font('Helvetica').text(`Periode: ${rangeLabel}`, { align: 'center' });
+  doc.moveDown(1.2);
+
+  // --- Kartu ringkasan 5 kategori ---
+  doc.fontSize(11).font('Helvetica-Bold').fillColor('black').text('Rekapitulasi Kategori Keterangan', startX, doc.y, { width: pageWidth });
+  doc.moveDown(0.5);
+
+  const cardGap = 10;
+  const cardW = (pageWidth - cardGap * (SUMMARY_CATEGORIES.length - 1)) / SUMMARY_CATEGORIES.length;
+  const cardH = 54;
+  const cardY = doc.y;
+  SUMMARY_CATEGORIES.forEach((cat, i) => {
+    const cardX = startX + i * (cardW + cardGap);
+    doc.rect(cardX, cardY, cardW, cardH).lineWidth(1.2).strokeColor(cat.color).stroke();
+    doc.rect(cardX, cardY, cardW, 5).fill(cat.color);
+    doc.fillColor(cat.color).font('Helvetica-Bold').fontSize(20)
+      .text(String(summaryCounts[cat.key]), cardX, cardY + 14, { width: cardW, align: 'center' });
+    doc.fillColor('#333').font('Helvetica').fontSize(8)
+      .text(cat.label, cardX + 4, cardY + 38, { width: cardW - 8, align: 'center', height: 14, ellipsis: true, lineBreak: false });
+  });
+  doc.fillColor('black');
+  doc.y = cardY + cardH + 28;
+
+  // --- Tren kehadiran harian ---
+  doc.fontSize(11).font('Helvetica-Bold').text('Tren Kehadiran Harian (% Hadir)', startX, doc.y, { width: pageWidth });
+  doc.fontSize(8.5).font('Helvetica').fillColor('#555')
+    .text(`Rata-rata kehadiran periode ini: ${avgHadirPct.toFixed(1)}% dari ${totalPersonnelActive} personel aktif`, startX, doc.y + 2, { width: pageWidth });
+  doc.fillColor('black');
+  doc.moveDown(1.2);
+
+  const chartX = startX;
+  const chartY = doc.y;
+  const chartH = 160;
+  const chartW = pageWidth;
+  const barGap = 10;
+  const barW = Math.min(46, (chartW - barGap * (dateList.length - 1)) / dateList.length);
+  const chartInnerW = barW * dateList.length + barGap * (dateList.length - 1);
+  const chartStartX = chartX + (chartW - chartInnerW) / 2;
+  const baselineY = chartY + chartH;
+
+  // Garis bantu 0%/50%/100% supaya tinggi batang mudah dibaca.
+  [0, 50, 100].forEach((pct) => {
+    const gy = baselineY - (pct / 100) * chartH;
+    doc.moveTo(chartX, gy).lineTo(chartX + chartW, gy).lineWidth(0.5).strokeColor('#e2e5ea').stroke();
+    doc.fontSize(7).fillColor('#9aa0ab').text(`${pct}%`, chartX, gy - 7, { width: 24, height: 9, lineBreak: false });
+  });
+
+  // Garis putus-putus rata-rata.
+  const avgY = baselineY - (avgHadirPct / 100) * chartH;
+  doc.save();
+  doc.dash(3, { space: 2 }).moveTo(chartStartX, avgY).lineTo(chartStartX + chartInnerW, avgY).lineWidth(1).strokeColor('#002878').stroke();
+  doc.undash();
+  doc.restore();
+
+  dateList.forEach((dateKey, i) => {
+    const pct = dailyHadirPct[i];
+    const barX = chartStartX + i * (barW + barGap);
+    const barH = Math.max(1, (pct / 100) * chartH);
+    doc.rect(barX, baselineY - barH, barW, barH).fill('#1a3ea3');
+    doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#1a3ea3')
+      .text(`${pct.toFixed(0)}%`, barX - 5, baselineY - barH - 11, { width: barW + 10, align: 'center', height: 10, lineBreak: false });
+    doc.fontSize(7.5).font('Helvetica').fillColor('#333')
+      .text(formatJakartaDate(dateKey, { weekday: 'short', day: '2-digit', month: '2-digit' }), barX - 5, baselineY + 4, { width: barW + 10, align: 'center', height: 10, lineBreak: false, ellipsis: true });
+  });
+  doc.fillColor('black');
+  doc.y = baselineY + 22;
+
   doc.end();
 }));
 
