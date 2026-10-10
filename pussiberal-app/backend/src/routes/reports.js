@@ -231,7 +231,8 @@ async function fetchVisits(from, to) {
   if (to) { where += ' AND DATE(g.created_at) <= :to'; params.to = to; }
 
   const [rows] = await pool.query(
-    `SELECT g.registration_number, g.company, g.status, MAX(vi.check_in_at) AS check_in_at, MAX(vi.check_out_at) AS check_out_at,
+    `SELECT g.registration_number, g.company, g.status, g.purpose, g.purpose_category,
+            MAX(vi.check_in_at) AS check_in_at, MAX(vi.check_out_at) AS check_out_at,
             COUNT(gm.id) AS member_count,
             GROUP_CONCAT(gm.full_name ORDER BY gm.id SEPARATOR ', ') AS member_names
      FROM guests g
@@ -244,6 +245,29 @@ async function fetchVisits(from, to) {
   );
 
   return rows;
+}
+
+// Label kategori keperluan -- sama seperti PURPOSE_CATEGORY_OPTIONS di
+// frontend/public/assets/detail-tamu.js, dipakai supaya laporan menampilkan
+// label yang enak dibaca ("Rapat/Koordinasi"), bukan nilai mentah ENUM
+// ("rapat_koordinasi").
+const PURPOSE_CATEGORY_LABELS = {
+  audiensi: 'Audiensi',
+  rapat_koordinasi: 'Rapat/Koordinasi',
+  diskusi_teknis: 'Diskusi Teknis',
+  maintenance: 'Maintenance',
+  pengiriman: 'Pengiriman',
+  lainnya: 'Lainnya',
+};
+
+// Menggabungkan kategori (label enak dibaca) + detail tujuan menghadap jadi
+// satu kolom "Keperluan" -- dipakai sama di Excel maupun PDF supaya kedua
+// format laporan konsisten.
+function keperluanText(row) {
+  const category = row.purpose_category ? (PURPOSE_CATEGORY_LABELS[row.purpose_category] || row.purpose_category) : null;
+  const detail = row.purpose ? String(row.purpose).trim() : '';
+  if (category && detail) return `${category} -- ${detail}`;
+  return category || detail || '-';
 }
 
 router.get('/visits', requireRole('admin', 'verifikator', 'pimpinan'), asyncHandler(async (req, res) => {
@@ -263,12 +287,13 @@ router.get('/visits/export', requireRole('admin', 'verifikator', 'pimpinan'), as
       { header: 'Perusahaan', key: 'company', width: 28 },
       { header: 'Jumlah Tamu', key: 'member_count', width: 12 },
       { header: 'Nama Tamu', key: 'member_names', width: 36 },
+      { header: 'Keperluan', key: 'keperluan', width: 36 },
       { header: 'Status', key: 'status', width: 20 },
       { header: 'Check-in', key: 'check_in_at', width: 20 },
       { header: 'Check-out', key: 'check_out_at', width: 20 },
     ];
     sheet.getRow(1).font = { bold: true };
-    rows.forEach((r) => sheet.addRow(r));
+    rows.forEach((r) => sheet.addRow({ ...r, keperluan: keperluanText(r) }));
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename="rekap-kunjungan.xlsx"');
@@ -287,7 +312,7 @@ router.get('/visits/export', requireRole('admin', 'verifikator', 'pimpinan'), as
     doc.moveDown();
     doc.fontSize(9);
 
-    const colWidths = [100, 130, 60, 190, 90, 100, 100];
+    const colWidths = [90, 105, 30, 140, 130, 65, 110, 110];
     const startX = doc.page.margins.left;
     let y = doc.y;
 
@@ -312,12 +337,13 @@ router.get('/visits/export', requireRole('admin', 'verifikator', 'pimpinan'), as
       }
     }
 
-    drawRow(['No. Registrasi', 'Perusahaan', 'Jml', 'Nama Tamu', 'Status', 'Check-in', 'Check-out'], true);
+    drawRow(['No. Registrasi', 'Perusahaan', 'Jml', 'Nama Tamu', 'Keperluan', 'Status', 'Check-in', 'Check-out'], true);
     rows.forEach((r) => drawRow([
       r.registration_number,
       r.company,
       r.member_count,
       r.member_names,
+      keperluanText(r),
       r.status,
       r.check_in_at ? formatJakartaDateTime(r.check_in_at) : '-',
       r.check_out_at ? formatJakartaDateTime(r.check_out_at) : '-',
