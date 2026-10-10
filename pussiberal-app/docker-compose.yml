@@ -35,14 +35,23 @@ services:
       BACKUP_DIR: /app/backups
     volumes:
       - ./backups:/app/backups
-    extra_hosts:
-      # Supaya backend bisa menjangkau Ollama yang jalan langsung di host
-      # (bukan di dalam container) -- dipakai field "URL Server Ollama" di
-      # Konfigurasi AI, isi dengan http://host.docker.internal:11434
-      - "host.docker.internal:host-gateway"
     depends_on:
       mysql:
         condition: service_healthy
+    networks: [pussiberal]
+
+  # AI Lokal (Ollama) -- dijalankan sebagai container, bukan langsung di
+  # host, supaya seluruh deployment cukup lewat "docker compose" tanpa ada
+  # layanan lain yang perlu dikelola terpisah (systemd, dst). SENGAJA tidak
+  # ada "ports:" di sini -- tidak dipetakan ke host sama sekali, hanya bisa
+  # dijangkau container lain di jaringan "pussiberal" yang sama (mis.
+  # backend lewat http://ollama:11434) -- lebih tertutup daripada
+  # pendekatan sebelumnya (host + firewall iptables manual).
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
     networks: [pussiberal]
 
   frontend:
@@ -62,3 +71,4 @@ networks:
 
 volumes:
   mysql_data:
+  ollama_data:
