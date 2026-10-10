@@ -38,39 +38,50 @@
       </div>
     </header>
 
-    <section class="content" style="max-width: 900px;">
+    <section class="content" style="max-width: 1200px;">
       <h1 class="page-title">AI Chat</h1>
       <p class="page-description">
         Tanyakan analisa data platform ini kepada AI &mdash; statistik kunjungan, kategori keamanan personel,
         bank data, dan aktivitas pengguna. Jawaban didasarkan pada ringkasan data terkini di sistem.
+        Riwayat percakapan tersimpan otomatis dan hanya terlihat oleh akun Anda sendiri (dihapus otomatis
+        setelah 30 hari tidak aktif).
       </p>
 
       <div id="resultBox" class="result-box" style="display:none;"></div>
 
-      <div class="routing-switch-row">
-        <span class="routing-switch-label">Sumber Model:</span>
-        <div class="routing-switch" id="routingSwitch">
-          <button type="button" class="routing-switch-btn" data-mode="auto">Otomatis</button>
-          <button type="button" class="routing-switch-btn" data-mode="openrouter">OpenRouter</button>
-          <button type="button" class="routing-switch-btn" data-mode="ollama">AI Lokal</button>
-        </div>
-      </div>
+      <div class="ai-chat-layout">
+        <aside class="ai-chat-sidebar">
+          <button type="button" class="btn btn-accent" id="newChatBtn" style="width:100%; margin-bottom:12px;">+ Percakapan Baru</button>
+          <div class="ai-chat-history-list" id="conversationList"></div>
+        </aside>
 
-      <div class="chat-suggestions" id="chatSuggestions">
-        <button type="button" class="chat-suggestion-btn" data-q="Berapa total tamu terdaftar dan berapa yang sedang berkunjung hari ini?">Ringkasan kunjungan hari ini</button>
-        <button type="button" class="chat-suggestion-btn" data-q="Bagaimana distribusi kategori keamanan personel saat ini? Apakah ada yang perlu penanganan khusus?">Distribusi kategori keamanan</button>
-        <button type="button" class="chat-suggestion-btn" data-q="Apakah ada NIK yang tercatat dengan lebih dari satu nama berbeda? Jelaskan risikonya.">Cek anomali NIK</button>
-        <button type="button" class="chat-suggestion-btn" data-q="Perusahaan mana saja dengan jumlah pendaftaran tamu terbanyak?">Perusahaan teraktif</button>
-      </div>
+        <div class="ai-chat-main">
+          <div class="routing-switch-row">
+            <span class="routing-switch-label">Sumber Model:</span>
+            <div class="routing-switch" id="routingSwitch">
+              <button type="button" class="routing-switch-btn" data-mode="auto">Otomatis</button>
+              <button type="button" class="routing-switch-btn" data-mode="openrouter">OpenRouter</button>
+              <button type="button" class="routing-switch-btn" data-mode="ollama">AI Lokal</button>
+            </div>
+          </div>
 
-      <div class="chat-card">
-        <div class="chat-window" id="chatWindow">
-          <div class="chat-empty" id="chatEmpty">Mulai percakapan dengan mengetik pertanyaan di bawah, atau pilih salah satu saran di atas.</div>
+          <div class="chat-suggestions" id="chatSuggestions">
+            <button type="button" class="chat-suggestion-btn" data-q="Berapa total tamu terdaftar dan berapa yang sedang berkunjung hari ini?">Ringkasan kunjungan hari ini</button>
+            <button type="button" class="chat-suggestion-btn" data-q="Bagaimana distribusi kategori keamanan personel saat ini? Apakah ada yang perlu penanganan khusus?">Distribusi kategori keamanan</button>
+            <button type="button" class="chat-suggestion-btn" data-q="Apakah ada NIK yang tercatat dengan lebih dari satu nama berbeda? Jelaskan risikonya.">Cek anomali NIK</button>
+            <button type="button" class="chat-suggestion-btn" data-q="Perusahaan mana saja dengan jumlah pendaftaran tamu terbanyak?">Perusahaan teraktif</button>
+          </div>
+
+          <div class="chat-card">
+            <div class="chat-window" id="chatWindow">
+              <div class="chat-empty" id="chatEmpty">Mulai percakapan dengan mengetik pertanyaan di bawah, atau pilih salah satu saran di atas.</div>
+            </div>
+            <form class="chat-input-row" id="chatForm">
+              <textarea id="chatInput" placeholder="Tulis pertanyaan Anda tentang data platform ini..." rows="1"></textarea>
+              <button type="submit" class="btn btn-primary" id="chatSendBtn">Kirim</button>
+            </form>
+          </div>
         </div>
-        <form class="chat-input-row" id="chatForm">
-          <textarea id="chatInput" placeholder="Tulis pertanyaan Anda tentang data platform ini..." rows="1"></textarea>
-          <button type="submit" class="btn btn-primary" id="chatSendBtn">Kirim</button>
-        </form>
       </div>
     </section>
   </main>

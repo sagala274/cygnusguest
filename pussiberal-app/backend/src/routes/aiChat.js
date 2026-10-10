@@ -237,7 +237,7 @@ async function parseApiError(apiResponse, defaultLabel) {
 }
 
 router.post('/query', asyncHandler(async (req, res) => {
-  const { message, history } = req.body || {};
+  const { message, conversation_id } = req.body || {};
 
   if (typeof message !== 'string' || !message.trim()) {
     return res.status(400).json({ error: 'Pesan tidak boleh kosong' });
@@ -246,12 +246,28 @@ router.post('/query', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: `Pesan terlalu panjang (maksimal ${MAX_MESSAGE_LENGTH} karakter)` });
   }
 
+  // Riwayat percakapan disimpan di database (lihat utils/aiChatHistory.js),
+  // private per akun -- bukan lagi dikirim penuh oleh klien setiap kali.
+  // Kalau conversation_id tidak diisi, percakapan BARU baru benar-benar
+  // dibuat di database setelah balasan AI berhasil didapat (lihat bagian
+  // bawah) -- supaya permintaan yang gagal di tengah jalan tidak
+  // meninggalkan percakapan kosong tanpa isi di daftar riwayat.
+  let conversationId = null;
   let safeHistory = [];
-  if (Array.isArray(history)) {
-    safeHistory = history
-      .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
-      .slice(-MAX_HISTORY_TURNS)
-      .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_MESSAGE_LENGTH) }));
+  if (conversation_id !== undefined && conversation_id !== null) {
+    const [convRows] = await pool.execute(
+      'SELECT id FROM ai_chat_conversations WHERE id = :id AND user_id = :userId',
+      { id: conversation_id, userId: req.user.sub }
+    );
+    if (!convRows.length) {
+      return res.status(404).json({ error: 'Percakapan tidak ditemukan' });
+    }
+    conversationId = convRows[0].id;
+    const [msgRows] = await pool.query(
+      'SELECT role, content FROM ai_chat_messages WHERE conversation_id = :id ORDER BY created_at ASC, id ASC',
+      { id: conversationId }
+    );
+    safeHistory = msgRows.slice(-MAX_HISTORY_TURNS).map((m) => ({ role: m.role, content: m.content }));
   }
 
   const settings = await getAiSettings();
@@ -443,11 +459,62 @@ router.post('/query', asyncHandler(async (req, res) => {
     });
   }
 
+  // Percakapan BARU baru dibuat di sini (bukan di awal handler) -- lihat
+  // alasannya di komentar dekat deklarasi conversationId di atas.
+  if (conversationId === null) {
+    const title = message.trim().length > 60 ? `${message.trim().slice(0, 60)}...` : message.trim();
+    const [result] = await pool.execute(
+      'INSERT INTO ai_chat_conversations (user_id, title) VALUES (:userId, :title)',
+      { userId: req.user.sub, title }
+    );
+    conversationId = result.insertId;
+  }
+  await pool.query('INSERT INTO ai_chat_messages (conversation_id, role, content) VALUES (:id, \'user\', :content)', {
+    id: conversationId, content: message.trim(),
+  });
+  await pool.query('INSERT INTO ai_chat_messages (conversation_id, role, content) VALUES (:id, \'assistant\', :content)', {
+    id: conversationId, content: finalReply,
+  });
+  await pool.execute('UPDATE ai_chat_conversations SET updated_at = NOW() WHERE id = :id', { id: conversationId });
+
   await logAudit(req.user.sub, 'ai_chat_query', 'ai_chat', null, {
     message: message.trim().slice(0, 500), model: usedModel, provider, routing_mode: routingMode, fallback_used: fallbackTriggered, used_tool: toolsUsed > 0,
   });
 
-  res.json({ data: { reply: finalReply, model: usedModel, provider, fallback_used: fallbackTriggered } });
+  res.json({ data: { reply: finalReply, model: usedModel, provider, fallback_used: fallbackTriggered, conversation_id: conversationId } });
+}));
+
+// --- Manajemen riwayat percakapan (private per akun) ---
+
+router.get('/conversations', asyncHandler(async (req, res) => {
+  const [rows] = await pool.execute(
+    'SELECT id, title, created_at, updated_at FROM ai_chat_conversations WHERE user_id = :userId ORDER BY updated_at DESC LIMIT 100',
+    { userId: req.user.sub }
+  );
+  res.json({ data: rows });
+}));
+
+router.get('/conversations/:id', asyncHandler(async (req, res) => {
+  const [convRows] = await pool.execute(
+    'SELECT id, title, created_at, updated_at FROM ai_chat_conversations WHERE id = :id AND user_id = :userId',
+    { id: req.params.id, userId: req.user.sub }
+  );
+  if (!convRows.length) return res.status(404).json({ error: 'Percakapan tidak ditemukan' });
+
+  const [messages] = await pool.query(
+    'SELECT id, role, content, created_at FROM ai_chat_messages WHERE conversation_id = :id ORDER BY created_at ASC, id ASC',
+    { id: req.params.id }
+  );
+  res.json({ data: { ...convRows[0], messages } });
+}));
+
+router.delete('/conversations/:id', asyncHandler(async (req, res) => {
+  const [result] = await pool.execute(
+    'DELETE FROM ai_chat_conversations WHERE id = :id AND user_id = :userId',
+    { id: req.params.id, userId: req.user.sub }
+  );
+  if (!result.affectedRows) return res.status(404).json({ error: 'Percakapan tidak ditemukan' });
+  res.json({ data: { ok: true } });
 }));
 
 module.exports = router;

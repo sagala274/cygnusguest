@@ -36,6 +36,7 @@ const { ensureCompanyProfilesTable } = require('./utils/companyProfiles');
 const { ensureUserLoginIpsTable } = require('./utils/userLoginIps');
 const { ensureNetworkDiagramsTable } = require('./utils/networkDiagrams');
 const { ensurePersonnelTables, ensureAttendanceStatusEnum, ensurePersonnelAnalysisColumns } = require('./utils/attendance');
+const { ensureAiChatHistoryTables, startAiChatHistoryCleanup } = require('./utils/aiChatHistory');
 
 const app = express();
 
@@ -142,8 +143,10 @@ async function start() {
   await ensurePersonnelTables();
   await ensureAttendanceStatusEnum();
   await ensurePersonnelAnalysisColumns();
+  await ensureAiChatHistoryTables();
   startBackupScheduler();
   startTelegramPolling();
+  startAiChatHistoryCleanup();
   app.listen(port, () => console.log(`Backend berjalan di port ${port}`));
 }
 

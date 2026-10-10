@@ -4,15 +4,17 @@ renderNav('ai-chat');
 
 const resultBox = document.getElementById('resultBox');
 const chatWindow = document.getElementById('chatWindow');
-const chatEmpty = document.getElementById('chatEmpty');
+let chatEmpty = document.getElementById('chatEmpty');
 const chatForm = document.getElementById('chatForm');
 const chatInput = document.getElementById('chatInput');
 const chatSendBtn = document.getElementById('chatSendBtn');
 const routingSwitch = document.getElementById('routingSwitch');
 const routingButtons = routingSwitch.querySelectorAll('.routing-switch-btn');
+const newChatBtn = document.getElementById('newChatBtn');
+const conversationList = document.getElementById('conversationList');
 
-const history = [];
 let sending = false;
+let currentConversationId = null;
 
 function setActiveRoutingButton(mode) {
   routingButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.mode === mode));
@@ -90,6 +92,96 @@ function removeTyping() {
   if (el) el.remove();
 }
 
+function resetChatWindow() {
+  chatWindow.innerHTML = '';
+  chatEmpty = document.createElement('div');
+  chatEmpty.className = 'chat-empty';
+  chatEmpty.id = 'chatEmpty';
+  chatEmpty.textContent = 'Mulai percakapan dengan mengetik pertanyaan di bawah, atau pilih salah satu saran di atas.';
+  chatWindow.appendChild(chatEmpty);
+}
+
+function startNewConversation() {
+  currentConversationId = null;
+  resetChatWindow();
+  highlightActiveConversation();
+  chatInput.focus();
+}
+
+function highlightActiveConversation() {
+  conversationList.querySelectorAll('.conversation-item').forEach((el) => {
+    el.classList.toggle('is-active', Number(el.dataset.id) === currentConversationId);
+  });
+}
+
+function renderConversationList(conversations) {
+  if (!conversations.length) {
+    conversationList.innerHTML = '<div class="ai-chat-history-empty">Belum ada percakapan tersimpan.</div>';
+    return;
+  }
+  conversationList.innerHTML = conversations
+    .map(
+      (c) => `
+    <div class="conversation-item" data-id="${c.id}">
+      <div class="conversation-item-main">
+        <div class="conversation-item-title">${escapeHtml(c.title)}</div>
+        <div class="conversation-item-time">${timeAgo(c.updated_at)}</div>
+      </div>
+      <button type="button" class="conversation-item-delete" data-id="${c.id}" title="Hapus percakapan">
+        ${icon('trash')}
+      </button>
+    </div>
+  `
+    )
+    .join('');
+  highlightActiveConversation();
+
+  conversationList.querySelectorAll('.conversation-item').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.conversation-item-delete')) return;
+      openConversation(Number(el.dataset.id));
+    });
+  });
+  conversationList.querySelectorAll('.conversation-item-delete').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = Number(btn.dataset.id);
+      if (!confirm('Hapus percakapan ini? Tidak bisa dibatalkan.')) return;
+      try {
+        await api(`/ai-chat/conversations/${id}`, { method: 'DELETE' });
+        if (currentConversationId === id) startNewConversation();
+        await loadConversations();
+      } catch (err) {
+        showMessage(err.message, true);
+      }
+    });
+  });
+}
+
+async function loadConversations() {
+  try {
+    const res = await api('/ai-chat/conversations');
+    renderConversationList(res.data);
+  } catch (err) {
+    conversationList.innerHTML = '<div class="ai-chat-history-empty">Gagal memuat riwayat percakapan.</div>';
+  }
+}
+
+async function openConversation(id) {
+  if (sending) return;
+  try {
+    const res = await api(`/ai-chat/conversations/${id}`);
+    currentConversationId = res.data.id;
+    resetChatWindow();
+    res.data.messages.forEach((m) => appendBubble(m.role, m.content));
+    highlightActiveConversation();
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
+newChatBtn.addEventListener('click', startNewConversation);
+
 async function sendMessage(text) {
   if (sending || !text.trim()) return;
   sending = true;
@@ -102,7 +194,7 @@ async function sendMessage(text) {
   try {
     const res = await api('/ai-chat/query', {
       method: 'POST',
-      body: JSON.stringify({ message: text.trim(), history }),
+      body: JSON.stringify({ message: text.trim(), conversation_id: currentConversationId }),
     });
     removeTyping();
     let note = '';
@@ -112,8 +204,8 @@ async function sendMessage(text) {
       note = `Dijawab oleh AI lokal (${res.data.model})`;
     }
     appendBubble('assistant', res.data.reply, false, note);
-    history.push({ role: 'user', content: text.trim() });
-    history.push({ role: 'assistant', content: res.data.reply });
+    currentConversationId = res.data.conversation_id;
+    await loadConversations();
   } catch (err) {
     removeTyping();
     appendBubble('assistant', err.message, true);
@@ -148,3 +240,4 @@ document.querySelectorAll('.chat-suggestion-btn').forEach((btn) => {
 });
 
 loadRoutingStatus();
+loadConversations();
