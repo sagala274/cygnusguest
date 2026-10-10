@@ -291,11 +291,18 @@ router.get('/visits/export', requireRole('admin', 'verifikator', 'pimpinan'), as
     const startX = doc.page.margins.left;
     let y = doc.y;
 
+    // height + lineBreak:false MEMAKSA tiap sel satu baris saja (dipotong
+    // "..." lewat ellipsis kalau teksnya kepanjangan, mis. "Nama Tamu" saat
+    // berisi banyak nama tamu sekaligus) -- tanpa ini, teks yang kepanjangan
+    // melebar ke beberapa baris dan tumpang tindih dengan baris berikutnya
+    // (lihat perbaikan serupa di rekap absensi, 15_...md).
     function drawRow(values, bold) {
       let x = startX;
       doc.font(bold ? 'Helvetica-Bold' : 'Helvetica');
       values.forEach((v, i) => {
-        doc.text(String(v === null || v === undefined ? '-' : v), x, y, { width: colWidths[i], ellipsis: true });
+        doc.text(String(v === null || v === undefined ? '-' : v), x, y, {
+          width: colWidths[i], height: 14, ellipsis: true, lineBreak: false,
+        });
         x += colWidths[i];
       });
       y += 18;
