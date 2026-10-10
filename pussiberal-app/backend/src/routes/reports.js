@@ -312,42 +312,68 @@ router.get('/visits/export', requireRole('admin', 'verifikator', 'pimpinan'), as
     doc.moveDown();
     doc.fontSize(9);
 
+    const headers = ['No. Registrasi', 'Perusahaan', 'Jml', 'Nama Tamu', 'Keperluan', 'Status', 'Check-in', 'Check-out'];
     const colWidths = [90, 105, 30, 140, 130, 65, 110, 110];
+    const NAME_COL = 3;
     const startX = doc.page.margins.left;
+    const colX = [];
+    { let acc = startX; colWidths.forEach((w) => { colX.push(acc); acc += w; }); }
     let y = doc.y;
+    const lineH = 11;
 
-    // height + lineBreak:false MEMAKSA tiap sel satu baris saja (dipotong
-    // "..." lewat ellipsis kalau teksnya kepanjangan, mis. "Nama Tamu" saat
-    // berisi banyak nama tamu sekaligus) -- tanpa ini, teks yang kepanjangan
-    // melebar ke beberapa baris dan tumpang tindih dengan baris berikutnya
-    // (lihat perbaikan serupa di rekap absensi, 15_...md).
-    function drawRow(values, bold) {
-      let x = startX;
-      doc.font(bold ? 'Helvetica-Bold' : 'Helvetica');
-      values.forEach((v, i) => {
-        doc.text(String(v === null || v === undefined ? '-' : v), x, y, {
-          width: colWidths[i], height: 14, ellipsis: true, lineBreak: false,
-        });
-        x += colWidths[i];
-      });
-      y += 18;
-      if (y > doc.page.height - doc.page.margins.bottom) {
+    function checkPageBreak(neededHeight) {
+      if (y + neededHeight > doc.page.height - doc.page.margins.bottom) {
         doc.addPage();
         y = doc.page.margins.top;
+        drawHeaderRow();
       }
     }
 
-    drawRow(['No. Registrasi', 'Perusahaan', 'Jml', 'Nama Tamu', 'Keperluan', 'Status', 'Check-in', 'Check-out'], true);
-    rows.forEach((r) => drawRow([
-      r.registration_number,
-      r.company,
-      r.member_count,
-      r.member_names,
-      keperluanText(r),
-      r.status,
-      r.check_in_at ? formatJakartaDateTime(r.check_in_at) : '-',
-      r.check_out_at ? formatJakartaDateTime(r.check_out_at) : '-',
-    ]));
+    // height + lineBreak:false MEMAKSA tiap sel satu baris saja (dipotong
+    // "..." lewat ellipsis kalau teksnya kepanjangan) -- tanpa ini, teks yang
+    // kepanjangan melebar ke beberapa baris dan tumpang tindih dengan baris
+    // berikutnya (lihat perbaikan serupa di rekap absensi, 15_...md).
+    function drawHeaderRow() {
+      doc.font('Helvetica-Bold');
+      headers.forEach((v, i) => {
+        doc.text(v, colX[i], y, { width: colWidths[i], height: lineH, ellipsis: true, lineBreak: false });
+      });
+      y += 18;
+    }
+
+    // "Nama Tamu" sengaja TIDAK dipotong satu baris seperti kolom lain --
+    // disusun ke bawah (satu nama per baris) supaya tidak ada nama yang
+    // hilang/kepotong kalau satu pendaftaran berisi banyak tamu sekaligus.
+    // Tinggi barisnya jadi menyesuaikan jumlah nama; kolom lain tetap rata
+    // atas di baris yang sama.
+    function drawVisitRow(r) {
+      const names = r.member_names ? String(r.member_names).split(', ') : ['-'];
+      const rowH = Math.max(18, names.length * lineH + 4);
+      checkPageBreak(rowH);
+
+      const values = [
+        r.registration_number, r.company, r.member_count, null, keperluanText(r), r.status,
+        r.check_in_at ? formatJakartaDateTime(r.check_in_at) : '-',
+        r.check_out_at ? formatJakartaDateTime(r.check_out_at) : '-',
+      ];
+      doc.font('Helvetica');
+      values.forEach((v, i) => {
+        if (i === NAME_COL) return;
+        doc.text(String(v === null || v === undefined ? '-' : v), colX[i], y, {
+          width: colWidths[i], height: lineH, ellipsis: true, lineBreak: false,
+        });
+      });
+      names.forEach((name, i) => {
+        doc.text(name, colX[NAME_COL], y + i * lineH, {
+          width: colWidths[NAME_COL], height: lineH, ellipsis: true, lineBreak: false,
+        });
+      });
+
+      y += rowH;
+    }
+
+    drawHeaderRow();
+    rows.forEach((r) => drawVisitRow(r));
 
     doc.end();
     return;
