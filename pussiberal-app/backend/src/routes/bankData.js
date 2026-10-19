@@ -519,7 +519,21 @@ function renderGroupPDF(doc, company, records, profile) {
   drawPersonnelTable(doc, records, GROUP_COLUMNS);
 }
 
-function renderPersonnelPDF(doc, visits, headlineRecord) {
+// Men-decode foto yang disimpan sebagai data URI ("data:image/...;base64,xxx")
+// di kolom MEDIUMTEXT guest_members.photo/ktp_photo menjadi Buffer biner yang
+// bisa dipakai doc.image(). Mengembalikan null kalau kosong/formatnya rusak
+// (foto lama bisa jadi tersimpan tanpa prefix data URI).
+function decodePhotoDataUri(value) {
+  if (!value) return null;
+  const match = /^data:[^;]+;base64,(.+)$/.exec(value);
+  try {
+    return Buffer.from(match ? match[1] : value, 'base64');
+  } catch (err) {
+    return null;
+  }
+}
+
+function renderPersonnelPDF(doc, visits, headlineRecord, photos) {
   const latest = headlineRecord || visits[0];
 
   doc.fontSize(16).font('Helvetica-Bold').text('Laporan Personel - Bank Data PUSSIBERAL', { align: 'center' });
@@ -527,8 +541,18 @@ function renderPersonnelPDF(doc, visits, headlineRecord) {
   doc.moveDown();
 
   doc.fontSize(10);
+  // Label & nilai digambar sebagai dua kolom pada x tetap (bukan teks
+  // menyambung "Label: nilai") -- supaya semua nilai sejajar rapi di satu
+  // garis vertikal, tidak bergeser-geser mengikuti panjang labelnya.
+  const FIELD_LABEL_X = doc.page.margins.left;
+  const FIELD_LABEL_WIDTH = 150;
+  const FIELD_VALUE_X = FIELD_LABEL_X + FIELD_LABEL_WIDTH;
+  const FIELD_VALUE_WIDTH = doc.page.width - doc.page.margins.right - FIELD_VALUE_X;
   const field = (label, value) => {
-    doc.font('Helvetica-Bold').text(`${label}: `, { continued: true }).font('Helvetica').text(value === null || value === undefined || value === '' ? '-' : String(value));
+    const y = doc.y;
+    const text = value === null || value === undefined || value === '' ? '-' : String(value);
+    doc.font('Helvetica-Bold').text(label, FIELD_LABEL_X, y, { width: FIELD_LABEL_WIDTH, lineBreak: false });
+    doc.font('Helvetica').text(text, FIELD_VALUE_X, y, { width: FIELD_VALUE_WIDTH });
   };
 
   field('Nama', latest.full_name);
@@ -553,6 +577,47 @@ function renderPersonnelPDF(doc, visits, headlineRecord) {
     doc.moveDown(0.5);
     doc.font('Helvetica-Bold').text('Hasil Analisa Terkini:');
     doc.font('Helvetica').text(latest.effective_analysis_notes, { width: 500 });
+  }
+
+  if (photos) {
+    const PHOTO_WIDTH = 150;
+    const PHOTO_GAP = 20;
+    const photoEntries = [
+      { label: 'Foto Tamu', buffer: decodePhotoDataUri(photos.photo) },
+      { label: 'Foto KTP', buffer: decodePhotoDataUri(photos.ktp_photo) },
+    ];
+    if (photoEntries.some((p) => p.buffer)) {
+      doc.moveDown(0.6);
+      doc.fontSize(10).font('Helvetica-Bold').text('Foto Tamu & KTP');
+      doc.moveDown(0.2);
+      // .image() dengan x/y eksplisit (beda dari teks mengalir biasa) TIDAK
+      // otomatis pindah halaman -- dicek manual supaya foto tidak terpotong
+      // kalau posisinya sudah mepet batas bawah halaman.
+      const PHOTO_BLOCK_HEIGHT = 14 + PHOTO_WIDTH * 0.75 + 10;
+      if (doc.y + PHOTO_BLOCK_HEIGHT > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+      }
+      const rowY = doc.y;
+      let maxHeight = 0;
+      photoEntries.forEach((entry, i) => {
+        const x = FIELD_LABEL_X + i * (PHOTO_WIDTH + PHOTO_GAP);
+        doc.fontSize(9).font('Helvetica').text(entry.label, x, rowY, { width: PHOTO_WIDTH });
+        const imageY = rowY + 14;
+        if (entry.buffer) {
+          try {
+            doc.image(entry.buffer, x, imageY, { width: PHOTO_WIDTH });
+            maxHeight = Math.max(maxHeight, imageY + PHOTO_WIDTH * 0.75 - rowY);
+          } catch (err) {
+            doc.fontSize(9).fillColor('#667085').text('(Foto tidak dapat ditampilkan)', x, imageY, { width: PHOTO_WIDTH }).fillColor('black');
+            maxHeight = Math.max(maxHeight, imageY + 20 - rowY);
+          }
+        } else {
+          doc.fontSize(9).fillColor('#667085').text('Tidak ada foto', x, imageY, { width: PHOTO_WIDTH }).fillColor('black');
+          maxHeight = Math.max(maxHeight, imageY + 20 - rowY);
+        }
+      });
+      doc.y = rowY + maxHeight;
+    }
   }
 
   doc.moveDown();
@@ -587,9 +652,13 @@ router.get('/export', asyncHandler(async (req, res) => {
     const headlineName = headlineRecord.full_name.trim().toLowerCase();
     const sameIdentityVisits = visits.filter((r) => r.full_name.trim().toLowerCase() === headlineName);
 
+    // Foto sengaja tidak ikut di-SELECT di fetchAllRecords() (lihat
+    // komentarnya) -- diambil terpisah di sini, hanya untuk baris headline.
+    const [[photoRow]] = await pool.execute('SELECT photo, ktp_photo FROM guest_members WHERE id = :id', { id: headlineRecord.id });
+
     layout = 'portrait';
     filename = `bank-data-${sanitizeFilename(headlineRecord.full_name)}.pdf`;
-    renderFn = (doc) => renderPersonnelPDF(doc, sameIdentityVisits, headlineRecord);
+    renderFn = (doc) => renderPersonnelPDF(doc, sameIdentityVisits, headlineRecord, photoRow);
   } else if (scope === 'company') {
     if (!company) return res.status(400).json({ error: 'Parameter company wajib diisi' });
     const groupRecords = allRecords.filter((r) => {
