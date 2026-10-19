@@ -58,12 +58,14 @@ async function load() {
     }
 
     document.getElementById('summaryRows').innerHTML = `
+      <div class="detail-row"><span class="detail-label">NIK</span><span class="detail-value">${escapeHtml(p.nik || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Nama Lainnya</span><span class="detail-value">${escapeHtml(p.other_names || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Jabatan Terakhir</span><span class="detail-value">${escapeHtml(p.position)}</span></div>
       <div class="detail-row"><span class="detail-label">Nomor HP</span><span class="detail-value">${escapeHtml(p.phone_number)}</span></div>
       <div class="detail-row"><span class="detail-label">Afiliasi</span><span class="detail-value">${escapeHtml(p.affiliation || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Media Sosial</span><span class="detail-value">${escapeHtml(p.social_media || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Alamat Rumah</span><span class="detail-value">${escapeHtml(p.address || '-')}</span></div>
+      <div class="detail-row"><span class="detail-label">Plat Nomor Kendaraan</span><span class="detail-value">${escapeHtml(p.plate_number || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Kategori Tamu Terkini</span><span class="detail-value"><span class="badge ${securityCategoryBadgeClass(p.effective_security_category)}">${escapeHtml(securityCategoryLabel(p.effective_security_category))}</span>${p.analysis_source && p.analysis_source.is_inherited ? ` <span title="Diambil dari hasil analisa paling baru untuk orang ini, pendaftaran ${escapeHtml(p.analysis_source.registration_number)} (dianalisa ${formatDateTime(p.analysis_source.analyzed_at)})" style="color: var(--muted); cursor:help; font-size:11px;">ⓘ dari kunjungan lain</span>` : ''}</span></div>
       <div class="detail-row"><span class="detail-label">Perusahaan Terkait</span><span class="detail-value">${escapeHtml(p.companies.join(', '))}</span></div>
       <div class="detail-row"><span class="detail-label">Jumlah Kunjungan</span><span class="detail-value">${p.visit_count}x</span></div>

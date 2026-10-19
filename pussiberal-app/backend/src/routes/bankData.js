@@ -43,9 +43,11 @@ async function fetchAllRecords() {
       gm.id, gm.guest_id, gm.nik, gm.full_name, gm.other_names, gm.phone_number, gm.position, gm.employee_id,
       gm.affiliation, gm.social_media, gm.address, gm.analysis_notes, gm.security_category, gm.analyzed_at,
       gm.device_status, gm.device_reason,
-      g.company, g.registration_number, g.created_at, g.status AS registration_status
+      g.company, g.registration_number, g.created_at, g.status AS registration_status,
+      v.vehicle_type, v.plate_number
     FROM guest_members gm
     JOIN guests g ON g.id = gm.guest_id
+    LEFT JOIN vehicles v ON v.guest_id = g.id
     ORDER BY g.company, gm.full_name, g.created_at DESC
   `);
 
@@ -392,6 +394,8 @@ router.get('/personnel/:nik', asyncHandler(async (req, res) => {
       affiliation: headline.affiliation,
       social_media: headline.social_media,
       address: headline.address,
+      vehicle_type: headline.vehicle_type,
+      plate_number: headline.plate_number,
       photo: photoRow.photo,
       ktp_photo: photoRow.ktp_photo,
       security_category: headline.security_category,
@@ -535,6 +539,7 @@ function renderPersonnelPDF(doc, visits, headlineRecord) {
   field('Afiliasi', latest.affiliation);
   field('Media Sosial', latest.social_media);
   field('Alamat Rumah', latest.address);
+  field('Plat Nomor Kendaraan', latest.plate_number);
   field('Kategori Tamu Terkini', securityCategoryLabelId(latest.effective_security_category));
   field('Jumlah Kunjungan', latest.visit_count);
 
