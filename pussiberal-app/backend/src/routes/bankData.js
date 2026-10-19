@@ -566,6 +566,11 @@ function renderPersonnelPDF(doc, visits, headlineRecord, photos) {
   field('Plat Nomor Kendaraan', latest.plate_number);
   field('Kategori Tamu Terkini', securityCategoryLabelId(latest.effective_security_category));
   field('Jumlah Kunjungan', latest.visit_count);
+  // field() terakhir menulis kolom NILAI dengan x eksplisit (FIELD_VALUE_X) --
+  // PDFKit menyimpan x itu sebagai posisi kursor untuk teks mengalir
+  // berikutnya. Tanpa reset ini, paragraf/judul sesudahnya (Hasil Analisa,
+  // Foto, Riwayat Kunjungan) ikut mulai dari kolom kanan, bukan margin kiri.
+  doc.x = FIELD_LABEL_X;
 
   if (latest.nik_shared_by_multiple_names) {
     doc.moveDown(0.3);
@@ -581,42 +586,45 @@ function renderPersonnelPDF(doc, visits, headlineRecord, photos) {
 
   if (photos) {
     const PHOTO_WIDTH = 150;
+    const PHOTO_MAX_HEIGHT = 170;
     const PHOTO_GAP = 20;
+    const LABEL_HEIGHT = 14;
     const photoEntries = [
       { label: 'Foto Tamu', buffer: decodePhotoDataUri(photos.photo) },
       { label: 'Foto KTP', buffer: decodePhotoDataUri(photos.ktp_photo) },
     ];
     if (photoEntries.some((p) => p.buffer)) {
       doc.moveDown(0.6);
-      doc.fontSize(10).font('Helvetica-Bold').text('Foto Tamu & KTP');
+      doc.fontSize(10).font('Helvetica-Bold').text('Foto Tamu & KTP', FIELD_LABEL_X, doc.y);
       doc.moveDown(0.2);
       // .image() dengan x/y eksplisit (beda dari teks mengalir biasa) TIDAK
       // otomatis pindah halaman -- dicek manual supaya foto tidak terpotong
       // kalau posisinya sudah mepet batas bawah halaman.
-      const PHOTO_BLOCK_HEIGHT = 14 + PHOTO_WIDTH * 0.75 + 10;
+      const PHOTO_BLOCK_HEIGHT = LABEL_HEIGHT + PHOTO_MAX_HEIGHT + 10;
       if (doc.y + PHOTO_BLOCK_HEIGHT > doc.page.height - doc.page.margins.bottom) {
         doc.addPage();
       }
       const rowY = doc.y;
-      let maxHeight = 0;
       photoEntries.forEach((entry, i) => {
         const x = FIELD_LABEL_X + i * (PHOTO_WIDTH + PHOTO_GAP);
         doc.fontSize(9).font('Helvetica').text(entry.label, x, rowY, { width: PHOTO_WIDTH });
-        const imageY = rowY + 14;
+        const imageY = rowY + LABEL_HEIGHT;
         if (entry.buffer) {
           try {
-            doc.image(entry.buffer, x, imageY, { width: PHOTO_WIDTH });
-            maxHeight = Math.max(maxHeight, imageY + PHOTO_WIDTH * 0.75 - rowY);
+            // "fit" membatasi foto ke kotak tetap (lebar x tinggi) sambil
+            // menjaga rasio aslinya -- tanpa ini, foto selfie potret (lebih
+            // tinggi dari lebar) bisa jauh lebih tinggi dari perkiraan dan
+            // menabrak konten di bawahnya (Riwayat Kunjungan).
+            doc.image(entry.buffer, x, imageY, { fit: [PHOTO_WIDTH, PHOTO_MAX_HEIGHT] });
           } catch (err) {
             doc.fontSize(9).fillColor('#667085').text('(Foto tidak dapat ditampilkan)', x, imageY, { width: PHOTO_WIDTH }).fillColor('black');
-            maxHeight = Math.max(maxHeight, imageY + 20 - rowY);
           }
         } else {
           doc.fontSize(9).fillColor('#667085').text('Tidak ada foto', x, imageY, { width: PHOTO_WIDTH }).fillColor('black');
-          maxHeight = Math.max(maxHeight, imageY + 20 - rowY);
         }
       });
-      doc.y = rowY + maxHeight;
+      doc.x = FIELD_LABEL_X;
+      doc.y = rowY + PHOTO_BLOCK_HEIGHT;
     }
   }
 
