@@ -4,9 +4,42 @@ renderNav('pendaftaran');
 
 const form = document.getElementById('guestForm');
 const cancelBtn = document.getElementById('cancelBtn');
-const resultBox = document.getElementById('resultBox');
 const membersContainer = document.getElementById('membersContainer');
 const addMemberBtn = document.getElementById('addMemberBtn');
+
+// Popup hasil pendaftaran (berhasil/gagal) -- sebelumnya berupa kotak
+// ringkasan di atas formulir yang gampang terlewat (apalagi di formulir
+// sepanjang ini). Sekarang muncul sebagai modal supaya hasilnya pasti
+// terlihat, baik saat berhasil maupun saat ada field wajib yang belum diisi.
+const registrationResultModal = document.getElementById('registrationResultModal');
+const registrationResultIconSlot = document.getElementById('registrationResultIconSlot');
+const registrationResultTitle = document.getElementById('registrationResultTitle');
+const registrationResultMessage = document.getElementById('registrationResultMessage');
+const registrationResultDetailLink = document.getElementById('registrationResultDetailLink');
+
+function openRegistrationResultModal({ success, title, message, detailUrl }) {
+  registrationResultTitle.textContent = title;
+  registrationResultMessage.textContent = message;
+  registrationResultIconSlot.className = `icon-bubble ${success ? 'icon-bubble-success' : 'icon-bubble-danger'}`;
+  registrationResultIconSlot.innerHTML = icon(success ? 'checkCircle' : 'warning');
+  if (detailUrl) {
+    registrationResultDetailLink.href = detailUrl;
+    registrationResultDetailLink.style.display = 'inline-flex';
+  } else {
+    registrationResultDetailLink.style.display = 'none';
+  }
+  registrationResultModal.classList.add('open');
+}
+
+function closeRegistrationResultModal() {
+  registrationResultModal.classList.remove('open');
+}
+
+document.getElementById('registrationResultCloseIconSlot').innerHTML = icon('close');
+document.getElementById('registrationResultCloseBtn').addEventListener('click', closeRegistrationResultModal);
+document.getElementById('registrationResultOkBtn').addEventListener('click', closeRegistrationResultModal);
+registrationResultModal.addEventListener('click', (e) => { if (e.target === registrationResultModal) closeRegistrationResultModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && registrationResultModal.classList.contains('open')) closeRegistrationResultModal(); });
 
 const memberWidgets = new Map();
 let memberSeq = 0;
@@ -535,8 +568,6 @@ function resetForm() {
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   clearAllErrors();
-  resultBox.style.display = 'none';
-  resultBox.classList.remove('error-box');
 
   const targetOfficialsOk = validateTargetOfficials();
   const purposeCategoryOk = validatePurposeCategory();
@@ -544,9 +575,12 @@ form.addEventListener('submit', async (e) => {
   const photosOk = validateAllPhotos();
 
   if (!targetOfficialsOk || !purposeCategoryOk || !devicePoliciesOk || !photosOk) {
-    resultBox.style.display = 'block';
-    resultBox.classList.add('error-box');
-    resultBox.textContent = 'Lengkapi seluruh field yang wajib diisi sebelum menyimpan.';
+    openRegistrationResultModal({
+      success: false,
+      title: 'Pendaftaran Belum Lengkap',
+      message: 'Pendaftaran tidak berhasil disimpan karena masih ada beberapa kolom wajib yang belum diisi. Periksa kembali tanda merah pada formulir di bawah.',
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     return;
   }
 
@@ -570,17 +604,23 @@ form.addEventListener('submit', async (e) => {
 
   try {
     const res = await api('/guests', { method: 'POST', body: JSON.stringify(payload) });
-    resultBox.style.display = 'block';
     const count = res.data.member_count;
-    resultBox.innerHTML = res.data.status === 'Draft'
-      ? `Tamu terjadwal berhasil disimpan sebagai draft untuk ${count} tamu. Nomor registrasi: <strong>${escapeHtml(res.data.registration_number)}</strong> — lengkapi data yang masih kosong (Perusahaan/Keperluan, Foto Tamu, deklarasi Perangkat Elektronik) kapan saja sebelum tamu tiba di <a class="link" href="detail-tamu?id=${res.data.id}">halaman Detail Tamu</a>.`
-      : `Pendaftaran berhasil untuk ${count} tamu. Nomor registrasi: <strong>${escapeHtml(res.data.registration_number)}</strong> — <a class="link" href="detail-tamu?id=${res.data.id}">Lihat detail</a>`;
+    const isDraft = res.data.status === 'Draft';
+    openRegistrationResultModal({
+      success: true,
+      title: isDraft ? 'Draft Tersimpan' : 'Pendaftaran Berhasil',
+      message: isDraft
+        ? `Tamu terjadwal berhasil disimpan sebagai draft untuk ${count} tamu. Nomor registrasi: ${res.data.registration_number}. Lengkapi data yang masih kosong (Perusahaan/Keperluan, Foto Tamu, deklarasi Perangkat Elektronik) kapan saja sebelum tamu tiba.`
+        : `Pendaftaran berhasil untuk ${count} tamu. Nomor registrasi: ${res.data.registration_number}, selanjutnya menunggu verifikasi.`,
+      detailUrl: `detail-tamu?id=${res.data.id}`,
+    });
     resetForm();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (err) {
-    resultBox.style.display = 'block';
-    resultBox.classList.add('error-box');
-    resultBox.textContent = err.message;
+    openRegistrationResultModal({
+      success: false,
+      title: 'Pendaftaran Gagal',
+      message: err.message,
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (err.fields) {
       Object.entries(err.fields).forEach(([field, message]) => showFieldError(field, message));
@@ -590,7 +630,6 @@ form.addEventListener('submit', async (e) => {
 
 cancelBtn.addEventListener('click', () => {
   if (confirm('Batalkan pengisian formulir?')) {
-    resultBox.style.display = 'none';
     resetForm();
   }
 });

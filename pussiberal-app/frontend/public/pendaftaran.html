@@ -47,7 +47,6 @@
         keamanan PUSSIBERAL.
       </p>
 
-      <div id="resultBox" class="result-box" style="display:none;"></div>
 
       <form class="form-card" id="guestForm">
 
@@ -213,6 +212,23 @@
       </form>
     </section>
   </main>
+</div>
+
+<div class="modal-overlay" id="registrationResultModal">
+  <div class="modal-card" style="max-width: 440px;">
+    <div class="modal-head">
+      <h2 id="registrationResultTitle">Pendaftaran</h2>
+      <button type="button" class="modal-close" id="registrationResultCloseBtn"><span class="icon-slot" id="registrationResultCloseIconSlot"></span></button>
+    </div>
+    <div class="modal-body">
+      <div id="registrationResultIconSlot" class="icon-bubble" style="margin-bottom:16px;"></div>
+      <p id="registrationResultMessage" style="margin:0; font-size:14px; line-height:1.6; color:#344054;"></p>
+      <div class="modal-actions">
+        <a class="btn" id="registrationResultDetailLink" href="#" style="display:none;">Lihat Detail</a>
+        <button type="button" class="btn btn-primary" id="registrationResultOkBtn">Tutup</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="assets/app.js"></script>
