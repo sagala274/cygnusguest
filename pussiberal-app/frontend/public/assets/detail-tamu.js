@@ -274,6 +274,20 @@ async function load() {
       <div class="detail-row"><span class="detail-label">Terdaftar Pada</span><span class="detail-value">${formatDateTime(g.created_at)}</span></div>
     `;
 
+    // activity_photo sengaja TIDAK dikirim backend sama sekali untuk role
+    // yang tidak boleh melihatnya (Pos Depan) -- lihat canViewActivityPhoto()
+    // di routes/guests.js -- jadi cukup cek `undefined` di sini, bukan perlu
+    // pengecekan role terpisah lagi di frontend.
+    const activityPhotoSection = document.getElementById('activityPhotoSection');
+    if (g.activity_photo !== undefined) {
+      activityPhotoSection.style.display = 'block';
+      document.getElementById('activityPhotoBody').innerHTML = g.activity_photo
+        ? `<div class="photo-frame" style="max-width:420px;"><img src="${escapeHtml(g.activity_photo)}" alt="Foto kegiatan"></div>`
+        : '<p class="page-description" style="margin:0;">Belum ada foto kegiatan yang diunggah untuk pendaftaran ini.</p>';
+    } else {
+      activityPhotoSection.style.display = 'none';
+    }
+
     const isDraftGuest = g.status === 'Draft';
     const isOngoingVisit = g.visit_status === 'Sedang Berkunjung';
     document.getElementById('membersList').innerHTML = g.members.map((m) => memberCardHTML(m, isDraftGuest, isOngoingVisit)).join('');

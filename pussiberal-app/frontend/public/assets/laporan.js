@@ -32,7 +32,7 @@ async function load() {
       .map(
         (r) => `
       <tr>
-        <td>${escapeHtml(r.registration_number)}</td>
+        <td><a class="link" href="detail-tamu?id=${r.id}">${escapeHtml(r.registration_number)}</a></td>
         <td>${escapeHtml(r.company)}</td>
         <td>${r.member_count}</td>
         <td>${stackedNamesHtml(r.member_names)}</td>
