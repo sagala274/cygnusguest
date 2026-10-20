@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS guests (
   target_officials SET('danpussiberal','wadan_pussiberal','dirbinminlogpers','dirbinkamsiber','dansatdak','dansatinasi','dansathan','lainnya') NOT NULL DEFAULT '',
   target_official_other VARCHAR(200) NULL,
   purpose TEXT NOT NULL,
-  purpose_category ENUM('audiensi','rapat_koordinasi','diskusi_teknis','maintenance','pengiriman','lainnya') NULL,
+  purpose_category ENUM('audiensi','rapat_koordinasi','diskusi_teknis','maintenance','instalasi','pengiriman','lainnya') NULL,
   accompanied_by VARCHAR(150) NULL,
   activity_photo MEDIUMTEXT NULL,
   status ENUM('Draft','Terdaftar','Menunggu Verifikasi','Disetujui','Ditolak','Sedang Berkunjung','Selesai') NOT NULL DEFAULT 'Terdaftar',

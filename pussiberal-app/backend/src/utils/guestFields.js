@@ -16,6 +16,7 @@ const PURPOSE_CATEGORIES = [
   'rapat_koordinasi',
   'diskusi_teknis',
   'maintenance',
+  'instalasi',
   'pengiriman',
   'lainnya',
 ];

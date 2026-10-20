@@ -268,6 +268,7 @@ const PURPOSE_CATEGORY_LABELS = {
   rapat_koordinasi: 'Rapat/Koordinasi',
   diskusi_teknis: 'Diskusi Teknis',
   maintenance: 'Maintenance',
+  instalasi: 'Instalasi/Pemasangan Perangkat',
   pengiriman: 'Pengiriman',
   lainnya: 'Lainnya',
 };
