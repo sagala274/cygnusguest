@@ -3,6 +3,7 @@ requireRole('admin', 'pos_depan');
 renderNav('pendaftaran');
 
 document.getElementById('companyIconSlot').innerHTML = icon('briefcase');
+document.getElementById('companyChevronSlot').innerHTML = icon('chevronDown');
 document.getElementById('vehicleBrandIconSlot').innerHTML = icon('car');
 document.getElementById('vehicleTypeIconSlot').innerHTML = icon('car');
 document.getElementById('plateIconSlot').innerHTML = icon('idCard');

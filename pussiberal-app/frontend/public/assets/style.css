@@ -1046,6 +1046,11 @@ a.link:hover { text-decoration: underline; }
    .member-card/.photo-frame dkk yang dipakai bersama di halaman lain,
    mis. modal edit Ringkasan Data Tamu di Bank Data atau Konfigurasi AI). */
 #guestForm .form-section-head { display: flex; align-items: flex-start; gap: 14px; }
+/* Hanya kena section "Perusahaan & Keperluan" (tidak dibungkus
+   .section-header-row seperti "Data Tamu"/"Data Kendaraan", yang sudah
+   dapat jarak dari margin-bottom .section-header-row) -- tanpa ini,
+   subjudul section langsung dempet dengan field pertama di bawahnya. */
+#guestForm .section > .form-section-head { margin-bottom: 20px; }
 #guestForm .step-badge {
   flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%;
   background: var(--navy); color: #fff; font-weight: 800; font-size: 14px;
@@ -1070,6 +1075,8 @@ a.link:hover { text-decoration: underline; }
   color: #8a93a6; display: flex; pointer-events: none;
 }
 #guestForm .input-icon-slot .icon { width: 16px; height: 16px; }
+#guestForm .input-icon-dropdown input { padding-right: 36px; cursor: pointer; }
+#guestForm .input-icon-slot-end { left: auto; right: 12px; }
 
 #guestForm .field label { font-size: 13px; font-weight: 700; letter-spacing: 0; color: #1d2433; }
 

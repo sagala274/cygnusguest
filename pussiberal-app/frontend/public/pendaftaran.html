@@ -74,11 +74,13 @@
           <div class="grid">
             <div class="field">
               <label for="company">Perusahaan / Instansi Asal <span id="companyRequiredMark"><span class="required">*</span></span></label>
-              <div class="input-icon">
+              <div class="input-icon input-icon-dropdown">
                 <span class="input-icon-slot" id="companyIconSlot"></span>
-                <input id="company" name="company" type="text" placeholder="Nama instansi" list="companySuggestions" autocomplete="off" required>
+                <input id="company" name="company" type="text" placeholder="Pilih atau ketik nama perusahaan/instansi" list="companySuggestions" autocomplete="off" required>
+                <span class="input-icon-slot input-icon-slot-end" id="companyChevronSlot"></span>
               </div>
               <datalist id="companySuggestions"></datalist>
+              <p class="label-note" style="margin-top:6px; padding-left:0;">Klik kolom ini untuk melihat daftar perusahaan/instansi yang sudah pernah terdaftar, atau ketik untuk menambah yang baru.</p>
             </div>
           </div>
 
