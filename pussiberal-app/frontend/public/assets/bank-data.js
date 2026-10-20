@@ -140,10 +140,12 @@ const COMPANY_PROFILE_SUMMARY_SECTIONS = [
   },
 ];
 
-// Menyusun hasil profiling (bagian 1-4) jadi ringkasan rapi -- field yang
-// kosong tidak ditampilkan sama sekali, dan bagian yang semua field-nya
-// kosong juga tidak ikut muncul (supaya ringkasannya tidak penuh baris
-// "-" untuk perusahaan yang baru sebagian diisi datanya).
+// Menyusun hasil profiling (bagian 1-4) jadi ringkasan rapi -- dipakai di
+// modal lihat-saja companyProfileViewModal (diklik lewat nama perusahaan),
+// BUKAN ditampilkan inline di kartu perusahaan (itu dirasa kepanjangan --
+// kartu tetap cuma menunjukkan Hasil Analisa Kaurpam yang ringkas). Field
+// yang kosong tidak ditampilkan sama sekali, dan bagian yang semua
+// field-nya kosong juga tidak ikut muncul.
 function companyProfileSummaryHTML(profile) {
   return COMPANY_PROFILE_SUMMARY_SECTIONS
     .map((section) => {
@@ -166,9 +168,45 @@ function companyProfileSummaryHTML(profile) {
 }
 
 // Nama perusahaan -> objek profil lengkapnya, diisi ulang tiap load() --
-// dipakai openCompanyProfile() supaya tombol "Profiling Perusahaan" cukup
-// bawa nama perusahaannya saja (bukan ~20 atribut data-* di tiap tombol).
+// dipakai openCompanyProfile()/openCompanyProfileView() supaya tombol dan
+// nama perusahaan cukup bawa nama perusahaannya saja (bukan ~20 atribut
+// data-* di tiap elemen).
 let profilesByCompany = new Map();
+
+// Modal lihat-saja (bukan form edit) -- dibuka dengan klik nama perusahaan,
+// menampilkan seluruh data profiling (bagian 1-4) + Hasil Analisa Kaurpam.
+const companyProfileViewModal = document.getElementById('companyProfileViewModal');
+const viewProfileCompanyName = document.getElementById('viewProfileCompanyName');
+const viewProfileBody = document.getElementById('viewProfileBody');
+
+function openCompanyProfileView(company) {
+  viewProfileCompanyName.textContent = company;
+  const profile = profilesByCompany.get(company) || {};
+
+  const kesimpulanHtml = profile.security_category || profile.profiling_notes
+    ? `
+      <div class="callout" style="margin-bottom:0;">
+        <span class="callout-label">Hasil Analisa Kaurpam${profile.security_category ? ` &middot; <span class="badge ${securityCategoryBadgeClass(profile.security_category)}">${escapeHtml(securityCategoryLabel(profile.security_category))}</span>` : ''}</span>
+        ${profile.profiling_notes ? `<p style="white-space:pre-line; margin-top:8px;">${escapeHtml(profile.profiling_notes)}</p>` : ''}
+      </div>
+    `
+    : '';
+  const detailHtml = companyProfileSummaryHTML(profile);
+
+  viewProfileBody.innerHTML = kesimpulanHtml + detailHtml
+    || '<p class="page-description" style="margin:0;">Belum ada data profiling untuk perusahaan ini. Klik "Profiling Perusahaan" untuk mulai mengisi.</p>';
+
+  companyProfileViewModal.classList.add('open');
+}
+
+function closeCompanyProfileView() {
+  companyProfileViewModal.classList.remove('open');
+}
+
+document.getElementById('closeViewProfileIconSlot').innerHTML = icon('close');
+document.getElementById('closeViewProfileIconBtn').addEventListener('click', closeCompanyProfileView);
+companyProfileViewModal.addEventListener('click', (e) => { if (e.target === companyProfileViewModal) closeCompanyProfileView(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && companyProfileViewModal.classList.contains('open')) closeCompanyProfileView(); });
 
 let editingGuestId = null;
 let editingMemberId = null;
@@ -231,20 +269,21 @@ function groupCardHTML(group) {
     .join('');
 
   const profile = group.profile;
-  // Bukan cuma cek security_category/profiling_notes lagi -- perusahaan
-  // bisa saja baru diisi sebagian data profilnya (mis. cuma bidang usaha)
-  // tanpa sampai ke bagian "5. Kesimpulan Profiling" sama sekali. Kolom
-  // metadata (id/updated_by/created_at/updated_at) sengaja DIKECUALIKAN --
-  // itu selalu terisi begitu baris company_profiles pernah dibuat sekali
-  // (termasuk kalau disimpan kosong semua), jadi tidak boleh ikut dihitung.
-  const hasProfile = profile && [...PROFILE_CONTENT_KEYS].some((k) => !!profile[k]);
+  const hasProfile = profile && (profile.security_category || profile.profiling_notes);
+  // Dipakai companyProfileViewModal untuk menentukan apakah ada data
+  // profiling (bagian 1-4) yang bisa ditampilkan saat nama perusahaan
+  // diklik -- metadata (id/updated_by/created_at/updated_at) dikecualikan.
+  const hasAnyProfileData = profile && [...PROFILE_CONTENT_KEYS].some((k) => !!profile[k]);
   const canEditProfile = group.company !== INDEPENDENT_GROUP_LABEL;
 
   return `
     <div class="form-card" style="margin-bottom:20px;">
       <div class="section">
         <div class="section-header-row">
-          <h2 class="section-title">${escapeHtml(group.company)} <span class="optional-badge">${group.members.length} orang${group.total_registrations !== group.members.length ? ` &middot; ${group.total_registrations} kunjungan` : ''}</span></h2>
+          <h2 class="section-title">${canEditProfile
+            ? `<button type="button" class="link-btn company-name-link" data-company="${escapeHtml(group.company)}" title="Lihat data profiling perusahaan">${escapeHtml(group.company)}${hasAnyProfileData ? ' <span title="Sudah ada data profiling" style="color: var(--success); font-size:11px;">&#9679;</span>' : ''}</button>`
+            : escapeHtml(group.company)
+          } <span class="optional-badge">${group.members.length} orang${group.total_registrations !== group.members.length ? ` &middot; ${group.total_registrations} kunjungan` : ''}</span></h2>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button type="button" class="btn btn-small download-group-btn" data-company="${escapeHtml(group.company)}">Unduh PDF Kelompok</button>
             ${canEditAnalysis && canEditProfile ? `
@@ -258,9 +297,8 @@ function groupCardHTML(group) {
         </div>
         ${hasProfile ? `
           <div class="callout" style="margin-bottom:18px;">
-            <span class="callout-label">Hasil Profiling Perusahaan${profile.security_category ? ` &middot; <span class="badge ${securityCategoryBadgeClass(profile.security_category)}">${escapeHtml(securityCategoryLabel(profile.security_category))}</span>` : ''}</span>
+            <span class="callout-label">Hasil Analisa Kaurpam${profile.security_category ? ` &middot; <span class="badge ${securityCategoryBadgeClass(profile.security_category)}">${escapeHtml(securityCategoryLabel(profile.security_category))}</span>` : ''}</span>
             ${profile.profiling_notes ? `<p style="white-space:pre-line; margin-top:8px;">${escapeHtml(profile.profiling_notes)}</p>` : ''}
-            ${companyProfileSummaryHTML(profile)}
           </div>
         ` : ''}
         <div class="table-wrap">
@@ -327,6 +365,10 @@ async function load() {
 
     document.querySelectorAll('.profile-company-btn').forEach((btn) => {
       btn.addEventListener('click', () => openCompanyProfile(btn.dataset.company));
+    });
+
+    document.querySelectorAll('.company-name-link').forEach((btn) => {
+      btn.addEventListener('click', () => openCompanyProfileView(btn.dataset.company));
     });
   } catch (err) {
     groupsContainer.innerHTML = `<p class="page-description" style="color: var(--danger);">${escapeHtml(err.message)}</p>`;

@@ -1020,6 +1020,16 @@ tbody tr:hover { background: #fafbff; }
 a.link { color: var(--accent); text-decoration: none; font-weight: 700; }
 a.link:hover { text-decoration: underline; }
 
+/* Tombol yang tampil seperti teks biasa (mis. nama perusahaan di Bank Data
+   yang bisa diklik untuk lihat data profiling) -- warnanya sengaja TIDAK
+   diubah jadi biru seperti a.link supaya tetap terlihat seperti judul,
+   cuma digarisbawahi saat hover sebagai petunjuk kalau bisa diklik. */
+.link-btn {
+  background: none; border: none; padding: 0; margin: 0; font: inherit; color: inherit;
+  cursor: pointer; text-decoration: underline; text-decoration-color: transparent; transition: text-decoration-color .12s;
+}
+.link-btn:hover { text-decoration-color: currentColor; }
+
 .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 16px 28px; background: #fafbfc; font-size: 12px; }
 
 .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eef0f4; font-size: 13px; }
