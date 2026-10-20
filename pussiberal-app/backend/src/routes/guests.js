@@ -86,7 +86,7 @@ const GUEST_LIST_SELECT = `
          (g.activity_photo IS NOT NULL) AS has_activity_photo,
          COUNT(gm.id) AS member_count,
          GROUP_CONCAT(gm.full_name ORDER BY gm.id SEPARATOR ', ') AS member_names,
-         MAX(v.vehicle_type) AS vehicle_type, MAX(v.plate_number) AS plate_number,
+         MAX(v.vehicle_type) AS vehicle_type, MAX(v.brand) AS vehicle_brand, MAX(v.plate_number) AS plate_number,
          MAX(vi.check_in_at) AS check_in_at, MAX(vi.check_out_at) AS check_out_at, MAX(vi.status) AS visit_status
   FROM guests g
   LEFT JOIN guest_members gm ON gm.guest_id = g.id
@@ -147,6 +147,7 @@ router.get('/', asyncHandler(async (req, res) => {
       member_count: r.member_count,
       member_names: r.member_names,
       vehicle_type: r.vehicle_type,
+      vehicle_brand: r.vehicle_brand,
       plate_number: r.plate_number,
       check_in_at: r.check_in_at,
       check_out_at: r.check_out_at,
@@ -200,7 +201,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   const [guestRows] = await pool.execute(
-    `SELECT g.*, v.vehicle_type, v.plate_number, vi.check_in_at, vi.check_out_at, vi.status AS visit_status,
+    `SELECT g.*, v.vehicle_type, v.brand AS vehicle_brand, v.plate_number, vi.check_in_at, vi.check_out_at, vi.status AS visit_status,
             vi.re_entry_reason, vi.re_entry_at
      FROM guests g
      LEFT JOIN vehicles v ON v.guest_id = g.id
@@ -228,6 +229,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
       device_reason: g.device_reason,
       status: g.status,
       vehicle_type: g.vehicle_type,
+      vehicle_brand: g.vehicle_brand,
       plate_number: g.plate_number,
       check_in_at: g.check_in_at,
       check_out_at: g.check_out_at,
@@ -242,7 +244,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
 // POST /api/guests  (Pos Depan mendaftarkan 1+ tamu dari perusahaan yang sama -> masuk antrian verifikasi)
 router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
-  const { company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, vehicle_type, plate_number, members, is_scheduled } = req.body || {};
+  const { company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, vehicle_type, vehicle_brand, plate_number, members, is_scheduled } = req.body || {};
   const isScheduled = !!is_scheduled;
 
   const errors = {};
@@ -344,10 +346,10 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
       );
     }
 
-    if (vehicle_type || plate_number) {
+    if (vehicle_type || vehicle_brand || plate_number) {
       await conn.execute(
-        'INSERT INTO vehicles (guest_id, vehicle_type, plate_number) VALUES (:guestId, :vehicle_type, :plate_number)',
-        { guestId, vehicle_type: vehicle_type || null, plate_number: plate_number || null }
+        'INSERT INTO vehicles (guest_id, vehicle_type, brand, plate_number) VALUES (:guestId, :vehicle_type, :vehicle_brand, :plate_number)',
+        { guestId, vehicle_type: vehicle_type || null, vehicle_brand: vehicle_brand || null, plate_number: plate_number || null }
       );
     }
 
@@ -393,7 +395,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
 
 // PUT /api/guests/:id  (edit data pendaftaran -- bukan status verifikasi)
 router.put('/:id', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
-  const { company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, vehicle_type, plate_number } = req.body || {};
+  const { company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, vehicle_type, vehicle_brand, plate_number } = req.body || {};
   const id = req.params.id;
 
   const fields = [];
@@ -433,17 +435,17 @@ router.put('/:id', requireRole('admin', 'pos_depan'), asyncHandler(async (req, r
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Pendaftaran tidak ditemukan' });
   }
 
-  if (vehicle_type !== undefined || plate_number !== undefined) {
+  if (vehicle_type !== undefined || vehicle_brand !== undefined || plate_number !== undefined) {
     const [existing] = await pool.execute('SELECT id FROM vehicles WHERE guest_id = :id', { id });
     if (existing[0]) {
       await pool.execute(
-        'UPDATE vehicles SET vehicle_type = :vehicle_type, plate_number = :plate_number WHERE guest_id = :id',
-        { vehicle_type: vehicle_type || null, plate_number: plate_number || null, id }
+        'UPDATE vehicles SET vehicle_type = :vehicle_type, brand = :vehicle_brand, plate_number = :plate_number WHERE guest_id = :id',
+        { vehicle_type: vehicle_type || null, vehicle_brand: vehicle_brand || null, plate_number: plate_number || null, id }
       );
     } else {
       await pool.execute(
-        'INSERT INTO vehicles (guest_id, vehicle_type, plate_number) VALUES (:id, :vehicle_type, :plate_number)',
-        { id, vehicle_type: vehicle_type || null, plate_number: plate_number || null }
+        'INSERT INTO vehicles (guest_id, vehicle_type, brand, plate_number) VALUES (:id, :vehicle_type, :vehicle_brand, :plate_number)',
+        { id, vehicle_type: vehicle_type || null, vehicle_brand: vehicle_brand || null, plate_number: plate_number || null }
       );
     }
   }

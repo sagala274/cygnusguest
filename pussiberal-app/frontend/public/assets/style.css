@@ -1041,6 +1041,79 @@ a.link:hover { text-decoration: underline; }
   .member-card { padding: 16px; }
 }
 
+/* Formulir Pendaftaran Tamu -- restyle khusus halaman ini (semua di-scope
+   lewat #guestForm supaya TIDAK memengaruhi .callout/.device-option/
+   .member-card/.photo-frame dkk yang dipakai bersama di halaman lain,
+   mis. modal edit Ringkasan Data Tamu di Bank Data atau Konfigurasi AI). */
+#guestForm .form-section-head { display: flex; align-items: flex-start; gap: 14px; }
+#guestForm .step-badge {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--navy); color: #fff; font-weight: 800; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+#guestForm .form-section-head .section-title { margin: 0 0 3px; }
+#guestForm .section-sub { margin: 0; color: var(--muted); font-size: 12.5px; }
+#guestForm .section-header-row { align-items: flex-start; }
+
+#guestForm .callout { border-radius: 10px; border-left-width: 0; padding: 16px 18px 16px 52px; position: relative; }
+#guestForm .callout::before {
+  content: '!'; position: absolute; left: 16px; top: 16px; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--accent); color: #fff; font-weight: 800; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+}
+#guestForm .callout.warn::before { background: var(--danger); }
+
+#guestForm .input-icon { position: relative; }
+#guestForm .input-icon input, #guestForm .input-icon select { padding-left: 38px; }
+#guestForm .input-icon-slot {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: #8a93a6; display: flex; pointer-events: none;
+}
+#guestForm .input-icon-slot .icon { width: 16px; height: 16px; }
+
+#guestForm .field label { font-size: 13px; font-weight: 700; letter-spacing: 0; color: #1d2433; }
+
+#guestForm .member-card { border-radius: 12px; border-color: #d7e0f5; background: #fff; box-shadow: 0 1px 3px rgba(16,24,40,.05); }
+#guestForm .member-card-head { padding-bottom: 14px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+#guestForm .member-card-title { font-size: 15px; }
+#guestForm .remove-member-btn {
+  border-radius: 999px; background: #fdecea; border-color: #fdecea; color: var(--danger);
+  padding: 0 16px; height: 32px; font-size: 12px;
+}
+#guestForm .remove-member-btn:hover { background: #fad7d3; opacity: 1; }
+#guestForm .remove-member-btn .icon { width: 14px; height: 14px; }
+
+#guestForm .photo-frame { border-style: dashed; border-color: #c3cce0; background: #f8f9fc; border-radius: 10px; }
+#guestForm .photo-frame video, #guestForm .photo-frame img { border-radius: 9px; }
+#guestForm .photo-frame-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #667085; }
+#guestForm .photo-frame-icon {
+  width: 44px; height: 44px; border-radius: 50%; background: #e8edfb; color: var(--navy);
+  display: flex; align-items: center; justify-content: center; margin-bottom: 2px;
+}
+#guestForm .photo-frame-icon .icon { width: 22px; height: 22px; }
+#guestForm .photo-frame-hint-small { font-size: 11px; color: #98a2b3; }
+#guestForm .photo-actions { justify-content: center; }
+#guestForm .photo-actions .btn { border-radius: 999px; }
+#guestForm .photo-actions .btn-primary { min-width: 0; background: var(--navy); border-color: var(--navy); }
+#guestForm .photo-actions .btn:not(.btn-primary) { background: #fff; border-color: #c9ced8; color: #1d2433; }
+
+#guestForm .device-policy-box {
+  border: 1px solid #c7d4f5; background: #f3f6fe; border-radius: 10px; padding: 18px 20px;
+}
+#guestForm .device-policy-box .subsection-title { margin-bottom: 4px; }
+#guestForm .device-policy-box .subsection-icon {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--navy); color: #fff;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+#guestForm .device-policy-box .subsection-icon .icon { width: 15px; height: 15px; }
+#guestForm .device-policy-sub { margin: 0 0 18px 38px; color: var(--muted); font-size: 12.5px; }
+#guestForm .device-options { gap: 10px; }
+#guestForm .device-option {
+  border: 1px solid #d7deea; background: #fff; border-radius: 8px; padding: 12px 14px;
+  transition: border-color .12s, background .12s;
+}
+#guestForm .device-option:has(input:checked) { border-color: var(--navy); background: #eef2fd; }
+
 /* AI Chat */
 .ai-chat-layout { display: flex; gap: 20px; align-items: flex-start; }
 .ai-chat-sidebar { width: 260px; flex-shrink: 0; }

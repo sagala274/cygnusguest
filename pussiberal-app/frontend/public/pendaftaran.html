@@ -63,21 +63,27 @@
         </section>
 
         <section class="section">
-          <h2 class="section-title">
-            <span class="section-icon">◆</span>
-            Perusahaan &amp; Keperluan
-          </h2>
+          <div class="form-section-head">
+            <span class="step-badge">1</span>
+            <div>
+              <h2 class="section-title">Perusahaan &amp; Keperluan</h2>
+              <p class="section-sub">Detail instansi asal dan tujuan kunjungan tamu.</p>
+            </div>
+          </div>
 
           <div class="grid">
             <div class="field">
-              <label for="company">PERUSAHAAN / INSTANSI ASAL <span id="companyRequiredMark"><span class="required">*</span></span></label>
-              <input id="company" name="company" type="text" placeholder="Nama instansi" list="companySuggestions" autocomplete="off" required>
+              <label for="company">Perusahaan / Instansi Asal <span id="companyRequiredMark"><span class="required">*</span></span></label>
+              <div class="input-icon">
+                <span class="input-icon-slot" id="companyIconSlot"></span>
+                <input id="company" name="company" type="text" placeholder="Nama instansi" list="companySuggestions" autocomplete="off" required>
+              </div>
               <datalist id="companySuggestions"></datalist>
             </div>
           </div>
 
           <div class="field full" style="margin-top:21px;">
-            <label>TUJUAN MENGHADAP KEPADA <span id="targetOfficialsRequiredMark"><span class="required">*</span></span><span class="label-note">Boleh pilih lebih dari satu</span></label>
+            <label>Tujuan Menghadap Kepada <span id="targetOfficialsRequiredMark"><span class="required">*</span></span><span class="label-note">Boleh pilih lebih dari satu</span></label>
             <div class="device-options" id="target_officials">
               <label class="device-option"><input type="checkbox" class="m-target-official" value="danpussiberal"><span>Danpussiberal</span></label>
               <label class="device-option"><input type="checkbox" class="m-target-official" value="wadan_pussiberal"><span>Wadan Pussiberal</span></label>
@@ -91,12 +97,12 @@
           </div>
 
           <div class="field full" id="targetOfficialOtherField" style="display:none; margin-top:18px;">
-            <label for="target_official_other">SEBUTKAN TUJUAN MENGHADAP LAINNYA <span class="required">*</span></label>
+            <label for="target_official_other">Sebutkan Tujuan Menghadap Lainnya <span class="required">*</span></label>
             <input id="target_official_other" type="text" placeholder="Tulis nama/jabatan pihak yang dituju jika tidak ada dalam pilihan di atas">
           </div>
 
           <div class="field full" style="margin-top:21px;">
-            <label>KATEGORI KEPERLUAN <span id="purposeCategoryRequiredMark"><span class="required">*</span></span></label>
+            <label>Kategori Keperluan <span id="purposeCategoryRequiredMark"><span class="required">*</span></span></label>
             <div class="device-options" id="purpose_category">
               <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="audiensi"><span>Audiensi</span></label>
               <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="rapat_koordinasi"><span>Rapat/Koordinasi</span></label>
@@ -108,27 +114,30 @@
           </div>
 
           <div class="field full" style="margin-top:21px;">
-            <label for="purpose">DETAIL TUJUAN MENGHADAP <span id="purposeRequiredMark"><span class="required">*</span></span></label>
+            <label for="purpose">Detail Tujuan Menghadap <span id="purposeRequiredMark"><span class="required">*</span></span></label>
             <textarea id="purpose" name="purpose" placeholder="Jelaskan lebih detail keperluan kunjungan. Untuk kategori &quot;Lainnya&quot;, sebutkan kegiatannya secara spesifik..." required></textarea>
           </div>
 
           <div class="field full" style="margin-top:21px;">
-            <label for="accompanied_by">KETERANGAN: TAMU DIDAMPINGI OLEH <span class="label-note">Opsional -- mis. diisi "Jaga Cygnus" jika Kaurpam/Baurpam tidak di tempat</span></label>
+            <label for="accompanied_by">Keterangan: Tamu Didampingi Oleh <span class="label-note">Opsional -- mis. diisi "Jaga Cygnus" jika Kaurpam/Baurpam tidak di tempat</span></label>
             <input id="accompanied_by" name="accompanied_by" type="text" placeholder="Nama/jabatan petugas yang mendampingi tamu" maxlength="150">
           </div>
         </section>
 
         <section class="section">
           <div class="section-header-row">
-            <h2 class="section-title">
-              <span class="section-icon">✎</span>
-              Data Tamu
-            </h2>
-            <button type="button" class="btn btn-small" id="addMemberBtn">+ Tambah Tamu</button>
+            <div class="form-section-head">
+              <span class="step-badge">2</span>
+              <div>
+                <h2 class="section-title">Data Tamu</h2>
+                <p class="section-sub">Informasi identitas tamu yang akan melakukan kunjungan.</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-small btn-primary" id="addMemberBtn" style="border-radius:999px;">+ Tambah Tamu</button>
           </div>
 
           <div class="callout warn">
-            <span class="callout-label">⚠ Perhatian — Kebijakan Perangkat Elektronik</span>
+            <span class="callout-label">Ketentuan Perangkat Elektronik</span>
             <p>Setiap tamu yang membawa perangkat elektronik <strong>wajib menitipkan perangkat tersebut di Pos Penjagaan</strong> sebelum memasuki area PUSSIBERAL. Termasuk namun tidak terbatas pada: Handphone/Smartphone, Tablet, Laptop, Smartwatch, Kamera, dan perangkat elektronik komunikasi atau perekaman lainnya.</p>
             <p>Apabila terdapat kebutuhan khusus untuk tetap membawa HP/perangkat elektronik lainnya, tamu wajib mencantumkan alasannya dan menunggu persetujuan petugas. Setiap tamu wajib mengonfirmasi kebijakan ini secara terpisah pada kartu masing-masing di bawah.</p>
           </div>
@@ -144,30 +153,47 @@
 
         <section class="section">
           <div class="section-header-row">
-            <h2 class="section-title">
-              <span class="section-icon">▣</span>
-              Data Kendaraan
-            </h2>
+            <div class="form-section-head">
+              <span class="step-badge">3</span>
+              <div>
+                <h2 class="section-title">Data Kendaraan</h2>
+                <p class="section-sub">Informasi kendaraan yang digunakan tamu (jika ada).</p>
+              </div>
+            </div>
             <span class="optional-badge">Opsional</span>
           </div>
 
-          <div class="grid">
+          <div class="field full">
+            <label for="vehicleBrand">Merk / Nama Kendaraan</label>
+            <div class="input-icon">
+              <span class="input-icon-slot" id="vehicleBrandIconSlot"></span>
+              <input id="vehicleBrand" name="vehicleBrand" type="text" placeholder="Contoh: Mitsubishi Xpander, Toyota Fortuner, Hyundai Palisade">
+            </div>
+          </div>
+
+          <div class="grid" style="margin-top:21px;">
             <div class="field">
-              <label for="vehicle">JENIS MOBIL</label>
-              <select id="vehicle" name="vehicle">
-                <option value="">Pilih klasifikasi kendaraan</option>
-                <option>Mobil Sedan</option>
-                <option>MPV</option>
-                <option>SUV</option>
-                <option>Pickup</option>
-                <option>Van</option>
-                <option>Lainnya</option>
-              </select>
+              <label for="vehicle">Jenis Mobil</label>
+              <div class="input-icon">
+                <span class="input-icon-slot" id="vehicleTypeIconSlot"></span>
+                <select id="vehicle" name="vehicle">
+                  <option value="">Pilih klasifikasi kendaraan</option>
+                  <option>Mobil Sedan</option>
+                  <option>MPV</option>
+                  <option>SUV</option>
+                  <option>Pickup</option>
+                  <option>Van</option>
+                  <option>Lainnya</option>
+                </select>
+              </div>
             </div>
 
             <div class="field">
-              <label for="plate">NOMOR POLISI (PLAT)</label>
-              <input id="plate" name="plate" type="text" placeholder="CONTOH: B 1234 XYZ">
+              <label for="plate">Nomor Polisi (Plat)</label>
+              <div class="input-icon">
+                <span class="input-icon-slot" id="plateIconSlot"></span>
+                <input id="plate" name="plate" type="text" placeholder="Contoh: B 1234 XYZ">
+              </div>
             </div>
           </div>
         </section>

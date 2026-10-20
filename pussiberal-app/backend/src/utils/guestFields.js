@@ -169,6 +169,17 @@ async function ensureVisitExtraColumns() {
   }
 }
 
+// Merk/nama kendaraan (mis. "Mitsubishi Xpander") -- terpisah dari
+// vehicle_type yang isinya klasifikasi umum (SUV, MPV, dst).
+async function ensureVehicleExtraColumns() {
+  if (!(await columnExists('vehicles', 'brand'))) {
+    await pool.query(`
+      ALTER TABLE vehicles ADD COLUMN brand
+        VARCHAR(100) NULL AFTER vehicle_type
+    `);
+  }
+}
+
 function isValidTargetOfficials(value) {
   return Array.isArray(value) && value.length > 0 && value.every((v) => TARGET_OFFICIALS.includes(v));
 }
@@ -191,5 +202,6 @@ module.exports = {
   ensureGuestExtraColumns,
   ensureGuestMemberExtraColumns,
   ensureVisitExtraColumns,
+  ensureVehicleExtraColumns,
   isValidTargetOfficials,
 };

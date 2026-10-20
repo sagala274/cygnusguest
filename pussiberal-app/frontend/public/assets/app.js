@@ -42,6 +42,13 @@ const ICONS = {
   network: '<circle cx="5.5" cy="6" r="2.5"/><circle cx="18.5" cy="6" r="2.5"/><circle cx="12" cy="19" r="2.5"/><line x1="7.7" y1="7.2" x2="10.1" y2="17"/><line x1="16.3" y1="7.2" x2="13.9" y2="17"/><line x1="8" y1="6" x2="16" y2="6"/>',
   star: '<polygon points="12,2.5 15,9 22,9.8 17,14.6 18.3,21.5 12,18 5.7,21.5 7,14.6 2,9.8 9,9"/>',
   grip: '<circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/>',
+  user: '<circle cx="12" cy="8" r="3.5"/><path d="M5,20 a7,6 0 0 1 14,0"/>',
+  phone: '<rect x="6" y="3" width="12" height="18" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/>',
+  idCard: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5,16 a3.2,2.6 0 0 1 6,0"/><line x1="13" y1="9" x2="19" y2="9"/><line x1="13" y1="12.5" x2="19" y2="12.5"/>',
+  briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8,7 V5.5 a1.5,1.5 0 0 1 1.5,-1.5 H14.5 a1.5,1.5 0 0 1 1.5,1.5 V7"/><line x1="3" y1="12.5" x2="21" y2="12.5"/>',
+  camera: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8,7 L9.3,4.5 H14.7 L16,7"/><circle cx="12" cy="13.5" r="3.4"/>',
+  car: '<path d="M4,16 L5.4,10.6 a2,2 0 0 1 1.9,-1.5 H16.7 a2,2 0 0 1 1.9,1.5 L20,16"/><rect x="2.5" y="16" width="19" height="4.2" rx="1.5"/><circle cx="7" cy="20.2" r="1.5"/><circle cx="17" cy="20.2" r="1.5"/>',
+  upload: '<path d="M12,16 V4"/><polyline points="7.5,8.5 12,4 16.5,8.5"/><path d="M4,15.5 V19 a1,1 0 0 0 1,1 H19 a1,1 0 0 0 1,-1 V15.5"/>',
 };
 
 function icon(name, extraClass) {
@@ -223,6 +230,16 @@ function purposeCategoryLabel(category) {
     pengiriman: 'Pengiriman',
     lainnya: 'Lainnya',
   }[category] || '-';
+}
+
+// Gabungan merk + jenis + plat kendaraan jadi satu baris ringkas, mis.
+// "Mitsubishi Xpander (MPV) &middot; B 1234 XYZ" -- ketiganya opsional dan
+// independen, jadi bisa kombinasi apa saja (atau tidak ada sama sekali).
+function vehicleSummary(g) {
+  const nameParts = [g.vehicle_brand, g.vehicle_type ? `(${g.vehicle_type})` : ''].filter(Boolean);
+  const name = nameParts.join(' ');
+  if (!name && !g.plate_number) return '-';
+  return [escapeHtml(name) || '-', g.plate_number ? escapeHtml(g.plate_number) : ''].filter(Boolean).join(' &middot; ');
 }
 
 function actionLabel(action) {
