@@ -216,7 +216,7 @@ function memberCardHTML(m, isDraftGuest, isOngoingVisit) {
       ${!needsDeviceDeclaration ? `<div class="detail-row"><span class="detail-label">Perangkat Elektronik</span><span class="detail-value">${escapeHtml(deviceStatusLabel(m.device_status))}</span></div>` : ''}
       ${m.device_status === 'dibawa_alasan_khusus' ? `<div class="detail-row"><span class="detail-label">Alasan Membawa HP/Perangkat Elektronik</span><span class="detail-value">${escapeHtml(m.device_reason)}</span></div>` : ''}
       ${canVerify ? `
-        <div class="detail-row"><span class="detail-label">Afiliasi</span><span class="detail-value">${escapeHtml(m.affiliation || '-')}</span></div>
+        <div class="detail-row detail-row-stacked"><span class="detail-label">Afiliasi</span><span class="detail-value">${escapeHtml(m.affiliation || '-')}</span></div>
         <div class="detail-row"><span class="detail-label">Kategori Tamu</span><span class="detail-value"><span class="badge ${securityCategoryBadgeClass(m.security_category)}">${escapeHtml(securityCategoryLabel(m.security_category))}</span></span></div>
         ${m.analysis_notes ? `<div class="detail-row detail-row-stacked"><span class="detail-label">Hasil Analisa</span><span class="detail-value">${escapeHtml(m.analysis_notes)}</span></div>` : ''}
       ` : ''}

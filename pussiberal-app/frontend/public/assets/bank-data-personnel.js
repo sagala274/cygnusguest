@@ -62,7 +62,7 @@ async function load() {
       <div class="detail-row"><span class="detail-label">Nama Lainnya</span><span class="detail-value">${escapeHtml(p.other_names || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Jabatan Terakhir</span><span class="detail-value">${escapeHtml(p.position)}</span></div>
       <div class="detail-row"><span class="detail-label">Nomor HP</span><span class="detail-value">${escapeHtml(p.phone_number)}</span></div>
-      <div class="detail-row"><span class="detail-label">Afiliasi</span><span class="detail-value">${escapeHtml(p.affiliation || '-')}</span></div>
+      <div class="detail-row detail-row-stacked"><span class="detail-label">Afiliasi</span><span class="detail-value">${escapeHtml(p.affiliation || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Media Sosial</span><span class="detail-value">${escapeHtml(p.social_media || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Alamat Rumah</span><span class="detail-value">${escapeHtml(p.address || '-')}</span></div>
       <div class="detail-row"><span class="detail-label">Plat Nomor Kendaraan</span><span class="detail-value">${escapeHtml(p.plate_number || '-')}</span></div>
