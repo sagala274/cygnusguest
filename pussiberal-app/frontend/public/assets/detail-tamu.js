@@ -169,7 +169,7 @@ function memberCardHTML(m, isDraftGuest, isOngoingVisit) {
             <button type="button" class="btn btn-small btn-primary capture-btn" style="display:none;">Ambil Foto</button>
             <button type="button" class="btn btn-small retake-btn" style="display:none;">Ambil Ulang</button>
             <button type="button" class="btn btn-small upload-btn">Unggah</button>
-            <input type="file" class="file-input-hidden photo-file-input" accept="image/*">
+            <input type="file" class="file-input-hidden photo-file-input" accept="image/jpeg,image/png,.jpg,.jpeg,.png">
           </div>
           <p class="photo-hint"></p>
         </div>
@@ -284,8 +284,13 @@ async function load() {
     const scSection = document.getElementById('scSection');
     if (SC_RELEVANT_CATEGORIES.includes(g.purpose_category) || g.sc_document || g.sc_exemption_note) {
       scSection.style.display = 'block';
+      // sc_document bisa berupa foto (ditampilkan langsung) atau PDF ("img"
+      // tidak bisa memuat PDF -- tawarkan sebagai unduhan saja).
+      const scIsPdf = g.sc_document && g.sc_document.startsWith('data:application/pdf');
       const scPhotoHtml = g.sc_document
-        ? `<div class="photo-frame" style="max-width:320px; margin-bottom:14px;"><img src="${escapeHtml(g.sc_document)}" alt="Dokumen SC"></div>`
+        ? scIsPdf
+          ? `<p style="margin:0 0 14px;"><a class="link" href="${escapeHtml(g.sc_document)}" download="dokumen-sc.pdf">&#128196; Unduh Dokumen SC (PDF)</a></p>`
+          : `<div class="photo-frame" style="max-width:320px; margin-bottom:14px;"><img src="${escapeHtml(g.sc_document)}" alt="Dokumen SC"></div>`
         : '';
       const scNoteHtml = g.sc_exemption_note
         ? `<div class="detail-row detail-row-stacked"><span class="detail-label">Catatan -- SC Tidak Diperlukan</span><span class="detail-value">${escapeHtml(g.sc_exemption_note)}</span></div>`

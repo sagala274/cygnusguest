@@ -30,7 +30,7 @@ const SC_REQUIRED_CATEGORIES = ['maintenance', 'instalasi', 'sosialisasi_pelatih
 const scDocumentFieldWrap = document.getElementById('scDocumentFieldWrap');
 const scExemptionNoteFieldWrap = document.getElementById('scExemptionNoteFieldWrap');
 const scExemptionNoteInput = document.getElementById('sc_exemption_note');
-const scDocumentWidget = initPhotoWidget(document.querySelector('[data-kind="sc_document"]'), 'environment');
+const scDocumentWidget = initDocumentWidget(document.querySelector('[data-kind="sc_document"]'), 'environment');
 
 function updateScFieldsVisibility() {
   const selected = document.querySelector('.m-purpose-category:checked');
@@ -192,7 +192,7 @@ function memberBlockHTML(seq, isScheduled) {
             <button type="button" class="btn btn-small btn-primary capture-btn" style="display:none;">Ambil Foto</button>
             <button type="button" class="btn btn-small retake-btn" style="display:none;">Ambil Ulang</button>
             <button type="button" class="btn btn-small upload-btn">Unggah</button>
-            <input type="file" class="file-input-hidden photo-file-input" accept="image/*">
+            <input type="file" class="file-input-hidden photo-file-input" accept="image/jpeg,image/png,.jpg,.jpeg,.png">
           </div>
           <p class="photo-hint"></p>
         </div>
@@ -210,7 +210,7 @@ function memberBlockHTML(seq, isScheduled) {
             <button type="button" class="btn btn-small btn-primary capture-btn" style="display:none;">Ambil Foto</button>
             <button type="button" class="btn btn-small retake-btn" style="display:none;">Ambil Ulang</button>
             <button type="button" class="btn btn-small upload-btn">Unggah</button>
-            <input type="file" class="file-input-hidden photo-file-input" accept="image/*">
+            <input type="file" class="file-input-hidden photo-file-input" accept="image/jpeg,image/png,.jpg,.jpeg,.png">
           </div>
           <p class="photo-hint"></p>
         </div>

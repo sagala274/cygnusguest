@@ -6,6 +6,7 @@ const {
   isValidPhone,
   maskNik,
   isValidPhotoDataUrl,
+  isValidDocumentDataUrl,
   VALID_DEVICE_STATUSES,
   isValidDeviceReason,
   VALID_SECURITY_CATEGORIES,
@@ -276,7 +277,7 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
     }
   }
   if (accompanied_by && String(accompanied_by).length > 150) errors.accompanied_by = 'Keterangan pendamping maksimal 150 karakter';
-  if (sc_document && !isValidPhotoDataUrl(sc_document)) errors.sc_document = 'Dokumen/foto SC tidak valid atau ukurannya terlalu besar (maks 3MB)';
+  if (sc_document && !isValidDocumentDataUrl(sc_document)) errors.sc_document = 'Dokumen SC harus berupa JPEG/PNG/PDF dan ukurannya maksimal 8MB';
   if (sc_exemption_note && String(sc_exemption_note).length > 500) errors.sc_exemption_note = 'Catatan SC maksimal 500 karakter';
 
   if (!Array.isArray(members) || members.length === 0) {
@@ -442,8 +443,8 @@ router.put('/:id', requireRole('admin', 'pos_depan'), asyncHandler(async (req, r
     params.accompanied_by = accompanied_by && String(accompanied_by).trim() ? String(accompanied_by).trim() : null;
   }
   if (sc_document !== undefined) {
-    if (sc_document && !isValidPhotoDataUrl(sc_document)) {
-      return res.status(400).json({ error: 'Dokumen/foto SC tidak valid atau ukurannya terlalu besar (maks 3MB)' });
+    if (sc_document && !isValidDocumentDataUrl(sc_document)) {
+      return res.status(400).json({ error: 'Dokumen SC harus berupa JPEG/PNG/PDF dan ukurannya maksimal 8MB' });
     }
     fields.push('sc_document = :sc_document'); params.sc_document = sc_document || null;
   }

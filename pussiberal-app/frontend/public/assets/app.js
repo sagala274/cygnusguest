@@ -478,6 +478,151 @@ function initPhotoWidget(root, facingMode) {
   return { getValue: () => capturedPhoto, setValue, reset, stopCamera };
 }
 
+// Widget dokumen (kamera + unggah JPEG/PNG/PDF) -- dipakai untuk Dokumen SC
+// di Pendaftaran Tamu. Beda dari initPhotoWidget(): file yang diunggah
+// dibaca APA ADANYA lewat FileReader, TIDAK digambar ulang lewat <canvas>
+// (PDF tidak bisa dimuat ke <img>/<canvas> sama sekali). Karena itu validasi
+// isi file yang sebenarnya (termasuk magic bytes, bukan cuma ekstensi/MIME
+// yang diklaim browser) dilakukan di server lewat isValidDocumentDataUrl()
+// (backend/src/utils/validators.js) -- jangan pernah percaya hasil widget
+// ini begitu saja tanpa validasi server tersebut. Markup sama seperti
+// ".photo-widget", ditambah satu elemen ".pdf-preview-label" di dalam
+// ".photo-frame" untuk pratinjau saat file-nya PDF (tidak bisa ditampilkan
+// sebagai <img>).
+const DOCUMENT_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+const DOCUMENT_MAX_BYTES = 8 * 1024 * 1024;
+
+function initDocumentWidget(root, facingMode) {
+  let mediaStream = null;
+  let capturedDoc = null;
+
+  const placeholder = root.querySelector('.photo-frame-empty');
+  const video = root.querySelector('video');
+  const img = root.querySelector('img');
+  const pdfLabel = root.querySelector('.pdf-preview-label');
+  const canvas = root.querySelector('canvas');
+  const startBtn = root.querySelector('.start-camera-btn');
+  const captureBtn = root.querySelector('.capture-btn');
+  const retakeBtn = root.querySelector('.retake-btn');
+  const uploadBtn = root.querySelector('.upload-btn');
+  const fileInput = root.querySelector('.photo-file-input');
+  const hint = root.querySelector('.photo-hint');
+
+  function showError(msg) { hint.textContent = msg || ''; }
+
+  function stopCamera() {
+    if (mediaStream) {
+      mediaStream.getTracks().forEach((t) => t.stop());
+      mediaStream = null;
+    }
+  }
+
+  function reset() {
+    stopCamera();
+    capturedDoc = null;
+    showError('');
+    img.src = '';
+    img.style.display = 'none';
+    pdfLabel.style.display = 'none';
+    pdfLabel.textContent = '';
+    video.style.display = 'none';
+    placeholder.style.display = 'flex';
+    startBtn.style.display = 'inline-block';
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display = 'none';
+  }
+
+  function showPreview(dataUrl, isPdf, fileName) {
+    stopCamera();
+    video.style.display = 'none';
+    placeholder.style.display = 'none';
+    if (isPdf) {
+      img.style.display = 'none';
+      pdfLabel.style.display = 'flex';
+      pdfLabel.textContent = `📄 ${fileName || 'Dokumen PDF'} terlampir`;
+    } else {
+      pdfLabel.style.display = 'none';
+      img.src = dataUrl;
+      img.style.display = 'block';
+    }
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display = 'inline-block';
+    startBtn.style.display = 'none';
+  }
+
+  // Menampilkan dokumen yang sudah ada (mis. saat membuka ulang form) tanpa
+  // validasi ulang -- nilainya sudah tersimpan valid di database.
+  function setValue(dataUrl) {
+    if (!dataUrl) { reset(); return; }
+    capturedDoc = dataUrl;
+    showPreview(dataUrl, dataUrl.startsWith('data:application/pdf'));
+  }
+
+  function applyImage(source, w, h) {
+    const maxW = 640;
+    const scale = Math.min(1, maxW / w);
+    canvas.width = Math.round(w * scale);
+    canvas.height = Math.round(h * scale);
+    canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
+    capturedDoc = canvas.toDataURL('image/jpeg', 0.8);
+    showPreview(capturedDoc, false);
+  }
+
+  startBtn.addEventListener('click', async () => {
+    showError('');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showError('Browser ini tidak mendukung akses kamera. Gunakan opsi unggah.');
+      return;
+    }
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode }, audio: false });
+      video.srcObject = mediaStream;
+      placeholder.style.display = 'none';
+      img.style.display = 'none';
+      pdfLabel.style.display = 'none';
+      video.style.display = 'block';
+      startBtn.style.display = 'none';
+      captureBtn.style.display = 'inline-block';
+      retakeBtn.style.display = 'none';
+    } catch (err) {
+      showError('Tidak dapat mengakses kamera (' + err.message + ').');
+    }
+  });
+
+  captureBtn.addEventListener('click', () => {
+    applyImage(video, video.videoWidth || 640, video.videoHeight || 480);
+  });
+
+  retakeBtn.addEventListener('click', reset);
+  uploadBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    showError('');
+    const file = fileInput.files[0];
+    if (!file) return;
+    // file.type dibaca browser dari header/ekstensi file -- TIDAK bisa
+    // dipercaya sebagai validasi keamanan (gampang dipalsukan), hanya
+    // dipakai supaya pengguna langsung dapat pesan error yang jelas kalau
+    // salah pilih file. Validasi sebenarnya (magic bytes) ada di server.
+    if (!DOCUMENT_ALLOWED_TYPES.includes(file.type)) {
+      showError('File harus berupa JPEG, PNG, atau PDF.');
+      return;
+    }
+    if (file.size > DOCUMENT_MAX_BYTES) { showError('Ukuran file maksimal 8MB.'); return; }
+
+    const isPdf = file.type === 'application/pdf';
+    const reader = new FileReader();
+    reader.onload = () => {
+      capturedDoc = reader.result;
+      showPreview(reader.result, isPdf, file.name);
+    };
+    reader.onerror = () => showError('Gagal membaca file.');
+    reader.readAsDataURL(file);
+  });
+
+  return { getValue: () => capturedDoc, setValue, reset, stopCamera };
+}
+
 /* Lapis keamanan tambahan (step-up auth): meminta verifikasi password
    sebelum masuk ke halaman sensitif seperti Bank Data & Data Personel.
    Defaultnya memakai "password tambahan" yang SENGAJA terpisah dari
