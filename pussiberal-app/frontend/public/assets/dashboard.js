@@ -628,10 +628,12 @@ function wireAttendanceTrendTooltip(points, period) {
     tooltip.appendChild(labelEl);
     tooltip.style.display = 'block';
 
-    const hitRect = group.querySelector('.chart-bar-hit').getBoundingClientRect();
+    // Sama seperti grafik Kunjungan Tamu -- posisi tooltip mengikuti titik
+    // datanya sendiri, bukan area klik yang setinggi seluruh plot.
+    const pointRect = group.querySelector('circle').getBoundingClientRect();
     const wrapRect = wrap.getBoundingClientRect();
-    tooltip.style.left = `${hitRect.left - wrapRect.left + hitRect.width / 2}px`;
-    tooltip.style.top = `${hitRect.top - wrapRect.top}px`;
+    tooltip.style.left = `${pointRect.left - wrapRect.left + pointRect.width / 2}px`;
+    tooltip.style.top = `${pointRect.top - wrapRect.top}px`;
 
     group.classList.add('is-hovered');
   }
@@ -931,10 +933,14 @@ if (canSeeVisitChart) {
       tooltip.appendChild(labelEl);
       tooltip.style.display = 'block';
 
-      const hitRect = group.querySelector('.chart-bar-hit').getBoundingClientRect();
+      // Diposisikan mengikuti titik data itu sendiri (bukan area klik
+      // "chart-bar-hit", yang sengaja dibuat setinggi seluruh area plot
+      // supaya mudah di-hover) -- tanpa ini tooltip selalu nongol rata di
+      // atas chart, tidak ikut naik-turun mengikuti tinggi grafiknya.
+      const pointRect = group.querySelector('circle').getBoundingClientRect();
       const wrapRect = wrap.getBoundingClientRect();
-      tooltip.style.left = `${hitRect.left - wrapRect.left + hitRect.width / 2}px`;
-      tooltip.style.top = `${hitRect.top - wrapRect.top}px`;
+      tooltip.style.left = `${pointRect.left - wrapRect.left + pointRect.width / 2}px`;
+      tooltip.style.top = `${pointRect.top - wrapRect.top}px`;
 
       group.classList.add('is-hovered');
     }
