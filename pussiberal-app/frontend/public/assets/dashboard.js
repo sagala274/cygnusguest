@@ -916,11 +916,6 @@ if (canSeeVisitChart) {
     const tooltip = document.getElementById('chartTooltip');
     const groups = wrap.querySelectorAll('.chart-bar-group');
 
-    // Maksimal nama yang ditampilkan langsung di tooltip -- supaya tooltip
-    // tidak jadi raksasa kalau satu hari ada puluhan pendaftaran. Sisanya
-    // diringkas jadi "+N lainnya".
-    const MAX_TOOLTIP_NAMES = 8;
-
     function showTooltip(group) {
       const idx = Number(group.dataset.index);
       const point = data[idx];
@@ -931,35 +926,9 @@ if (canSeeVisitChart) {
       valueEl.textContent = `${point.count} tamu`;
       const labelEl = document.createElement('div');
       labelEl.className = 'chart-tooltip-label';
-      labelEl.textContent = point.label;
+      labelEl.textContent = point.count > 0 ? `${point.label} -- klik untuk lihat detail` : point.label;
       tooltip.appendChild(valueEl);
       tooltip.appendChild(labelEl);
-
-      // Langsung tunjukkan siapa saja yang mendaftar pada periode ini --
-      // sama seperti grafik di Absensi Personel yang langsung memberi
-      // keterangan saat kursor diarahkan, tanpa perlu klik dulu.
-      const names = point.names || [];
-      if (names.length) {
-        const namesEl = document.createElement('div');
-        namesEl.className = 'chart-tooltip-names';
-        namesEl.innerHTML = names
-          .slice(0, MAX_TOOLTIP_NAMES)
-          .map((n) => `<div>&bull; ${escapeHtml(n)}</div>`)
-          .join('');
-        if (names.length > MAX_TOOLTIP_NAMES) {
-          const moreEl = document.createElement('div');
-          moreEl.className = 'chart-tooltip-names-more';
-          moreEl.textContent = `+${names.length - MAX_TOOLTIP_NAMES} lainnya`;
-          namesEl.appendChild(moreEl);
-        }
-        tooltip.appendChild(namesEl);
-      } else if (point.count === 0) {
-        const emptyEl = document.createElement('div');
-        emptyEl.className = 'chart-tooltip-names';
-        emptyEl.textContent = 'Tidak ada pendaftaran';
-        tooltip.appendChild(emptyEl);
-      }
-
       tooltip.style.display = 'block';
 
       const hitRect = group.querySelector('.chart-bar-hit').getBoundingClientRect();
@@ -975,13 +944,79 @@ if (canSeeVisitChart) {
       group.classList.remove('is-hovered');
     }
 
+    // Klik titik/batang -> modal daftar pendaftaran pada periode itu (sama
+    // seperti klik kelompok pada pie chart "Kondisi Absensi Hari Ini"), bukan
+    // langsung menumpuk nama di tooltip -- tooltip tetap ringkas, daftarnya
+    // muncul di tabel yang lebih lega lewat openVisitChartModal().
+    function activate(group) {
+      const idx = Number(group.dataset.index);
+      const point = data[idx];
+      if (point && point.count > 0) openVisitChartModal(point);
+    }
+
     groups.forEach((group) => {
       group.addEventListener('pointerenter', () => showTooltip(group));
       group.addEventListener('pointerleave', () => hideTooltip(group));
       group.addEventListener('focus', () => showTooltip(group));
       group.addEventListener('blur', () => hideTooltip(group));
+      group.addEventListener('click', () => activate(group));
+      group.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        activate(group);
+      });
     });
   }
+
+  // Modal daftar pendaftaran tamu pada satu titik grafik yang diklik -- sama
+  // polanya seperti openAttendanceBucketModal() untuk pie chart "Kondisi
+  // Absensi Hari Ini": klik dulu baru tabelnya muncul, tooltip hover tetap
+  // ringkas (cuma jumlah + label periode).
+  async function openVisitChartModal(point) {
+    const modal = document.getElementById('visitChartModal');
+    const titleEl = document.getElementById('visitChartModalTitle');
+    const bodyEl = document.getElementById('visitChartModalBody');
+    titleEl.textContent = `Pendaftaran Tamu -- ${point.label}`;
+    bodyEl.innerHTML = '<tr><td colspan="6">Memuat data...</td></tr>';
+    modal.classList.add('open');
+
+    try {
+      const res = await api(`/guests?from=${point.date_from}&to=${point.date_to}&pageSize=100`);
+      const rows = res.data;
+      titleEl.textContent = `Pendaftaran Tamu -- ${point.label} (${rows.length})`;
+      bodyEl.innerHTML = rows.length
+        ? rows
+            .map(
+              (g) => `
+        <tr>
+          <td>${escapeHtml(g.registration_number)}</td>
+          <td>${escapeHtml(g.company || '-')}</td>
+          <td>${escapeHtml(g.member_names || '-')}</td>
+          <td><span class="badge ${statusBadgeClass(g.status)}">${escapeHtml(guestStatusLabel(g.status))}</span></td>
+          <td>${formatDateTime(g.created_at)}</td>
+          <td><a class="link" href="detail-tamu?id=${g.id}">Detail</a></td>
+        </tr>
+      `
+            )
+            .join('')
+        : '<tr><td colspan="6">Tidak ada pendaftaran pada periode ini.</td></tr>';
+    } catch (err) {
+      bodyEl.innerHTML = `<tr><td colspan="6" style="color:var(--danger);">${escapeHtml(err.message)}</td></tr>`;
+    }
+  }
+
+  function closeVisitChartModal() {
+    document.getElementById('visitChartModal').classList.remove('open');
+  }
+
+  document.getElementById('visitChartCloseIconSlot').innerHTML = icon('close');
+  document.getElementById('visitChartModalCloseBtn').addEventListener('click', closeVisitChartModal);
+  document.getElementById('visitChartModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('visitChartModal')) closeVisitChartModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('visitChartModal').classList.contains('open')) closeVisitChartModal();
+  });
 
   function renderChartTable(data) {
     const container = document.getElementById('visitChartTable');

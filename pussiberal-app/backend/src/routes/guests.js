@@ -96,7 +96,7 @@ const GUEST_LIST_SELECT = `
 
 // GET /api/guests  (list + search via ?q=&status=&page=&pageSize=)
 router.get('/', asyncHandler(async (req, res) => {
-  const { q, status, page = 1, pageSize = 20 } = req.query;
+  const { q, status, from, to, page = 1, pageSize = 20 } = req.query;
   const limit = Math.min(parseInt(pageSize, 10) || 20, 100);
   const offset = (Math.max(parseInt(page, 10) || 1, 1) - 1) * limit;
 
@@ -111,6 +111,17 @@ router.get('/', asyncHandler(async (req, res) => {
   if (status) {
     where.push('g.status = :status');
     params.status = status;
+  }
+  // from/to: filter tanggal pendaftaran (YYYY-MM-DD, inklusif) -- dipakai
+  // klik-tembus dari grafik Kunjungan Tamu di dashboard untuk menampilkan
+  // daftar pendaftaran pada periode yang diklik.
+  if (from) {
+    where.push('DATE(g.created_at) >= :from');
+    params.from = from;
+  }
+  if (to) {
+    where.push('DATE(g.created_at) <= :to');
+    params.to = to;
   }
 
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';

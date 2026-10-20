@@ -204,30 +204,34 @@ router.get('/visit-stats', requireRole('admin', 'verifikator'), asyncHandler(asy
   const since = periods[0].start;
 
   const [rows] = await pool.query(
-    `SELECT g.created_at, gm.full_name
+    `SELECT g.created_at
      FROM guests g
      JOIN guest_members gm ON gm.guest_id = g.id
-     WHERE g.created_at >= :since
-     ORDER BY gm.full_name`,
+     WHERE g.created_at >= :since`,
     { since }
   );
 
   const counts = periods.map(() => 0);
-  // Nama-nama tamu yang mendaftar di tiap periode -- dipakai tooltip grafik
-  // Kunjungan Tamu di dashboard supaya hover langsung menunjukkan siapa saja
-  // yang mendaftar hari/minggu/bulan itu, bukan cuma angkanya.
-  const names = periods.map(() => []);
   rows.forEach((row) => {
     const t = new Date(row.created_at).getTime();
     const idx = periods.findIndex((p) => t >= p.start.getTime() && t < p.end.getTime());
-    if (idx !== -1) {
-      counts[idx] += 1;
-      names[idx].push(row.full_name);
-    }
+    if (idx !== -1) counts[idx] += 1;
   });
 
+  // "YYYY-MM-DD" dari komponen y/m/d Date "lokal" Jakarta (lihat
+  // nowJakartaLocal()) -- date_from/date_to dipakai frontend untuk
+  // klik-tembus ke daftar pendaftaran pada periode tersebut
+  // (GET /guests?from=&to=). date_to = sehari sebelum p.end (p.end adalah
+  // batas EKSKLUSIF awal periode berikutnya).
+  const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
   res.json({
-    data: periods.map((p, i) => ({ label: p.label, count: counts[i], names: names[i] })),
+    data: periods.map((p, i) => ({
+      label: p.label,
+      count: counts[i],
+      date_from: ymd(p.start),
+      date_to: ymd(new Date(p.end.getFullYear(), p.end.getMonth(), p.end.getDate() - 1)),
+    })),
     period,
   });
 }));
