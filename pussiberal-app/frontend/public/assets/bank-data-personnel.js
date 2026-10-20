@@ -129,6 +129,69 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
 const editModal = document.getElementById('editSummaryModal');
 const editForm = document.getElementById('editSummaryForm');
 
+// Media Sosial disimpan di database sebagai SATU string bebas (kolom
+// guest_members.social_media, mis. "Instagram: @nama, TikTok: @nama2") --
+// tidak diubah jadi tabel terpisah supaya tidak perlu migrasi. Di form ini
+// dipecah jadi baris-baris [jenis platform] + [username/tautan] supaya enak
+// diisi, lalu digabung ulang jadi satu string dengan format yang sama saat
+// disimpan.
+const SOCIAL_MEDIA_PLATFORMS = ['Instagram', 'Facebook', 'TikTok', 'Twitter/X', 'LinkedIn', 'YouTube', 'WhatsApp', 'Telegram', 'Lainnya'];
+
+function socialMediaRowHTML(platform, handle) {
+  const options = SOCIAL_MEDIA_PLATFORMS
+    .map((p) => `<option value="${escapeHtml(p)}" ${p === platform ? 'selected' : ''}>${escapeHtml(p)}</option>`)
+    .join('');
+  return `
+    <div class="inline-form social-media-row" style="margin-bottom:8px;">
+      <select class="sm-platform" style="max-width:150px;">${options}</select>
+      <input type="text" class="sm-handle" placeholder="Username atau tautan akun" maxlength="200" value="${escapeHtml(handle || '')}" style="flex:1; min-width:160px;">
+      <button type="button" class="btn btn-small btn-danger sm-remove-row-btn">Hapus</button>
+    </div>
+  `;
+}
+
+function addSocialMediaRow(platform, handle) {
+  const rowsEl = document.getElementById('editSocialMediaRows');
+  rowsEl.insertAdjacentHTML('beforeend', socialMediaRowHTML(platform || SOCIAL_MEDIA_PLATFORMS[0], handle || ''));
+  rowsEl.lastElementChild.querySelector('.sm-remove-row-btn').addEventListener('click', (e) => {
+    e.target.closest('.social-media-row').remove();
+  });
+}
+document.getElementById('addSocialMediaRowBtn').addEventListener('click', () => addSocialMediaRow());
+
+// Baris lama (bebas format, tanpa label platform yang konsisten) diurai
+// sebaik mungkin dengan mencari kemunculan nama platform yang dikenal --
+// kalau tidak ada satu pun yang cocok, seluruh teksnya ditaruh sebagai satu
+// baris "Lainnya" supaya datanya tidak hilang begitu saja.
+function parseSocialMediaValue(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return [];
+  const knownPlatforms = SOCIAL_MEDIA_PLATFORMS.filter((p) => p !== 'Lainnya');
+  const pattern = knownPlatforms.map((p) => p.replace('/', '\\/')).join('|');
+  const re = new RegExp(`(${pattern})\\s*:?\\s*`, 'gi');
+  const matches = [...raw.matchAll(re)];
+  if (!matches.length) return [{ platform: 'Lainnya', handle: raw }];
+
+  return matches.map((m, i) => {
+    const start = m.index + m[0].length;
+    const end = i + 1 < matches.length ? matches[i + 1].index : raw.length;
+    const handle = raw.slice(start, end).replace(/[,;]+\s*$/, '').trim();
+    const platform = knownPlatforms.find((p) => p.toLowerCase() === m[1].toLowerCase()) || m[1];
+    return { platform, handle };
+  });
+}
+
+function serializeSocialMediaRows() {
+  return Array.from(document.querySelectorAll('.social-media-row'))
+    .map((row) => ({
+      platform: row.querySelector('.sm-platform').value,
+      handle: row.querySelector('.sm-handle').value.trim(),
+    }))
+    .filter((r) => r.handle)
+    .map((r) => `${r.platform}: ${r.handle}`)
+    .join(', ');
+}
+
 function openEditModal() {
   if (!lastPerson) return;
   document.getElementById('editFullName').value = lastPerson.full_name || '';
@@ -138,7 +201,13 @@ function openEditModal() {
   document.getElementById('editPosition').value = lastPerson.position || '';
   document.getElementById('editPhone').value = lastPerson.phone_number || '';
   document.getElementById('editAffiliation').value = lastPerson.affiliation || '';
-  document.getElementById('editSocialMedia').value = lastPerson.social_media || '';
+  document.getElementById('editSocialMediaRows').innerHTML = '';
+  const parsedSocialMedia = parseSocialMediaValue(lastPerson.social_media);
+  if (parsedSocialMedia.length) {
+    parsedSocialMedia.forEach((r) => addSocialMediaRow(r.platform, r.handle));
+  } else {
+    addSocialMediaRow();
+  }
   document.getElementById('editAddress').value = lastPerson.address || '';
   document.getElementById('editCategory').value = lastPerson.security_category || '';
   document.getElementById('editAnalysisNotes').value = lastPerson.analysis_notes || '';
@@ -165,7 +234,7 @@ editForm.addEventListener('submit', async (e) => {
   const payload = {
     other_names: document.getElementById('editOtherNames').value.trim(),
     affiliation: document.getElementById('editAffiliation').value.trim(),
-    social_media: document.getElementById('editSocialMedia').value.trim(),
+    social_media: serializeSocialMediaRows(),
     address: document.getElementById('editAddress').value.trim(),
     security_category: document.getElementById('editCategory').value || null,
     analysis_notes: document.getElementById('editAnalysisNotes').value.trim(),
