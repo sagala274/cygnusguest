@@ -2,12 +2,6 @@ requireAuth();
 requireRole('admin', 'pos_depan');
 renderNav('pendaftaran');
 
-document.getElementById('companyIconSlot').innerHTML = icon('briefcase');
-document.getElementById('companyChevronSlot').innerHTML = icon('chevronDown');
-document.getElementById('vehicleBrandIconSlot').innerHTML = icon('car');
-document.getElementById('vehicleTypeIconSlot').innerHTML = icon('car');
-document.getElementById('plateIconSlot').innerHTML = icon('idCard');
-
 const form = document.getElementById('guestForm');
 const cancelBtn = document.getElementById('cancelBtn');
 const resultBox = document.getElementById('resultBox');
@@ -49,7 +43,7 @@ function updateMemberScheduledBadges() {
     if (photoLabel) photoLabel.innerHTML = `Foto Tamu ${badgeHtml}`;
 
     const deviceLabel = block.querySelector('.m-device-status')?.closest('.field')?.querySelector('label');
-    if (deviceLabel) deviceLabel.innerHTML = `Perangkat Elektronik ${badgeHtml}`;
+    if (deviceLabel) deviceLabel.innerHTML = `PERANGKAT ELEKTRONIK ${badgeHtml}`;
   });
 }
 scheduledToggle.addEventListener('change', updateMemberScheduledBadges);
@@ -136,44 +130,29 @@ function memberBlockHTML(seq, isScheduled) {
     <div class="member-card" data-seq="${seq}">
       <div class="member-card-head">
         <span class="member-card-title"></span>
-        <button type="button" class="btn btn-small btn-danger remove-member-btn">${icon('trash')} Hapus</button>
+        <button type="button" class="btn btn-small btn-danger remove-member-btn">Hapus</button>
       </div>
 
       <div class="grid">
         <div class="field">
           <label>NIK KTP <span class="optional-badge">Opsional</span><span class="label-note">16 Digit</span></label>
-          <div class="input-icon">
-            <span class="input-icon-slot">${icon('idCard')}</span>
-            <input type="text" class="m-nik" inputmode="numeric" maxlength="16" placeholder="Masukkan 16 digit NIK KTP">
-          </div>
+          <input type="text" class="m-nik" inputmode="numeric" maxlength="16" placeholder="Masukkan NIK KTP (jika ada)">
         </div>
         <div class="field">
-          <label>Nama Lengkap <span class="required">*</span></label>
-          <div class="input-icon">
-            <span class="input-icon-slot">${icon('user')}</span>
-            <input type="text" class="m-name" placeholder="Masukkan nama lengkap tamu" list="companyMemberSuggestions" autocomplete="off" required>
-          </div>
+          <label>NAMA LENGKAP <span class="required">*</span></label>
+          <input type="text" class="m-name" placeholder="Sesuai kartu identitas" list="companyMemberSuggestions" autocomplete="off" required>
         </div>
         <div class="field">
-          <label>Jabatan <span class="required">*</span></label>
-          <div class="input-icon">
-            <span class="input-icon-slot">${icon('briefcase')}</span>
-            <input type="text" class="m-position" placeholder="Masukkan jabatan tamu" required>
-          </div>
+          <label>JABATAN <span class="required">*</span></label>
+          <input type="text" class="m-position" placeholder="Jabatan atau profesi" required>
         </div>
         <div class="field">
-          <label>Nomor Handphone <span class="required">*</span></label>
-          <div class="input-icon">
-            <span class="input-icon-slot">${icon('phone')}</span>
-            <input type="tel" class="m-phone" inputmode="tel" placeholder="Contoh: 081234567890" required>
-          </div>
+          <label>NOMOR HANDPHONE <span class="required">*</span></label>
+          <input type="tel" class="m-phone" inputmode="tel" placeholder="08xxxxxxxxxx" required>
         </div>
         <div class="field">
-          <label>Nomor ID Karyawan / Identitas Lain <span class="optional-badge">Opsional</span></label>
-          <div class="input-icon">
-            <span class="input-icon-slot">${icon('idCard')}</span>
-            <input type="text" class="m-employee-id" placeholder="Masukkan nomor ID karyawan atau identitas lain">
-          </div>
+          <label>NOMOR ID KARYAWAN <span class="optional-badge">Opsional</span></label>
+          <input type="text" class="m-employee-id" placeholder="Contoh: EMP-00231">
         </div>
       </div>
 
@@ -181,42 +160,34 @@ function memberBlockHTML(seq, isScheduled) {
         <div class="photo-widget" data-kind="photo">
           <label class="photo-widget-label">Foto Tamu ${photoRequiredBadge}</label>
           <div class="photo-frame">
-            <div class="photo-frame-empty">
-              <span class="photo-frame-icon">${icon('camera')}</span>
-              <div>Klik tombol di bawah untuk mengambil foto tamu<br>atau unggah dari perangkat</div>
-              <div class="photo-frame-hint-small">PNG, JPG (maks 8MB)</div>
-            </div>
+            <div class="photo-frame-empty">Kamera belum aktif.<br>Tekan "Aktifkan Kamera" atau unggah foto.</div>
             <video autoplay playsinline muted style="display:none;"></video>
             <img alt="Pratinjau foto tamu" style="display:none;">
           </div>
           <canvas style="display:none;"></canvas>
           <div class="photo-actions">
-            <button type="button" class="btn btn-small start-camera-btn">${icon('camera')} Aktifkan Kamera</button>
-            <button type="button" class="btn btn-small btn-primary capture-btn" style="display:none;">${icon('camera')} Ambil Foto</button>
+            <button type="button" class="btn btn-small start-camera-btn">Aktifkan Kamera</button>
+            <button type="button" class="btn btn-small btn-primary capture-btn" style="display:none;">Ambil Foto</button>
             <button type="button" class="btn btn-small retake-btn" style="display:none;">Ambil Ulang</button>
-            <button type="button" class="btn btn-small upload-btn">${icon('upload')} Unggah File</button>
+            <button type="button" class="btn btn-small upload-btn">Unggah</button>
             <input type="file" class="file-input-hidden photo-file-input" accept="image/*">
           </div>
           <p class="photo-hint"></p>
         </div>
 
         <div class="photo-widget" data-kind="ktp_photo">
-          <label class="photo-widget-label">Foto KTP / Identitas <span class="optional-badge">Opsional</span></label>
+          <label class="photo-widget-label">Foto KTP <span class="optional-badge">Opsional</span></label>
           <div class="photo-frame">
-            <div class="photo-frame-empty">
-              <span class="photo-frame-icon">${icon('camera')}</span>
-              <div>Klik tombol di bawah untuk mengambil foto KTP<br>atau unggah dari perangkat</div>
-              <div class="photo-frame-hint-small">PNG, JPG (maks 8MB)</div>
-            </div>
+            <div class="photo-frame-empty">Kamera belum aktif.<br>Tekan "Aktifkan Kamera" atau unggah foto KTP.</div>
             <video autoplay playsinline muted style="display:none;"></video>
             <img alt="Pratinjau foto KTP" style="display:none;">
           </div>
           <canvas style="display:none;"></canvas>
           <div class="photo-actions">
-            <button type="button" class="btn btn-small start-camera-btn">${icon('camera')} Aktifkan Kamera</button>
-            <button type="button" class="btn btn-small btn-primary capture-btn" style="display:none;">${icon('camera')} Ambil Foto</button>
+            <button type="button" class="btn btn-small start-camera-btn">Aktifkan Kamera</button>
+            <button type="button" class="btn btn-small btn-primary capture-btn" style="display:none;">Ambil Foto</button>
             <button type="button" class="btn btn-small retake-btn" style="display:none;">Ambil Ulang</button>
-            <button type="button" class="btn btn-small upload-btn">${icon('upload')} Unggah File</button>
+            <button type="button" class="btn btn-small upload-btn">Unggah</button>
             <input type="file" class="file-input-hidden photo-file-input" accept="image/*">
           </div>
           <p class="photo-hint"></p>
@@ -224,45 +195,42 @@ function memberBlockHTML(seq, isScheduled) {
       </div>
 
       <div class="subsection-divider">
-        <div class="device-policy-box">
-          <h3 class="subsection-title">
-            <span class="subsection-icon">${icon('shield')}</span>
-            Kebijakan Perangkat Elektronik
-          </h3>
-          <p class="device-policy-sub">Pilih kondisi membawa perangkat elektronik.</p>
+        <h3 class="subsection-title">
+          <span class="section-icon">📵</span>
+          Kebijakan Perangkat Elektronik
+        </h3>
 
-          <div class="field full">
-            <label>Perangkat Elektronik ${deviceRequiredBadge}</label>
-            <div class="device-options">
-              <label class="device-option">
-                <input type="radio" name="deviceStatus-${seq}" class="m-device-status" value="tidak_membawa">
-                <span>Tidak membawa perangkat elektronik</span>
-              </label>
-              <label class="device-option">
-                <input type="radio" name="deviceStatus-${seq}" class="m-device-status" value="dititipkan" ${dititipkanChecked}>
-                <span>Membawa dan menitipkan di Pos Penjagaan</span>
-              </label>
-              <label class="device-option">
-                <input type="radio" name="deviceStatus-${seq}" class="m-device-status" value="dibawa_alasan_khusus">
-                <span>Tetap membawa HP/perangkat elektronik lainnya dengan alasan khusus</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="field full m-device-reason-field" style="display:none; margin-top:18px;">
-            <label>
-              <span>Alasan Membawa HP/Perangkat Elektronik <span class="required">*</span></span>
-              <span class="label-note m-device-reason-counter">0 / 500</span>
+        <div class="field full">
+          <label>PERANGKAT ELEKTRONIK ${deviceRequiredBadge}</label>
+          <div class="device-options">
+            <label class="device-option">
+              <input type="radio" name="deviceStatus-${seq}" class="m-device-status" value="tidak_membawa">
+              <span>Tidak membawa perangkat elektronik</span>
             </label>
-            <textarea class="m-device-reason" placeholder="Jelaskan alasan khusus mengapa HP/perangkat elektronik lainnya perlu tetap dibawa selama berada di area PUSSIBERAL..." maxlength="500"></textarea>
-          </div>
-
-          <div class="field full" style="margin-top:18px;">
-            <label class="confirm-checkbox">
-              <input type="checkbox" class="m-device-confirm">
-              <span>Petugas telah menyampaikan kebijakan penitipan perangkat elektronik ini kepada tamu, dan tamu telah memahaminya. <span class="required">*</span></span>
+            <label class="device-option">
+              <input type="radio" name="deviceStatus-${seq}" class="m-device-status" value="dititipkan" ${dititipkanChecked}>
+              <span>Membawa dan menitipkan di Pos Penjagaan</span>
+            </label>
+            <label class="device-option">
+              <input type="radio" name="deviceStatus-${seq}" class="m-device-status" value="dibawa_alasan_khusus">
+              <span>Tetap membawa HP/perangkat elektronik lainnya dengan alasan khusus</span>
             </label>
           </div>
+        </div>
+
+        <div class="field full m-device-reason-field" style="display:none; margin-top:18px;">
+          <label>
+            <span>ALASAN MEMBAWA HP/PERANGKAT ELEKTRONIK <span class="required">*</span></span>
+            <span class="label-note m-device-reason-counter">0 / 500</span>
+          </label>
+          <textarea class="m-device-reason" placeholder="Jelaskan alasan khusus mengapa HP/perangkat elektronik lainnya perlu tetap dibawa selama berada di area PUSSIBERAL..." maxlength="500"></textarea>
+        </div>
+
+        <div class="field full" style="margin-top:18px;">
+          <label class="confirm-checkbox">
+            <input type="checkbox" class="m-device-confirm">
+            <span>Petugas telah menyampaikan kebijakan penitipan perangkat elektronik ini kepada tamu, dan tamu telah memahaminya. <span class="required">*</span></span>
+          </label>
         </div>
       </div>
 
