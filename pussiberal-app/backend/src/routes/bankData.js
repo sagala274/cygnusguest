@@ -5,6 +5,9 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { isIndependentCompany, VALID_SECURITY_CATEGORIES } = require('../utils/validators');
 const { formatJakartaDateTime, formatJakartaDate } = require('../utils/datetime');
 const { logAudit } = require('../utils/audit');
+const {
+  COMPANY_TYPES, LEGAL_STATUSES, RELATIONSHIP_STATUSES, VISIT_HISTORIES, PUBLIC_CHECK_RESULTS, DATA_CONSISTENCIES,
+} = require('../utils/companyProfiles');
 const asyncHandler = require('../utils/asyncHandler');
 
 const router = express.Router();
@@ -181,9 +184,7 @@ function applyFilters(records, { q, category }) {
 router.get('/', asyncHandler(async (req, res) => {
   const records = applyFilters(await fetchAllRecords(), req.query);
 
-  const [profileRows] = await pool.query(
-    'SELECT company, security_category, profiling_notes, updated_at FROM company_profiles'
-  );
+  const [profileRows] = await pool.query('SELECT * FROM company_profiles');
   const profileMap = new Map(profileRows.map((r) => [r.company, r]));
 
   const data = groupByCompany(records).map((g) => ({
@@ -298,6 +299,39 @@ router.delete('/company', requireRole('admin'), asyncHandler(async (req, res) =>
   res.json({ data: { deleted_guests: result.affectedRows } });
 }));
 
+// Field-field "Rancangan Formulir Profiling Perusahaan" (di luar
+// security_category/profiling_notes yang sudah ada sejak awal -- lihat
+// bagian "5. Kesimpulan Profiling" di modal-nya) -- didaftarkan di sini
+// (bukan ditulis berulang 19 kali) supaya validasi & query INSERT/UPDATE
+// di bawah bisa dibangun otomatis dari satu sumber.
+const COMPANY_PROFILE_FIELDS = [
+  // 1. Identitas Perusahaan
+  { key: 'official_name', maxLen: 200, label: 'Nama resmi perusahaan' },
+  { key: 'company_type', enumValues: COMPANY_TYPES, label: 'Kategori perusahaan' },
+  { key: 'business_field', maxLen: 200, label: 'Bidang usaha' },
+  { key: 'founded_year', maxLen: 4, label: 'Tahun berdiri' },
+  { key: 'head_office_address', maxLen: 255, label: 'Alamat kantor pusat' },
+  { key: 'website', maxLen: 200, label: 'Website resmi' },
+  { key: 'company_phone', maxLen: 50, label: 'Nomor telepon perusahaan' },
+  // 2. Legalitas dan Pengurus
+  { key: 'nib', maxLen: 50, label: 'Nomor Induk Berusaha' },
+  { key: 'legal_status', enumValues: LEGAL_STATUSES, label: 'Status legalitas' },
+  { key: 'director_name', maxLen: 150, label: 'Nama pimpinan/direktur' },
+  { key: 'representative_name', maxLen: 150, label: 'Nama perwakilan perusahaan' },
+  { key: 'legal_notes', maxLen: 2000, label: 'Catatan legalitas' },
+  // 3. Hubungan dengan Pussiberal/TNI AL
+  { key: 'relationship_status', enumValues: RELATIONSHIP_STATUSES, label: 'Status hubungan' },
+  { key: 'relationship_target_unit', maxLen: 150, label: 'Unit/pejabat yang dituju' },
+  { key: 'relationship_basis', maxLen: 2000, label: 'Dasar atau kepentingan hubungan' },
+  { key: 'visit_history', enumValues: VISIT_HISTORIES, label: 'Riwayat kunjungan' },
+  { key: 'internal_contact', maxLen: 150, label: 'Kontak internal penghubung' },
+  // 4. Rekam Jejak dan Hasil Pemeriksaan
+  { key: 'public_check_result', enumValues: PUBLIC_CHECK_RESULTS, label: 'Hasil pemeriksaan informasi publik' },
+  { key: 'data_consistency', enumValues: DATA_CONSISTENCIES, label: 'Konsistensi data perusahaan' },
+  { key: 'track_record_notes', maxLen: 2000, label: 'Temuan atau rekam jejak' },
+  { key: 'information_sources', maxLen: 255, label: 'Sumber informasi' },
+];
+
 // PUT /api/bank-data/company-profile  (isi/ubah hasil profiling untuk
 // PERUSAHAAN itu sendiri -- terpisah dari analisa per-personel. Admin &
 // Verifikator, mengikuti pola yang sama dengan "Kelola Analisa" per tamu.
@@ -320,19 +354,37 @@ router.put('/company-profile', requireRole('admin', 'verifikator'), asyncHandler
     return res.status(400).json({ error: 'Hasil profiling maksimal 2000 karakter' });
   }
 
-  await pool.execute(
-    `INSERT INTO company_profiles (company, security_category, profiling_notes, updated_by)
-     VALUES (:company, :security_category, :profiling_notes, :updated_by)
-     ON DUPLICATE KEY UPDATE
-       security_category = VALUES(security_category),
-       profiling_notes = VALUES(profiling_notes),
-       updated_by = VALUES(updated_by)`,
-    {
-      company: trimmedCompany,
-      security_category: security_category || null,
-      profiling_notes: profiling_notes && String(profiling_notes).trim() ? String(profiling_notes).trim() : null,
-      updated_by: req.user.sub,
+  const params = {
+    company: trimmedCompany,
+    security_category: security_category || null,
+    profiling_notes: profiling_notes && String(profiling_notes).trim() ? String(profiling_notes).trim() : null,
+    updated_by: req.user.sub,
+  };
+
+  for (const field of COMPANY_PROFILE_FIELDS) {
+    const raw = req.body ? req.body[field.key] : undefined;
+    if (field.enumValues) {
+      if (raw && !field.enumValues.includes(raw)) {
+        return res.status(400).json({ error: `${field.label} tidak valid` });
+      }
+      params[field.key] = raw || null;
+    } else {
+      const trimmed = raw && String(raw).trim() ? String(raw).trim() : null;
+      if (trimmed && trimmed.length > field.maxLen) {
+        return res.status(400).json({ error: `${field.label} maksimal ${field.maxLen} karakter` });
+      }
+      params[field.key] = trimmed;
     }
+  }
+
+  const columns = ['company', ...COMPANY_PROFILE_FIELDS.map((f) => f.key), 'security_category', 'profiling_notes', 'updated_by'];
+  const updateClauses = columns.filter((c) => c !== 'company').map((c) => `${c} = VALUES(${c})`).join(', ');
+
+  await pool.execute(
+    `INSERT INTO company_profiles (${columns.join(', ')})
+     VALUES (${columns.map((c) => `:${c}`).join(', ')})
+     ON DUPLICATE KEY UPDATE ${updateClauses}`,
+    params
   );
 
   await logAudit(req.user.sub, 'update_company_profile', 'company_profile', null, { company: trimmedCompany });

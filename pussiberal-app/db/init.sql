@@ -124,6 +124,32 @@ CREATE TABLE IF NOT EXISTS trainees (
 CREATE TABLE IF NOT EXISTS company_profiles (
   id INT AUTO_INCREMENT PRIMARY KEY,
   company VARCHAR(150) NOT NULL UNIQUE,
+  -- 1. Identitas Perusahaan
+  official_name VARCHAR(200) NULL,
+  company_type ENUM('swasta','bumn_bumd','instansi_pemerintah','pendidikan','organisasi_lsm','perorangan','lainnya') NULL,
+  business_field VARCHAR(200) NULL,
+  founded_year VARCHAR(4) NULL,
+  head_office_address VARCHAR(255) NULL,
+  website VARCHAR(200) NULL,
+  company_phone VARCHAR(50) NULL,
+  -- 2. Legalitas dan Pengurus
+  nib VARCHAR(50) NULL,
+  legal_status ENUM('terverifikasi','belum_terverifikasi','tidak_valid') NULL,
+  director_name VARCHAR(150) NULL,
+  representative_name VARCHAR(150) NULL,
+  legal_notes TEXT NULL,
+  -- 3. Hubungan dengan Pussiberal/TNI AL
+  relationship_status ENUM('mitra_aktif','calon_mitra','tidak_ada_hubungan_khusus','perlu_tindak_lanjut') NULL,
+  relationship_target_unit VARCHAR(150) NULL,
+  relationship_basis TEXT NULL,
+  visit_history ENUM('baru_pertama_kali','beberapa_kali','rutin') NULL,
+  internal_contact VARCHAR(150) NULL,
+  -- 4. Rekam Jejak dan Hasil Pemeriksaan
+  public_check_result ENUM('tidak_ada_masalah','ada_catatan','perlu_pendalaman') NULL,
+  data_consistency ENUM('konsisten','sebagian_konsisten','tidak_konsisten') NULL,
+  track_record_notes TEXT NULL,
+  information_sources VARCHAR(255) NULL,
+  -- 5. Kesimpulan Profiling
   security_category ENUM('aman','perlu_perhatian','perlu_penanganan') NULL,
   profiling_notes TEXT NULL,
   updated_by INT NULL,

@@ -32,7 +32,7 @@ const {
 } = require('./utils/userAvatar');
 const { ensureNotificationsTable } = require('./utils/notifications');
 const { ensureTraineesTable } = require('./utils/trainees');
-const { ensureCompanyProfilesTable } = require('./utils/companyProfiles');
+const { ensureCompanyProfilesTable, ensureCompanyProfileExtraColumns } = require('./utils/companyProfiles');
 const { ensureUserLoginIpsTable } = require('./utils/userLoginIps');
 const { ensureNetworkDiagramsTable } = require('./utils/networkDiagrams');
 const { ensurePersonnelTables, ensureAttendanceStatusEnum, ensurePersonnelAnalysisColumns } = require('./utils/attendance');
@@ -139,6 +139,7 @@ async function start() {
   await ensureNotificationsTable();
   await ensureTraineesTable();
   await ensureCompanyProfilesTable();
+  await ensureCompanyProfileExtraColumns();
   await ensureUserLoginIpsTable();
   await ensureNetworkDiagramsTable();
   await ensurePersonnelTables();

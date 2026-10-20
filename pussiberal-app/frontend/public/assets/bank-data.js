@@ -25,10 +25,47 @@ const editAffiliation = document.getElementById('editAffiliation');
 const editCategory = document.getElementById('editCategory');
 const editAnalysisNotes = document.getElementById('editAnalysisNotes');
 
-const companyProfilePanel = document.getElementById('companyProfilePanel');
+const companyProfileModal = document.getElementById('companyProfileModal');
 const profileCompanyName = document.getElementById('profileCompanyName');
-const profileCategory = document.getElementById('profileCategory');
 const profileNotes = document.getElementById('profileNotes');
+const profileResultBox = document.getElementById('profileResultBox');
+
+// Field teks/textarea biasa (key field di database -> id elemen input-nya)
+// pada "Rancangan Formulir Profiling Perusahaan" -- dipetakan di sini
+// (bukan ditulis berulang satu-satu) supaya populate (openCompanyProfile)
+// dan collect (tombol Simpan) sama-sama tinggal loop lewat daftar ini.
+// security_category (radio) & profiling_notes ditangani terpisah di bawah
+// karena bentuknya beda (bagian "5. Kesimpulan Profiling").
+const PROFILE_TEXT_FIELD_IDS = {
+  official_name: 'profileOfficialName',
+  business_field: 'profileBusinessField',
+  founded_year: 'profileFoundedYear',
+  head_office_address: 'profileHeadOfficeAddress',
+  website: 'profileWebsite',
+  company_phone: 'profileCompanyPhone',
+  nib: 'profileNib',
+  director_name: 'profileDirectorName',
+  representative_name: 'profileRepresentativeName',
+  legal_notes: 'profileLegalNotes',
+  relationship_target_unit: 'profileRelationshipTargetUnit',
+  relationship_basis: 'profileRelationshipBasis',
+  internal_contact: 'profileInternalContact',
+  track_record_notes: 'profileTrackRecordNotes',
+  information_sources: 'profileInformationSources',
+};
+const PROFILE_SELECT_FIELD_IDS = {
+  company_type: 'profileCompanyType',
+  legal_status: 'profileLegalStatus',
+  relationship_status: 'profileRelationshipStatus',
+  visit_history: 'profileVisitHistory',
+  public_check_result: 'profilePublicCheckResult',
+  data_consistency: 'profileDataConsistency',
+};
+
+// Nama perusahaan -> objek profil lengkapnya, diisi ulang tiap load() --
+// dipakai openCompanyProfile() supaya tombol "Profiling Perusahaan" cukup
+// bawa nama perusahaannya saja (bukan ~20 atribut data-* di tiap tombol).
+let profilesByCompany = new Map();
 
 let editingGuestId = null;
 let editingMemberId = null;
@@ -102,11 +139,7 @@ function groupCardHTML(group) {
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button type="button" class="btn btn-small download-group-btn" data-company="${escapeHtml(group.company)}">Unduh PDF Kelompok</button>
             ${canEditAnalysis && canEditProfile ? `
-              <button type="button" class="btn btn-small profile-company-btn"
-                data-company="${escapeHtml(group.company)}"
-                data-category="${escapeHtml((profile && profile.security_category) || '')}"
-                data-notes="${escapeHtml((profile && profile.profiling_notes) || '')}"
-              >Profiling Perusahaan</button>
+              <button type="button" class="btn btn-small profile-company-btn" data-company="${escapeHtml(group.company)}">Profiling Perusahaan</button>
             ` : ''}
             ${isAdmin && canEditProfile ? `
               <button type="button" class="btn btn-small edit-company-btn" data-company="${escapeHtml(group.company)}">Edit Nama Perusahaan</button>
@@ -159,6 +192,7 @@ async function load() {
       return;
     }
 
+    profilesByCompany = new Map(res.data.map((g) => [g.company, g.profile || {}]));
     groupsContainer.innerHTML = res.data.map(groupCardHTML).join('');
 
     document.querySelectorAll('.manage-btn').forEach((btn) => {
@@ -182,7 +216,7 @@ async function load() {
     });
 
     document.querySelectorAll('.profile-company-btn').forEach((btn) => {
-      btn.addEventListener('click', () => openCompanyProfile(btn.dataset));
+      btn.addEventListener('click', () => openCompanyProfile(btn.dataset.company));
     });
   } catch (err) {
     groupsContainer.innerHTML = `<p class="page-description" style="color: var(--danger);">${escapeHtml(err.message)}</p>`;
@@ -293,40 +327,64 @@ document.getElementById('saveEditBtn').addEventListener('click', async () => {
   }
 });
 
-function openCompanyProfile(data) {
-  editingCompany = data.company;
-  profileCompanyName.textContent = data.company;
-  profileCategory.value = data.category || '';
-  profileNotes.value = data.notes || '';
-  companyProfilePanel.style.display = 'block';
-  companyProfilePanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+function openCompanyProfile(company) {
+  editingCompany = company;
+  profileCompanyName.textContent = company;
+  profileResultBox.style.display = 'none';
+  const profile = profilesByCompany.get(company) || {};
+
+  Object.entries(PROFILE_TEXT_FIELD_IDS).forEach(([key, id]) => {
+    document.getElementById(id).value = profile[key] || '';
+  });
+  Object.entries(PROFILE_SELECT_FIELD_IDS).forEach(([key, id]) => {
+    document.getElementById(id).value = profile[key] || '';
+  });
+  document.querySelectorAll('.profile-category-radio').forEach((r) => {
+    r.checked = !!profile.security_category && r.value === profile.security_category;
+  });
+  profileNotes.value = profile.profiling_notes || '';
+
+  companyProfileModal.classList.add('open');
 }
 
 function closeCompanyProfile() {
   editingCompany = null;
-  companyProfilePanel.style.display = 'none';
+  companyProfileModal.classList.remove('open');
 }
 
+document.getElementById('closeProfileIconSlot').innerHTML = icon('close');
+document.getElementById('closeProfileIconBtn').addEventListener('click', closeCompanyProfile);
 document.getElementById('cancelProfileBtn').addEventListener('click', closeCompanyProfile);
+companyProfileModal.addEventListener('click', (e) => { if (e.target === companyProfileModal) closeCompanyProfile(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && companyProfileModal.classList.contains('open')) closeCompanyProfile(); });
 
 document.getElementById('saveProfileBtn').addEventListener('click', async () => {
-  resultBox.style.display = 'none';
+  profileResultBox.style.display = 'none';
+  const selectedCategory = document.querySelector('.profile-category-radio:checked');
   const payload = {
     company: editingCompany,
-    security_category: profileCategory.value || null,
+    security_category: selectedCategory ? selectedCategory.value : null,
     profiling_notes: profileNotes.value.trim() || null,
   };
+  Object.entries(PROFILE_TEXT_FIELD_IDS).forEach(([key, id]) => {
+    payload[key] = document.getElementById(id).value.trim() || null;
+  });
+  Object.entries(PROFILE_SELECT_FIELD_IDS).forEach(([key, id]) => {
+    payload[key] = document.getElementById(id).value || null;
+  });
 
   try {
     await api('/bank-data/company-profile', {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
-    showMessage(`Profiling perusahaan "${editingCompany}" berhasil disimpan.`, false);
     closeCompanyProfile();
+    showMessage(`Profiling perusahaan "${editingCompany}" berhasil disimpan.`, false);
     load();
   } catch (err) {
-    showMessage(err.message, true);
+    profileResultBox.style.display = 'block';
+    profileResultBox.classList.add('error-box');
+    profileResultBox.textContent = err.message;
   }
 });
 

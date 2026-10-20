@@ -91,32 +91,198 @@
         </div>
       </div>
 
-      <div class="form-card" id="companyProfilePanel" style="display:none; margin-top:24px;">
-        <div class="section">
-          <h2 class="section-title">Profiling Perusahaan: <span id="profileCompanyName"></span></h2>
-          <div class="grid">
-            <div class="field">
-              <label for="profileCategory">KATEGORI PERUSAHAAN <span class="label-note">Opsional</span></label>
-              <select id="profileCategory">
-                <option value="">Belum Dianalisa</option>
-                <option value="aman">Aman</option>
-                <option value="perlu_perhatian">Perlu Perhatian</option>
-                <option value="perlu_penanganan">Perlu Penanganan</option>
-              </select>
-            </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-overlay" id="companyProfileModal">
+  <div class="modal-card" style="max-width: 820px;">
+    <div class="modal-head">
+      <h2>Rancangan Formulir Profiling Perusahaan: <span id="profileCompanyName"></span></h2>
+      <button type="button" class="modal-close" id="closeProfileIconBtn"><span class="icon-slot" id="closeProfileIconSlot"></span></button>
+    </div>
+    <div class="modal-body">
+      <div id="profileResultBox" class="result-box" style="display:none;"></div>
+
+      <div class="section" style="padding:0 0 24px;">
+        <h3 class="subsection-title" style="margin-bottom:4px;">1. Identitas Perusahaan</h3>
+        <p class="page-description" style="margin:0 0 16px;">Data dasar perusahaan yang sedang diprofilkan.</p>
+        <div class="grid">
+          <div class="field">
+            <label for="profileOfficialName">NAMA RESMI PERUSAHAAN <span class="label-note">Opsional</span></label>
+            <input id="profileOfficialName" type="text" placeholder="Contoh: Prima Tailor" maxlength="200">
           </div>
-          <div class="field full" style="margin-top:21px;">
-            <label for="profileNotes">HASIL PROFILING PERUSAHAAN <span class="label-note">Opsional</span></label>
-            <textarea id="profileNotes" placeholder="Catatan hasil profiling terhadap perusahaan/instansi ini secara keseluruhan..." maxlength="2000"></textarea>
+          <div class="field">
+            <label for="profileCompanyType">KATEGORI PERUSAHAAN <span class="label-note">Opsional</span></label>
+            <select id="profileCompanyType">
+              <option value="">Pilih kategori</option>
+              <option value="swasta">Swasta</option>
+              <option value="bumn_bumd">BUMN/BUMD</option>
+              <option value="instansi_pemerintah">Instansi Pemerintah</option>
+              <option value="pendidikan">Pendidikan</option>
+              <option value="organisasi_lsm">Organisasi/LSM</option>
+              <option value="perorangan">Perorangan</option>
+              <option value="lainnya">Lainnya</option>
+            </select>
           </div>
-          <div class="actions">
-            <button type="button" class="btn" id="cancelProfileBtn">Batal</button>
-            <button type="button" class="btn btn-primary" id="saveProfileBtn">Simpan Profiling</button>
+          <div class="field">
+            <label for="profileBusinessField">BIDANG USAHA <span class="label-note">Opsional</span></label>
+            <input id="profileBusinessField" type="text" placeholder="Contoh: Fashion dan konveksi" maxlength="200">
+          </div>
+          <div class="field">
+            <label for="profileFoundedYear">TAHUN BERDIRI <span class="label-note">Opsional</span></label>
+            <input id="profileFoundedYear" type="text" inputmode="numeric" placeholder="Contoh: 2015" maxlength="4">
+          </div>
+        </div>
+        <div class="field full" style="margin-top:21px;">
+          <label for="profileHeadOfficeAddress">ALAMAT KANTOR PUSAT <span class="label-note">Opsional</span></label>
+          <input id="profileHeadOfficeAddress" type="text" placeholder="Alamat lengkap perusahaan" maxlength="255">
+        </div>
+        <div class="grid" style="margin-top:21px;">
+          <div class="field">
+            <label for="profileWebsite">WEBSITE RESMI <span class="label-note">Opsional</span></label>
+            <input id="profileWebsite" type="text" placeholder="https://..." maxlength="200">
+          </div>
+          <div class="field">
+            <label for="profileCompanyPhone">NOMOR TELEPON PERUSAHAAN <span class="label-note">Opsional</span></label>
+            <input id="profileCompanyPhone" type="text" placeholder="Nomor kontak resmi" maxlength="50">
           </div>
         </div>
       </div>
-    </section>
-  </main>
+
+      <div class="section" style="padding:0 0 24px;">
+        <h3 class="subsection-title" style="margin-bottom:16px;">2. Legalitas dan Pengurus</h3>
+        <div class="grid">
+          <div class="field">
+            <label for="profileNib">NOMOR INDUK BERUSAHA (NIB) <span class="label-note">Opsional</span></label>
+            <input id="profileNib" type="text" placeholder="Nomor NIB" maxlength="50">
+          </div>
+          <div class="field">
+            <label for="profileLegalStatus">STATUS LEGALITAS <span class="label-note">Opsional</span></label>
+            <select id="profileLegalStatus">
+              <option value="">Pilih status</option>
+              <option value="terverifikasi">Terverifikasi</option>
+              <option value="belum_terverifikasi">Belum Terverifikasi</option>
+              <option value="tidak_valid">Tidak Valid/Bermasalah</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="profileDirectorName">NAMA PIMPINAN/DIREKTUR <span class="label-note">Opsional</span></label>
+            <input id="profileDirectorName" type="text" placeholder="Nama pimpinan" maxlength="150">
+          </div>
+          <div class="field">
+            <label for="profileRepresentativeName">NAMA PERWAKILAN PERUSAHAAN <span class="label-note">Opsional</span></label>
+            <input id="profileRepresentativeName" type="text" placeholder="Nama perwakilan" maxlength="150">
+          </div>
+        </div>
+        <div class="field full" style="margin-top:21px;">
+          <label for="profileLegalNotes">CATATAN LEGALITAS <span class="label-note">Opsional</span></label>
+          <textarea id="profileLegalNotes" placeholder="Dokumen yang diperiksa, sumber verifikasi, dan catatan relevan..." maxlength="2000"></textarea>
+        </div>
+      </div>
+
+      <div class="section" style="padding:0 0 24px;">
+        <h3 class="subsection-title" style="margin-bottom:16px;">3. Hubungan dengan Pussiberal/TNI AL</h3>
+        <div class="grid">
+          <div class="field">
+            <label for="profileRelationshipStatus">STATUS HUBUNGAN <span class="label-note">Opsional</span></label>
+            <select id="profileRelationshipStatus">
+              <option value="">Pilih status</option>
+              <option value="mitra_aktif">Mitra Aktif</option>
+              <option value="calon_mitra">Calon Mitra</option>
+              <option value="tidak_ada_hubungan_khusus">Tidak Ada Hubungan Khusus</option>
+              <option value="perlu_tindak_lanjut">Perlu Tindak Lanjut</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="profileRelationshipTargetUnit">UNIT/PEJABAT YANG DITUJU <span class="label-note">Opsional</span></label>
+            <input id="profileRelationshipTargetUnit" type="text" placeholder="Unit atau pejabat tujuan" maxlength="150">
+          </div>
+        </div>
+        <div class="field full" style="margin-top:21px;">
+          <label for="profileRelationshipBasis">DASAR ATAU KEPENTINGAN HUBUNGAN <span class="label-note">Opsional</span></label>
+          <textarea id="profileRelationshipBasis" placeholder="Contoh: rapat, penawaran produk, kontrak, pemeliharaan, atau undangan..." maxlength="2000"></textarea>
+        </div>
+        <div class="grid" style="margin-top:21px;">
+          <div class="field">
+            <label for="profileVisitHistory">RIWAYAT KUNJUNGAN <span class="label-note">Opsional</span></label>
+            <select id="profileVisitHistory">
+              <option value="">Pilih riwayat</option>
+              <option value="baru_pertama_kali">Baru Pertama Kali</option>
+              <option value="beberapa_kali">Beberapa Kali</option>
+              <option value="rutin">Rutin/Berkala</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="profileInternalContact">KONTAK INTERNAL PENGHUBUNG <span class="label-note">Opsional</span></label>
+            <input id="profileInternalContact" type="text" placeholder="Nama/unit penghubung" maxlength="150">
+          </div>
+        </div>
+      </div>
+
+      <div class="section" style="padding:0 0 24px;">
+        <h3 class="subsection-title" style="margin-bottom:16px;">4. Rekam Jejak dan Hasil Pemeriksaan</h3>
+        <div class="grid">
+          <div class="field">
+            <label for="profilePublicCheckResult">HASIL PEMERIKSAAN INFORMASI PUBLIK <span class="label-note">Opsional</span></label>
+            <select id="profilePublicCheckResult">
+              <option value="">Pilih hasil</option>
+              <option value="tidak_ada_masalah">Tidak Ditemukan Masalah</option>
+              <option value="ada_catatan">Ada Catatan Minor</option>
+              <option value="perlu_pendalaman">Perlu Pendalaman Lebih Lanjut</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="profileDataConsistency">KONSISTENSI DATA PERUSAHAAN <span class="label-note">Opsional</span></label>
+            <select id="profileDataConsistency">
+              <option value="">Pilih hasil</option>
+              <option value="konsisten">Konsisten</option>
+              <option value="sebagian_konsisten">Sebagian Konsisten</option>
+              <option value="tidak_konsisten">Tidak Konsisten</option>
+            </select>
+          </div>
+        </div>
+        <div class="field full" style="margin-top:21px;">
+          <label for="profileTrackRecordNotes">TEMUAN ATAU REKAM JEJAK <span class="label-note">Opsional</span></label>
+          <textarea id="profileTrackRecordNotes" placeholder="Cantumkan fakta, tanggal, sumber informasi, dan status verifikasi..." maxlength="2000"></textarea>
+        </div>
+        <div class="field full" style="margin-top:21px;">
+          <label for="profileInformationSources">SUMBER INFORMASI <span class="label-note">Opsional</span></label>
+          <input id="profileInformationSources" type="text" placeholder="Contoh: situs resmi, dokumen publik, atau sumber publik" maxlength="255">
+        </div>
+      </div>
+
+      <div class="section" style="padding:0;">
+        <h3 class="subsection-title" style="margin-bottom:16px;">5. Kesimpulan Profiling</h3>
+        <div class="field full">
+          <label>KATEGORI HASIL EVALUASI <span class="label-note">Opsional</span></label>
+          <div class="device-options" id="profileCategoryOptions">
+            <label class="device-option">
+              <input type="radio" name="profileCategory" class="profile-category-radio" value="aman">
+              <span>Normal &mdash; data yang diperiksa konsisten</span>
+            </label>
+            <label class="device-option">
+              <input type="radio" name="profileCategory" class="profile-category-radio" value="perlu_perhatian">
+              <span>Perlu verifikasi &mdash; ada data yang belum lengkap</span>
+            </label>
+            <label class="device-option">
+              <input type="radio" name="profileCategory" class="profile-category-radio" value="perlu_penanganan">
+              <span>Perlu atensi pengamanan &mdash; terdapat indikator konkret yang perlu ditindaklanjuti</span>
+            </label>
+          </div>
+        </div>
+        <div class="field full" style="margin-top:21px;">
+          <label for="profileNotes">HASIL ANALISIS KAURPAM <span class="label-note">Opsional</span></label>
+          <textarea id="profileNotes" placeholder="Tuliskan ringkasan profil perusahaan, fakta utama, keterbatasan informasi, dan kesimpulan..." maxlength="2000"></textarea>
+        </div>
+      </div>
+
+      <div class="actions" style="padding:24px 0 0; background:transparent;">
+        <button type="button" class="btn" id="cancelProfileBtn">Batal</button>
+        <button type="button" class="btn btn-primary" id="saveProfileBtn">Simpan Profiling</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="stepUpGateOverlay">
