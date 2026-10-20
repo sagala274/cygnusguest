@@ -62,6 +62,109 @@ const PROFILE_SELECT_FIELD_IDS = {
   data_consistency: 'profileDataConsistency',
 };
 
+// Semua kolom "isi" company_profiles (bukan metadata seperti id/updated_by/
+// created_at/updated_at) -- dipakai groupCardHTML() untuk menentukan apakah
+// kartu perusahaan ini sudah punya data profiling untuk ditampilkan.
+const PROFILE_CONTENT_KEYS = new Set([
+  ...Object.keys(PROFILE_TEXT_FIELD_IDS),
+  ...Object.keys(PROFILE_SELECT_FIELD_IDS),
+  'security_category',
+  'profiling_notes',
+]);
+
+// Label yang enak dibaca untuk tiap nilai ENUM -- dipakai ringkasan hasil
+// profiling di kartu perusahaan (bukan nilai mentah "bumn_bumd").
+const COMPANY_TYPE_LABELS = {
+  swasta: 'Swasta', bumn_bumd: 'BUMN/BUMD', instansi_pemerintah: 'Instansi Pemerintah',
+  pendidikan: 'Pendidikan', organisasi_lsm: 'Organisasi/LSM', perorangan: 'Perorangan', lainnya: 'Lainnya',
+};
+const LEGAL_STATUS_LABELS = {
+  terverifikasi: 'Terverifikasi', belum_terverifikasi: 'Belum Terverifikasi', tidak_valid: 'Tidak Valid/Bermasalah',
+};
+const RELATIONSHIP_STATUS_LABELS = {
+  mitra_aktif: 'Mitra Aktif', calon_mitra: 'Calon Mitra',
+  tidak_ada_hubungan_khusus: 'Tidak Ada Hubungan Khusus', perlu_tindak_lanjut: 'Perlu Tindak Lanjut',
+};
+const VISIT_HISTORY_LABELS = { baru_pertama_kali: 'Baru Pertama Kali', beberapa_kali: 'Beberapa Kali', rutin: 'Rutin/Berkala' };
+const PUBLIC_CHECK_RESULT_LABELS = {
+  tidak_ada_masalah: 'Tidak Ditemukan Masalah', ada_catatan: 'Ada Catatan Minor', perlu_pendalaman: 'Perlu Pendalaman Lebih Lanjut',
+};
+const DATA_CONSISTENCY_LABELS = { konsisten: 'Konsisten', sebagian_konsisten: 'Sebagian Konsisten', tidak_konsisten: 'Tidak Konsisten' };
+
+// Field mana masuk bagian mana, dipakai untuk menyusun ringkasan hasil
+// profiling di kartu perusahaan (groupCardHTML) -- urutan & pengelompokan
+// sama persis dengan modal "Rancangan Formulir Profiling Perusahaan".
+// "long: true" ditampilkan disusun ke bawah (seperti Hasil Analisa di
+// Detail Tamu), field lain sejajar label-nilai karena biasanya pendek.
+const COMPANY_PROFILE_SUMMARY_SECTIONS = [
+  {
+    title: '1. Identitas Perusahaan',
+    fields: [
+      ['official_name', 'Nama Resmi Perusahaan'],
+      ['company_type', 'Kategori Perusahaan', COMPANY_TYPE_LABELS],
+      ['business_field', 'Bidang Usaha'],
+      ['founded_year', 'Tahun Berdiri'],
+      ['head_office_address', 'Alamat Kantor Pusat'],
+      ['website', 'Website Resmi'],
+      ['company_phone', 'Nomor Telepon Perusahaan'],
+    ],
+  },
+  {
+    title: '2. Legalitas dan Pengurus',
+    fields: [
+      ['nib', 'Nomor Induk Berusaha'],
+      ['legal_status', 'Status Legalitas', LEGAL_STATUS_LABELS],
+      ['director_name', 'Nama Pimpinan/Direktur'],
+      ['representative_name', 'Nama Perwakilan Perusahaan'],
+      ['legal_notes', 'Catatan Legalitas', null, true],
+    ],
+  },
+  {
+    title: '3. Hubungan dengan Pussiberal/TNI AL',
+    fields: [
+      ['relationship_status', 'Status Hubungan', RELATIONSHIP_STATUS_LABELS],
+      ['relationship_target_unit', 'Unit/Pejabat yang Dituju'],
+      ['relationship_basis', 'Dasar atau Kepentingan Hubungan', null, true],
+      ['visit_history', 'Riwayat Kunjungan', VISIT_HISTORY_LABELS],
+      ['internal_contact', 'Kontak Internal Penghubung'],
+    ],
+  },
+  {
+    title: '4. Rekam Jejak dan Hasil Pemeriksaan',
+    fields: [
+      ['public_check_result', 'Hasil Pemeriksaan Informasi Publik', PUBLIC_CHECK_RESULT_LABELS],
+      ['data_consistency', 'Konsistensi Data Perusahaan', DATA_CONSISTENCY_LABELS],
+      ['track_record_notes', 'Temuan atau Rekam Jejak', null, true],
+      ['information_sources', 'Sumber Informasi'],
+    ],
+  },
+];
+
+// Menyusun hasil profiling (bagian 1-4) jadi ringkasan rapi -- field yang
+// kosong tidak ditampilkan sama sekali, dan bagian yang semua field-nya
+// kosong juga tidak ikut muncul (supaya ringkasannya tidak penuh baris
+// "-" untuk perusahaan yang baru sebagian diisi datanya).
+function companyProfileSummaryHTML(profile) {
+  return COMPANY_PROFILE_SUMMARY_SECTIONS
+    .map((section) => {
+      const rows = section.fields
+        .filter(([key]) => profile[key])
+        .map(([key, label, labelMap, isLong]) => {
+          const value = labelMap ? (labelMap[profile[key]] || profile[key]) : profile[key];
+          return `<div class="detail-row${isLong ? ' detail-row-stacked' : ''}"><span class="detail-label">${escapeHtml(label)}</span><span class="detail-value">${escapeHtml(value)}</span></div>`;
+        })
+        .join('');
+      if (!rows) return '';
+      return `
+        <div style="margin-top:16px;">
+          <div style="font-size:11px; font-weight:800; letter-spacing:.2px; color:#667085; margin-bottom:4px;">${escapeHtml(section.title)}</div>
+          ${rows}
+        </div>
+      `;
+    })
+    .join('');
+}
+
 // Nama perusahaan -> objek profil lengkapnya, diisi ulang tiap load() --
 // dipakai openCompanyProfile() supaya tombol "Profiling Perusahaan" cukup
 // bawa nama perusahaannya saja (bukan ~20 atribut data-* di tiap tombol).
@@ -128,7 +231,13 @@ function groupCardHTML(group) {
     .join('');
 
   const profile = group.profile;
-  const hasProfile = profile && (profile.security_category || profile.profiling_notes);
+  // Bukan cuma cek security_category/profiling_notes lagi -- perusahaan
+  // bisa saja baru diisi sebagian data profilnya (mis. cuma bidang usaha)
+  // tanpa sampai ke bagian "5. Kesimpulan Profiling" sama sekali. Kolom
+  // metadata (id/updated_by/created_at/updated_at) sengaja DIKECUALIKAN --
+  // itu selalu terisi begitu baris company_profiles pernah dibuat sekali
+  // (termasuk kalau disimpan kosong semua), jadi tidak boleh ikut dihitung.
+  const hasProfile = profile && [...PROFILE_CONTENT_KEYS].some((k) => !!profile[k]);
   const canEditProfile = group.company !== INDEPENDENT_GROUP_LABEL;
 
   return `
@@ -151,6 +260,7 @@ function groupCardHTML(group) {
           <div class="callout" style="margin-bottom:18px;">
             <span class="callout-label">Hasil Profiling Perusahaan${profile.security_category ? ` &middot; <span class="badge ${securityCategoryBadgeClass(profile.security_category)}">${escapeHtml(securityCategoryLabel(profile.security_category))}</span>` : ''}</span>
             ${profile.profiling_notes ? `<p style="white-space:pre-line; margin-top:8px;">${escapeHtml(profile.profiling_notes)}</p>` : ''}
+            ${companyProfileSummaryHTML(profile)}
           </div>
         ` : ''}
         <div class="table-wrap">
@@ -334,7 +444,11 @@ function openCompanyProfile(company) {
   const profile = profilesByCompany.get(company) || {};
 
   Object.entries(PROFILE_TEXT_FIELD_IDS).forEach(([key, id]) => {
-    document.getElementById(id).value = profile[key] || '';
+    // "Nama Resmi Perusahaan" belum pernah diisi -> isi otomatis dengan
+    // nama perusahaan yang sudah tercatat dari pendaftaran tamu, supaya
+    // petugas tidak perlu mengetik ulang nama yang sama.
+    const fallback = key === 'official_name' ? company : '';
+    document.getElementById(id).value = profile[key] || fallback;
   });
   Object.entries(PROFILE_SELECT_FIELD_IDS).forEach(([key, id]) => {
     document.getElementById(id).value = profile[key] || '';
