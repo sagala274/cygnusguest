@@ -1313,6 +1313,19 @@ a.link:hover { text-decoration: underline; }
   .detail-value { text-align: left; }
   thead th, tbody td { padding: 10px 12px; }
   .brand-mark { width: 44px; height: 44px; }
+
+  /* Popup hasil Pendaftaran Tamu -- di layar sempit (HP) tombol "Lihat
+     Detail"/"Tutup" ditumpuk ke bawah (bukan sejajar) supaya labelnya
+     tidak terlalu sempit/terpotong, dan jarak/ukurannya dipadatkan. */
+  .result-modal-card { padding: 32px 20px 24px; border-radius: 16px; }
+  .result-modal-icon-wrap { width: 84px; height: 84px; }
+  .result-modal-icon { width: 56px; height: 56px; }
+  .result-modal-icon .icon { width: 28px; height: 28px; }
+  .result-modal-title { font-size: 18px; }
+  .result-modal-reg-box { gap: 8px; padding: 10px 12px; }
+  .result-modal-reg-number { font-size: 14px; }
+  .result-modal-actions { flex-direction: column; }
+  .result-modal-btn { width: 100%; }
 }
 
 /* Matikan animasi masuk pie chart/grafik (Dashboard) untuk pengguna yang
