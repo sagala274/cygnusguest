@@ -327,7 +327,7 @@ router.get('/visits/export', requireRole('admin', 'verifikator', 'pimpinan'), as
     doc.fontSize(9);
 
     const headers = ['No. Registrasi', 'Perusahaan', 'Jml', 'Nama Tamu', 'Keperluan', 'Status', 'Check-in', 'Check-out'];
-    const colWidths = [90, 105, 30, 140, 130, 65, 110, 110];
+    const colWidths = [105, 95, 25, 140, 130, 65, 110, 110];
     const NAME_COL = 3;
     const startX = doc.page.margins.left;
     const colX = [];
@@ -355,27 +355,35 @@ router.get('/visits/export', requireRole('admin', 'verifikator', 'pimpinan'), as
       y += 18;
     }
 
-    // "Nama Tamu" sengaja TIDAK dipotong satu baris seperti kolom lain --
-    // disusun ke bawah (satu nama per baris) supaya tidak ada nama yang
-    // hilang/kepotong kalau satu pendaftaran berisi banyak tamu sekaligus.
-    // Tinggi barisnya jadi menyesuaikan jumlah nama; kolom lain tetap rata
-    // atas di baris yang sama.
+    // Tidak ada kolom yang dipotong "..." lagi -- "Nama Tamu" disusun ke
+    // bawah (satu nama per baris, seperti sebelumnya), kolom lainnya
+    // (No. Registrasi, Keperluan, dst) dibiarkan membungkus ke baris
+    // berikutnya kalau tidak muat dalam satu baris. Tinggi barisnya
+    // menyesuaikan kolom TERPANJANG di baris itu (dihitung dulu lewat
+    // doc.heightOfString() sebelum digambar), supaya tidak ada teks yang
+    // kepotong maupun tumpang tindih dengan baris berikutnya.
     function drawVisitRow(r) {
       const names = r.member_names ? String(r.member_names).split(', ') : ['-'];
-      const rowH = Math.max(18, names.length * lineH + 4);
-      checkPageBreak(rowH);
-
       const values = [
         r.registration_number, r.company, r.member_count, null, keperluanText(r), r.status,
         r.check_in_at ? formatJakartaDateTime(r.check_in_at) : '-',
         r.check_out_at ? formatJakartaDateTime(r.check_out_at) : '-',
       ];
+
       doc.font('Helvetica');
+      let rowH = Math.max(18, names.length * lineH + 4);
       values.forEach((v, i) => {
         if (i === NAME_COL) return;
-        doc.text(String(v === null || v === undefined ? '-' : v), colX[i], y, {
-          width: colWidths[i], height: lineH, ellipsis: true, lineBreak: false,
-        });
+        const text = v === null || v === undefined ? '-' : String(v);
+        rowH = Math.max(rowH, doc.heightOfString(text, { width: colWidths[i] }) + 4);
+      });
+
+      checkPageBreak(rowH);
+
+      values.forEach((v, i) => {
+        if (i === NAME_COL) return;
+        const text = v === null || v === undefined ? '-' : String(v);
+        doc.text(text, colX[i], y, { width: colWidths[i] });
       });
       names.forEach((name, i) => {
         doc.text(name, colX[NAME_COL], y + i * lineH, {
