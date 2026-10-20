@@ -235,6 +235,18 @@ function vehicleSummary(g) {
   return [escapeHtml(name) || '-', g.plate_number ? escapeHtml(g.plate_number) : ''].filter(Boolean).join(' &middot; ');
 }
 
+// member_names dari backend digabung jadi satu string dipisah ", "
+// (GROUP_CONCAT) -- disusun ke bawah satu nama per baris di sini supaya
+// pendaftaran rombongan (>1 orang) tetap gampang dibaca di tabel, bukan
+// jadi satu baris panjang yang bikin tabelnya melebar/discroll ke samping.
+function stackedNamesHtml(names) {
+  if (!names) return '-';
+  return names
+    .split(', ')
+    .map((n) => `<div>${escapeHtml(n)}</div>`)
+    .join('');
+}
+
 function actionLabel(action) {
   const map = {
     login: 'Login',

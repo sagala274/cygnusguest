@@ -974,17 +974,7 @@ if (canSeeVisitChart) {
     });
   }
 
-  // member_names dari backend digabung jadi satu string dipisah ", "
-  // (GROUP_CONCAT) -- disusun ke bawah satu nama per baris di sini supaya
-  // pendaftaran rombongan (>1 orang) tetap gampang dibaca, bukan jadi satu
-  // baris panjang yang terpotong/discroll ke samping.
-  function stackedNamesHtml(names) {
-    if (!names) return '-';
-    return names
-      .split(', ')
-      .map((n) => `<div>${escapeHtml(n)}</div>`)
-      .join('');
-  }
+  // stackedNamesHtml() sekarang ada di app.js (dipakai bersama Daftar Tamu).
 
   // Modal daftar pendaftaran tamu pada satu titik grafik yang diklik -- sama
   // polanya seperti openAttendanceBucketModal() untuk pie chart "Kondisi

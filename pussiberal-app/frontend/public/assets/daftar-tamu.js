@@ -49,7 +49,7 @@ async function load() {
         <tr>
           <td>${escapeHtml(g.registration_number)}</td>
           <td>${escapeHtml(g.company || '-')}</td>
-          <td>${escapeHtml(g.member_names || '-')}</td>
+          <td>${stackedNamesHtml(g.member_names)}</td>
           <td>${g.member_count}</td>
           <td><span class="badge ${statusBadgeClass(g.status)}">${escapeHtml(guestStatusLabel(g.status))}</span></td>
           <td>${formatDateTime(g.created_at)}</td>
