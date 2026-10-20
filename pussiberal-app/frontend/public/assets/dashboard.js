@@ -974,6 +974,18 @@ if (canSeeVisitChart) {
     });
   }
 
+  // member_names dari backend digabung jadi satu string dipisah ", "
+  // (GROUP_CONCAT) -- disusun ke bawah satu nama per baris di sini supaya
+  // pendaftaran rombongan (>1 orang) tetap gampang dibaca, bukan jadi satu
+  // baris panjang yang terpotong/discroll ke samping.
+  function stackedNamesHtml(names) {
+    if (!names) return '-';
+    return names
+      .split(', ')
+      .map((n) => `<div>${escapeHtml(n)}</div>`)
+      .join('');
+  }
+
   // Modal daftar pendaftaran tamu pada satu titik grafik yang diklik -- sama
   // polanya seperti openAttendanceBucketModal() untuk pie chart "Kondisi
   // Absensi Hari Ini": klik dulu baru tabelnya muncul, tooltip hover tetap
@@ -997,7 +1009,7 @@ if (canSeeVisitChart) {
         <tr>
           <td>${escapeHtml(g.registration_number)}</td>
           <td>${escapeHtml(g.company || '-')}</td>
-          <td>${escapeHtml(g.member_names || '-')}</td>
+          <td>${stackedNamesHtml(g.member_names)}</td>
           <td><span class="badge ${statusBadgeClass(g.status)}">${escapeHtml(guestStatusLabel(g.status))}</span></td>
           <td>${formatDateTime(g.created_at)}</td>
           <td><a class="link" href="detail-tamu?id=${g.id}">Detail</a></td>
