@@ -215,18 +215,31 @@
 </div>
 
 <div class="modal-overlay" id="registrationResultModal">
-  <div class="modal-card" style="max-width: 440px;">
-    <div class="modal-head">
-      <h2 id="registrationResultTitle">Pendaftaran</h2>
-      <button type="button" class="modal-close" id="registrationResultCloseBtn"><span class="icon-slot" id="registrationResultCloseIconSlot"></span></button>
+  <div class="result-modal-card">
+    <button type="button" class="result-modal-close" id="registrationResultCloseBtn"><span id="registrationResultCloseIconSlot"></span></button>
+
+    <div class="result-modal-icon-wrap" id="registrationResultIconWrap">
+      <span class="result-modal-dot"></span>
+      <span class="result-modal-dot"></span>
+      <span class="result-modal-dot"></span>
+      <span class="result-modal-dot"></span>
+      <div class="result-modal-icon" id="registrationResultIconSlot"></div>
     </div>
-    <div class="modal-body">
-      <div id="registrationResultIconSlot" class="icon-bubble" style="margin-bottom:16px;"></div>
-      <p id="registrationResultMessage" style="margin:0; font-size:14px; line-height:1.6; color:#344054;"></p>
-      <div class="modal-actions">
-        <a class="btn" id="registrationResultDetailLink" href="#" style="display:none;">Lihat Detail</a>
-        <button type="button" class="btn btn-primary" id="registrationResultOkBtn">Tutup</button>
-      </div>
+
+    <h2 id="registrationResultTitle" class="result-modal-title"></h2>
+    <p id="registrationResultMessage" class="result-modal-message"></p>
+
+    <div class="result-modal-reg-box" id="registrationResultRegBox" style="display:none;">
+      <span class="result-modal-reg-icon" id="registrationResultRegIconSlot"></span>
+      <span class="result-modal-reg-number" id="registrationResultRegNumber"></span>
+      <button type="button" class="result-modal-copy-btn" id="registrationResultCopyBtn" title="Salin nomor registrasi"></button>
+    </div>
+
+    <p id="registrationResultSubMessage" class="result-modal-submessage" style="display:none;"></p>
+
+    <div class="result-modal-actions">
+      <a class="result-modal-btn result-modal-btn-outline" id="registrationResultDetailLink" href="#" style="display:none;"></a>
+      <button type="button" class="result-modal-btn result-modal-btn-primary" id="registrationResultOkBtn"></button>
     </div>
   </div>
 </div>

@@ -12,22 +12,55 @@ const addMemberBtn = document.getElementById('addMemberBtn');
 // sepanjang ini). Sekarang muncul sebagai modal supaya hasilnya pasti
 // terlihat, baik saat berhasil maupun saat ada field wajib yang belum diisi.
 const registrationResultModal = document.getElementById('registrationResultModal');
+const registrationResultIconWrap = document.getElementById('registrationResultIconWrap');
 const registrationResultIconSlot = document.getElementById('registrationResultIconSlot');
 const registrationResultTitle = document.getElementById('registrationResultTitle');
 const registrationResultMessage = document.getElementById('registrationResultMessage');
+const registrationResultRegBox = document.getElementById('registrationResultRegBox');
+const registrationResultRegNumber = document.getElementById('registrationResultRegNumber');
+const registrationResultSubMessage = document.getElementById('registrationResultSubMessage');
 const registrationResultDetailLink = document.getElementById('registrationResultDetailLink');
+const registrationResultOkBtn = document.getElementById('registrationResultOkBtn');
+const registrationResultCopyBtn = document.getElementById('registrationResultCopyBtn');
 
-function openRegistrationResultModal({ success, title, message, detailUrl }) {
+document.getElementById('registrationResultRegIconSlot').innerHTML = icon('clipboard');
+
+function openRegistrationResultModal({ success, title, message, registrationNumber, subMessage, detailUrl }) {
   registrationResultTitle.textContent = title;
-  registrationResultMessage.textContent = message;
-  registrationResultIconSlot.className = `icon-bubble ${success ? 'icon-bubble-success' : 'icon-bubble-danger'}`;
+  // message boleh berisi "\n" untuk baris baru (mis. "Pendaftaran berhasil
+  // untuk 1 tamu.\nNomor registrasi:") -- di-escape dulu sebelum
+  // diubah jadi <br> supaya tetap aman dari teks yang mungkin mengandung
+  // karakter HTML (mis. pesan error dari server).
+  registrationResultMessage.innerHTML = escapeHtml(message).replace(/\n/g, '<br>');
+
+  registrationResultIconWrap.className = `result-modal-icon-wrap ${success ? 'is-success' : 'is-error'}`;
+  registrationResultIconSlot.className = `result-modal-icon ${success ? 'is-success' : 'is-error'}`;
   registrationResultIconSlot.innerHTML = icon(success ? 'checkCircle' : 'warning');
+
+  if (registrationNumber) {
+    registrationResultRegNumber.textContent = registrationNumber;
+    registrationResultRegBox.style.display = 'flex';
+  } else {
+    registrationResultRegBox.style.display = 'none';
+  }
+
+  if (subMessage) {
+    registrationResultSubMessage.textContent = subMessage;
+    registrationResultSubMessage.style.display = 'block';
+  } else {
+    registrationResultSubMessage.style.display = 'none';
+  }
+
   if (detailUrl) {
     registrationResultDetailLink.href = detailUrl;
+    registrationResultDetailLink.innerHTML = `${icon('clipboard')} Lihat Detail`;
     registrationResultDetailLink.style.display = 'inline-flex';
+    registrationResultOkBtn.innerHTML = `${icon('check')} Tutup`;
   } else {
     registrationResultDetailLink.style.display = 'none';
+    registrationResultOkBtn.innerHTML = `${icon('close')} Tutup`;
   }
+
   registrationResultModal.classList.add('open');
 }
 
@@ -37,9 +70,22 @@ function closeRegistrationResultModal() {
 
 document.getElementById('registrationResultCloseIconSlot').innerHTML = icon('close');
 document.getElementById('registrationResultCloseBtn').addEventListener('click', closeRegistrationResultModal);
-document.getElementById('registrationResultOkBtn').addEventListener('click', closeRegistrationResultModal);
+registrationResultOkBtn.addEventListener('click', closeRegistrationResultModal);
 registrationResultModal.addEventListener('click', (e) => { if (e.target === registrationResultModal) closeRegistrationResultModal(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && registrationResultModal.classList.contains('open')) closeRegistrationResultModal(); });
+
+registrationResultCopyBtn.innerHTML = icon('copy');
+registrationResultCopyBtn.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(registrationResultRegNumber.textContent);
+    registrationResultCopyBtn.innerHTML = icon('check');
+    setTimeout(() => { registrationResultCopyBtn.innerHTML = icon('copy'); }, 1500);
+  } catch (err) {
+    // Clipboard API bisa gagal/tidak tersedia (mis. browser lama, bukan
+    // konteks HTTPS) -- nomor registrasinya tetap terlihat jelas di kotak,
+    // jadi gagal menyalin tidak menghalangi apa pun, cukup diamkan saja.
+  }
+});
 
 const memberWidgets = new Map();
 let memberSeq = 0;
@@ -610,8 +656,12 @@ form.addEventListener('submit', async (e) => {
       success: true,
       title: isDraft ? 'Draft Tersimpan' : 'Pendaftaran Berhasil',
       message: isDraft
-        ? `Tamu terjadwal berhasil disimpan sebagai draft untuk ${count} tamu. Nomor registrasi: ${res.data.registration_number}. Lengkapi data yang masih kosong (Perusahaan/Keperluan, Foto Tamu, deklarasi Perangkat Elektronik) kapan saja sebelum tamu tiba.`
-        : `Pendaftaran berhasil untuk ${count} tamu. Nomor registrasi: ${res.data.registration_number}, selanjutnya menunggu verifikasi.`,
+        ? `Tamu terjadwal berhasil disimpan sebagai draft untuk ${count} tamu.\nNomor registrasi:`
+        : `Pendaftaran berhasil untuk ${count} tamu.\nNomor registrasi:`,
+      registrationNumber: res.data.registration_number,
+      subMessage: isDraft
+        ? 'Lengkapi data yang masih kosong (Perusahaan/Keperluan, Foto Tamu, deklarasi Perangkat Elektronik) kapan saja sebelum tamu tiba.'
+        : 'Selanjutnya menunggu verifikasi dari petugas pengamanan.',
       detailUrl: `detail-tamu?id=${res.data.id}`,
     });
     resetForm();

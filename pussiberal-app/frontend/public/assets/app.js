@@ -42,6 +42,8 @@ const ICONS = {
   network: '<circle cx="5.5" cy="6" r="2.5"/><circle cx="18.5" cy="6" r="2.5"/><circle cx="12" cy="19" r="2.5"/><line x1="7.7" y1="7.2" x2="10.1" y2="17"/><line x1="16.3" y1="7.2" x2="13.9" y2="17"/><line x1="8" y1="6" x2="16" y2="6"/>',
   star: '<polygon points="12,2.5 15,9 22,9.8 17,14.6 18.3,21.5 12,18 5.7,21.5 7,14.6 2,9.8 9,9"/>',
   grip: '<circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/>',
+  copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5,15 H4 a2,2 0 0 1 -2,-2 V4 a2,2 0 0 1 2,-2 H15 a2,2 0 0 1 2,2 V5"/>',
+  check: '<polyline points="4,13 9,18 20,6"/>',
 };
 
 function icon(name, extraClass) {

@@ -924,6 +924,84 @@ input:focus, select:focus, textarea:focus {
 .modal-actions { display: flex; gap: 12px; margin-top: 6px; }
 .modal-actions .btn { flex: 1; }
 
+/* Popup hasil Pendaftaran Tamu -- dibuat terpisah dari .modal-card standar
+   di atas (bukan dipakai ulang di tempat lain) karena gaya visualnya
+   khusus: tanpa bar judul, ikon besar melingkar dengan efek halo, dan
+   kotak nomor registrasi yang bisa disalin. */
+.result-modal-card {
+  position: relative;
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 420px;
+  padding: 40px 32px 28px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(16,24,40,.3);
+}
+.result-modal-close {
+  position: absolute; top: 18px; right: 18px;
+  width: 32px; height: 32px; border-radius: 50%; border: none; background: none;
+  color: #98a2b3; display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.result-modal-close:hover { background: #f5f6f9; color: #667085; }
+.result-modal-close .icon { width: 18px; height: 18px; }
+
+.result-modal-icon-wrap {
+  position: relative; width: 104px; height: 104px; margin: 0 auto 20px;
+  display: flex; align-items: center; justify-content: center;
+}
+.result-modal-icon-wrap::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+}
+.result-modal-icon-wrap.is-success::before { background: radial-gradient(circle, #86e0a8 0%, transparent 72%); opacity: .5; }
+.result-modal-icon-wrap.is-error::before { background: radial-gradient(circle, #f5a3a3 0%, transparent 72%); opacity: .4; }
+.result-modal-icon {
+  position: relative; width: 68px; height: 68px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; z-index: 1;
+}
+.result-modal-icon.is-success { background: #e3f6e9; color: var(--success); }
+.result-modal-icon.is-error { background: #fdecea; color: var(--danger); }
+.result-modal-icon .icon { width: 34px; height: 34px; }
+
+.result-modal-dot { position: absolute; border-radius: 50%; display: none; }
+.result-modal-icon-wrap.is-success .result-modal-dot { display: block; }
+.result-modal-icon-wrap .result-modal-dot:nth-child(1) { width: 9px; height: 9px; background: #34d399; top: 2px; left: 14px; }
+.result-modal-icon-wrap .result-modal-dot:nth-child(2) { width: 6px; height: 6px; background: #fbbf24; top: 12px; right: 4px; }
+.result-modal-icon-wrap .result-modal-dot:nth-child(3) { width: 5px; height: 5px; background: #60a5fa; bottom: 10px; left: 2px; }
+.result-modal-icon-wrap .result-modal-dot:nth-child(4) { width: 7px; height: 7px; background: #34d399; bottom: 0; right: 16px; }
+
+.result-modal-title { margin: 0 0 10px; font-size: 20px; font-weight: 800; color: var(--navy); }
+.result-modal-message { margin: 0; font-size: 13.5px; line-height: 1.6; color: #667085; }
+.result-modal-submessage { margin: 12px 0 0; font-size: 12.5px; color: #98a2b3; }
+
+.result-modal-reg-box {
+  display: flex; align-items: center; gap: 12px; margin: 18px 0 0; padding: 12px 16px;
+  border: 1.5px dashed #86e0a8; background: #f1faf4; border-radius: 10px;
+}
+.result-modal-reg-icon {
+  flex-shrink: 0; width: 34px; height: 34px; border-radius: 8px; background: #d8f3e1; color: var(--success);
+  display: flex; align-items: center; justify-content: center;
+}
+.result-modal-reg-icon .icon { width: 18px; height: 18px; }
+.result-modal-reg-number { flex: 1; min-width: 0; font-size: 16px; font-weight: 800; color: var(--navy); text-align: left; word-break: break-all; }
+.result-modal-copy-btn {
+  flex-shrink: 0; width: 32px; height: 32px; border-radius: 8px; border: none; background: #fff;
+  color: #667085; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .12s, color .12s;
+}
+.result-modal-copy-btn:hover { background: #e3f6e9; color: var(--success); }
+.result-modal-copy-btn .icon { width: 16px; height: 16px; }
+
+.result-modal-actions { display: flex; gap: 12px; margin-top: 24px; }
+.result-modal-btn {
+  flex: 1; height: 48px; border-radius: 999px; font-weight: 800; font-size: 13.5px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  text-decoration: none; cursor: pointer; transition: opacity .15s; border: none;
+}
+.result-modal-btn:hover { opacity: .88; }
+.result-modal-btn .icon { width: 16px; height: 16px; }
+.result-modal-btn-primary { background: var(--navy); color: #fff; }
+.result-modal-btn-outline { background: #fff; border: 1.5px solid #c9ced8; color: #172033; }
+
 /* Table */
 /* Klik-geser (drag) untuk menggeser tabel lebar ke kiri/kanan -- supaya
    pengguna tidak perlu mencari scrollbar tipis di bagian paling bawah
