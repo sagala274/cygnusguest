@@ -916,6 +916,11 @@ if (canSeeVisitChart) {
     const tooltip = document.getElementById('chartTooltip');
     const groups = wrap.querySelectorAll('.chart-bar-group');
 
+    // Maksimal nama yang ditampilkan langsung di tooltip -- supaya tooltip
+    // tidak jadi raksasa kalau satu hari ada puluhan pendaftaran. Sisanya
+    // diringkas jadi "+N lainnya".
+    const MAX_TOOLTIP_NAMES = 8;
+
     function showTooltip(group) {
       const idx = Number(group.dataset.index);
       const point = data[idx];
@@ -929,6 +934,32 @@ if (canSeeVisitChart) {
       labelEl.textContent = point.label;
       tooltip.appendChild(valueEl);
       tooltip.appendChild(labelEl);
+
+      // Langsung tunjukkan siapa saja yang mendaftar pada periode ini --
+      // sama seperti grafik di Absensi Personel yang langsung memberi
+      // keterangan saat kursor diarahkan, tanpa perlu klik dulu.
+      const names = point.names || [];
+      if (names.length) {
+        const namesEl = document.createElement('div');
+        namesEl.className = 'chart-tooltip-names';
+        namesEl.innerHTML = names
+          .slice(0, MAX_TOOLTIP_NAMES)
+          .map((n) => `<div>&bull; ${escapeHtml(n)}</div>`)
+          .join('');
+        if (names.length > MAX_TOOLTIP_NAMES) {
+          const moreEl = document.createElement('div');
+          moreEl.className = 'chart-tooltip-names-more';
+          moreEl.textContent = `+${names.length - MAX_TOOLTIP_NAMES} lainnya`;
+          namesEl.appendChild(moreEl);
+        }
+        tooltip.appendChild(namesEl);
+      } else if (point.count === 0) {
+        const emptyEl = document.createElement('div');
+        emptyEl.className = 'chart-tooltip-names';
+        emptyEl.textContent = 'Tidak ada pendaftaran';
+        tooltip.appendChild(emptyEl);
+      }
+
       tooltip.style.display = 'block';
 
       const hitRect = group.querySelector('.chart-bar-hit').getBoundingClientRect();

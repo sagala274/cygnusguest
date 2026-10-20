@@ -788,6 +788,17 @@ input:focus, select:focus, textarea:focus {
 }
 .chart-tooltip-value { font-weight: 800; font-size: 13px; }
 .chart-tooltip-label { color: #aeb6cf; margin-top: 2px; }
+.chart-tooltip-names {
+  white-space: normal;
+  max-width: 220px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,.15);
+  font-size: 11px;
+  line-height: 1.5;
+  color: #e4e7f2;
+}
+.chart-tooltip-names-more { color: #aeb6cf; font-style: italic; margin-top: 2px; }
 
 /* Toolbar */
 .toolbar { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }

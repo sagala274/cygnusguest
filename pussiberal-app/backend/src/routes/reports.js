@@ -204,22 +204,30 @@ router.get('/visit-stats', requireRole('admin', 'verifikator'), asyncHandler(asy
   const since = periods[0].start;
 
   const [rows] = await pool.query(
-    `SELECT g.created_at
+    `SELECT g.created_at, gm.full_name
      FROM guests g
      JOIN guest_members gm ON gm.guest_id = g.id
-     WHERE g.created_at >= :since`,
+     WHERE g.created_at >= :since
+     ORDER BY gm.full_name`,
     { since }
   );
 
   const counts = periods.map(() => 0);
+  // Nama-nama tamu yang mendaftar di tiap periode -- dipakai tooltip grafik
+  // Kunjungan Tamu di dashboard supaya hover langsung menunjukkan siapa saja
+  // yang mendaftar hari/minggu/bulan itu, bukan cuma angkanya.
+  const names = periods.map(() => []);
   rows.forEach((row) => {
     const t = new Date(row.created_at).getTime();
     const idx = periods.findIndex((p) => t >= p.start.getTime() && t < p.end.getTime());
-    if (idx !== -1) counts[idx] += 1;
+    if (idx !== -1) {
+      counts[idx] += 1;
+      names[idx].push(row.full_name);
+    }
   });
 
   res.json({
-    data: periods.map((p, i) => ({ label: p.label, count: counts[i] })),
+    data: periods.map((p, i) => ({ label: p.label, count: counts[i], names: names[i] })),
     period,
   });
 }));
