@@ -17,9 +17,11 @@ const PURPOSE_CATEGORIES = [
   'diskusi_teknis',
   'maintenance',
   'instalasi',
+  'sosialisasi_pelatihan',
   'pengiriman',
   'lainnya',
 ];
+
 
 async function columnExists(table, column) {
   const [rows] = await pool.query(
@@ -74,6 +76,24 @@ async function ensureGuestExtraColumns() {
     await pool.query(`
       ALTER TABLE guests ADD COLUMN activity_photo
         MEDIUMTEXT NULL AFTER accompanied_by
+    `);
+  }
+
+  // Dokumen/foto Security Clearance (SC) -- diminta untuk keperluan yang
+  // sifatnya Maintenance/Instalasi/Sosialisasi-Pelatihan (lihat pendaftaran.js).
+  // sc_exemption_note dipakai kalau pimpinan mengarahkan kegiatan ini TIDAK
+  // perlu SC -- keduanya tetap opsional di backend (bukan divalidasi wajib),
+  // supaya petugas tetap bisa menyimpan pendaftaran walau SC-nya menyusul.
+  if (!(await columnExists('guests', 'sc_document'))) {
+    await pool.query(`
+      ALTER TABLE guests ADD COLUMN sc_document
+        MEDIUMTEXT NULL AFTER activity_photo
+    `);
+  }
+  if (!(await columnExists('guests', 'sc_exemption_note'))) {
+    await pool.query(`
+      ALTER TABLE guests ADD COLUMN sc_exemption_note
+        VARCHAR(500) NULL AFTER sc_document
     `);
   }
 }

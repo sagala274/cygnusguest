@@ -44,6 +44,7 @@ const PURPOSE_CATEGORY_OPTIONS = [
   ['diskusi_teknis', 'Diskusi Teknis'],
   ['maintenance', 'Maintenance'],
   ['instalasi', 'Instalasi/Pemasangan Perangkat'],
+  ['sosialisasi_pelatihan', 'Sosialisasi/Pelatihan'],
   ['pengiriman', 'Pengiriman'],
   ['lainnya', 'Lainnya'],
 ];
@@ -274,6 +275,26 @@ async function load() {
       ${g.re_entry_reason ? `<div class="detail-row"><span class="detail-label">Keterangan Check-in Ulang</span><span class="detail-value">${escapeHtml(g.re_entry_reason)} <span class="label-note">(${formatDateTime(g.re_entry_at)})</span></span></div>` : ''}
       <div class="detail-row"><span class="detail-label">Terdaftar Pada</span><span class="detail-value">${formatDateTime(g.created_at)}</span></div>
     `;
+
+    // Bagian SC hanya ditampilkan kalau kategori keperluannya memang
+    // biasanya mewajibkan SC, atau datanya sudah pernah diisi sebelumnya
+    // (mis. kategori sempat diubah setelah SC-nya terisi) -- supaya tidak
+    // menambah bagian kosong di pendaftaran yang memang tidak perlu SC.
+    const SC_RELEVANT_CATEGORIES = ['maintenance', 'instalasi', 'sosialisasi_pelatihan'];
+    const scSection = document.getElementById('scSection');
+    if (SC_RELEVANT_CATEGORIES.includes(g.purpose_category) || g.sc_document || g.sc_exemption_note) {
+      scSection.style.display = 'block';
+      const scPhotoHtml = g.sc_document
+        ? `<div class="photo-frame" style="max-width:320px; margin-bottom:14px;"><img src="${escapeHtml(g.sc_document)}" alt="Dokumen SC"></div>`
+        : '';
+      const scNoteHtml = g.sc_exemption_note
+        ? `<div class="detail-row detail-row-stacked"><span class="detail-label">Catatan -- SC Tidak Diperlukan</span><span class="detail-value">${escapeHtml(g.sc_exemption_note)}</span></div>`
+        : '';
+      document.getElementById('scBody').innerHTML = scPhotoHtml + scNoteHtml
+        || '<p class="page-description" style="margin:0;">Belum ada dokumen SC maupun catatan pengecualian untuk pendaftaran ini.</p>';
+    } else {
+      scSection.style.display = 'none';
+    }
 
     // activity_photo sengaja TIDAK dikirim backend sama sekali untuk role
     // yang tidak boleh melihatnya (Pos Depan) -- lihat canViewActivityPhoto()

@@ -103,6 +103,7 @@
               <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="diskusi_teknis"><span>Diskusi Teknis</span></label>
               <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="maintenance"><span>Maintenance</span></label>
               <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="instalasi"><span>Instalasi/Pemasangan Perangkat</span></label>
+              <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="sosialisasi_pelatihan"><span>Sosialisasi/Pelatihan</span></label>
               <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="pengiriman"><span>Pengiriman</span></label>
               <label class="device-option"><input type="radio" name="purposeCategory" class="m-purpose-category" value="lainnya"><span>Lainnya</span></label>
             </div>
@@ -111,6 +112,31 @@
           <div class="field full" style="margin-top:21px;">
             <label for="purpose">DETAIL TUJUAN MENGHADAP <span id="purposeRequiredMark"><span class="required">*</span></span></label>
             <textarea id="purpose" name="purpose" placeholder="Jelaskan lebih detail keperluan kunjungan. Untuk kategori &quot;Lainnya&quot;, sebutkan kegiatannya secara spesifik..." required></textarea>
+          </div>
+
+          <div class="field full" id="scDocumentFieldWrap" style="display:none; margin-top:21px;">
+            <label class="photo-widget-label">DOKUMEN/FOTO SECURITY CLEARANCE (SC) <span class="optional-badge">Opsional</span></label>
+            <div class="photo-widget" data-kind="sc_document" style="max-width:320px;">
+              <div class="photo-frame">
+                <div class="photo-frame-empty">Kamera belum aktif.<br>Tekan "Aktifkan Kamera" atau unggah foto/dokumen SC.</div>
+                <video autoplay playsinline muted style="display:none;"></video>
+                <img alt="Pratinjau dokumen SC" style="display:none;">
+              </div>
+              <canvas style="display:none;"></canvas>
+              <div class="photo-actions">
+                <button type="button" class="btn btn-small start-camera-btn">Aktifkan Kamera</button>
+                <button type="button" class="btn btn-small btn-primary capture-btn" style="display:none;">Ambil Foto</button>
+                <button type="button" class="btn btn-small retake-btn" style="display:none;">Ambil Ulang</button>
+                <button type="button" class="btn btn-small upload-btn">Unggah</button>
+                <input type="file" class="file-input-hidden photo-file-input" accept="image/*">
+              </div>
+              <p class="photo-hint"></p>
+            </div>
+          </div>
+
+          <div class="field full" id="scExemptionNoteFieldWrap" style="display:none; margin-top:21px;">
+            <label for="sc_exemption_note">CATATAN -- JIKA SC TIDAK DIPERLUKAN SESUAI ARAHAN PIMPINAN <span class="label-note">Opsional</span></label>
+            <textarea id="sc_exemption_note" maxlength="500" placeholder="Jelaskan dasar/arahan pimpinan jika kegiatan ini tidak memerlukan Security Clearance..."></textarea>
           </div>
 
           <div class="field full" style="margin-top:21px;">

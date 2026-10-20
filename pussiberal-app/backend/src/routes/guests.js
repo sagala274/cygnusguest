@@ -225,6 +225,8 @@ router.get('/:id', asyncHandler(async (req, res) => {
       purpose_category: g.purpose_category,
       accompanied_by: g.accompanied_by,
       activity_photo: canViewActivityPhoto(req.user.role) ? g.activity_photo : undefined,
+      sc_document: g.sc_document,
+      sc_exemption_note: g.sc_exemption_note,
       device_status: g.device_status,
       device_reason: g.device_reason,
       status: g.status,
@@ -244,7 +246,10 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
 // POST /api/guests  (Pos Depan mendaftarkan 1+ tamu dari perusahaan yang sama -> masuk antrian verifikasi)
 router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
-  const { company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, vehicle_type, vehicle_brand, plate_number, members, is_scheduled } = req.body || {};
+  const {
+    company, target_officials, target_official_other, purpose, purpose_category, accompanied_by,
+    sc_document, sc_exemption_note, vehicle_type, vehicle_brand, plate_number, members, is_scheduled,
+  } = req.body || {};
   const isScheduled = !!is_scheduled;
 
   const errors = {};
@@ -271,6 +276,8 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
     }
   }
   if (accompanied_by && String(accompanied_by).length > 150) errors.accompanied_by = 'Keterangan pendamping maksimal 150 karakter';
+  if (sc_document && !isValidPhotoDataUrl(sc_document)) errors.sc_document = 'Dokumen/foto SC tidak valid atau ukurannya terlalu besar (maks 3MB)';
+  if (sc_exemption_note && String(sc_exemption_note).length > 500) errors.sc_exemption_note = 'Catatan SC maksimal 500 karakter';
 
   if (!Array.isArray(members) || members.length === 0) {
     errors.members = 'Minimal satu tamu harus diisi';
@@ -305,8 +312,8 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
     await conn.beginTransaction();
 
     const [result] = await conn.execute(
-      `INSERT INTO guests (registration_number, company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, status, created_by)
-       VALUES ('', :company, :target_officials, :target_official_other, :purpose, :purpose_category, :accompanied_by, :status, :created_by)`,
+      `INSERT INTO guests (registration_number, company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, sc_document, sc_exemption_note, status, created_by)
+       VALUES ('', :company, :target_officials, :target_official_other, :purpose, :purpose_category, :accompanied_by, :sc_document, :sc_exemption_note, :status, :created_by)`,
       {
         company: company || '',
         target_officials: hasTargetOfficials ? target_officials.join(',') : '',
@@ -314,6 +321,8 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
         purpose: purpose || '',
         purpose_category: purpose_category || null,
         accompanied_by: accompanied_by && String(accompanied_by).trim() ? String(accompanied_by).trim() : null,
+        sc_document: sc_document || null,
+        sc_exemption_note: sc_exemption_note && String(sc_exemption_note).trim() ? String(sc_exemption_note).trim() : null,
         status: isScheduled ? 'Draft' : 'Menunggu Verifikasi',
         created_by: req.user.sub,
       }
@@ -395,7 +404,10 @@ router.post('/', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res
 
 // PUT /api/guests/:id  (edit data pendaftaran -- bukan status verifikasi)
 router.put('/:id', requireRole('admin', 'pos_depan'), asyncHandler(async (req, res) => {
-  const { company, target_officials, target_official_other, purpose, purpose_category, accompanied_by, vehicle_type, vehicle_brand, plate_number } = req.body || {};
+  const {
+    company, target_officials, target_official_other, purpose, purpose_category, accompanied_by,
+    sc_document, sc_exemption_note, vehicle_type, vehicle_brand, plate_number,
+  } = req.body || {};
   const id = req.params.id;
 
   const fields = [];
@@ -428,6 +440,19 @@ router.put('/:id', requireRole('admin', 'pos_depan'), asyncHandler(async (req, r
     }
     fields.push('accompanied_by = :accompanied_by');
     params.accompanied_by = accompanied_by && String(accompanied_by).trim() ? String(accompanied_by).trim() : null;
+  }
+  if (sc_document !== undefined) {
+    if (sc_document && !isValidPhotoDataUrl(sc_document)) {
+      return res.status(400).json({ error: 'Dokumen/foto SC tidak valid atau ukurannya terlalu besar (maks 3MB)' });
+    }
+    fields.push('sc_document = :sc_document'); params.sc_document = sc_document || null;
+  }
+  if (sc_exemption_note !== undefined) {
+    if (sc_exemption_note && String(sc_exemption_note).length > 500) {
+      return res.status(400).json({ error: 'Catatan SC maksimal 500 karakter' });
+    }
+    fields.push('sc_exemption_note = :sc_exemption_note');
+    params.sc_exemption_note = sc_exemption_note && String(sc_exemption_note).trim() ? String(sc_exemption_note).trim() : null;
   }
 
   if (fields.length) {

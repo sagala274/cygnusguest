@@ -221,6 +221,7 @@ function purposeCategoryLabel(category) {
     diskusi_teknis: 'Diskusi Teknis',
     maintenance: 'Maintenance',
     instalasi: 'Instalasi/Pemasangan Perangkat',
+    sosialisasi_pelatihan: 'Sosialisasi/Pelatihan',
     pengiriman: 'Pengiriman',
     lainnya: 'Lainnya',
   }[category] || '-';

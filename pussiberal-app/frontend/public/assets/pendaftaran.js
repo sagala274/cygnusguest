@@ -22,6 +22,28 @@ function updateTargetOfficialOtherVisibility() {
 }
 targetOfficialOtherCheckbox.addEventListener('change', updateTargetOfficialOtherVisibility);
 
+// Kategori keperluan yang biasanya mewajibkan Security Clearance (SC) --
+// memunculkan kolom unggah dokumen/foto SC + catatan pengecualian dari
+// pimpinan. sc_document/sc_exemption_note sendiri tetap opsional di
+// backend (lihat routes/guests.js) -- daftar ini murni logika tampilan.
+const SC_REQUIRED_CATEGORIES = ['maintenance', 'instalasi', 'sosialisasi_pelatihan'];
+const scDocumentFieldWrap = document.getElementById('scDocumentFieldWrap');
+const scExemptionNoteFieldWrap = document.getElementById('scExemptionNoteFieldWrap');
+const scExemptionNoteInput = document.getElementById('sc_exemption_note');
+const scDocumentWidget = initPhotoWidget(document.querySelector('[data-kind="sc_document"]'), 'environment');
+
+function updateScFieldsVisibility() {
+  const selected = document.querySelector('.m-purpose-category:checked');
+  const needsSc = selected && SC_REQUIRED_CATEGORIES.includes(selected.value);
+  scDocumentFieldWrap.style.display = needsSc ? 'block' : 'none';
+  scExemptionNoteFieldWrap.style.display = needsSc ? 'block' : 'none';
+  if (!needsSc) {
+    scDocumentWidget.reset();
+    scExemptionNoteInput.value = '';
+  }
+}
+document.querySelectorAll('.m-purpose-category').forEach((r) => r.addEventListener('change', updateScFieldsVisibility));
+
 // Tamu Terjadwal -- daftarkan NIK/Nama/Jabatan/Nomor HP di muka, Foto Tamu &
 // deklarasi Perangkat Elektronik menyusul saat kedatangan (dilengkapi lewat
 // halaman Detail Tamu). Mempengaruhi kartu tamu yang DITAMBAHKAN SETELAH
@@ -322,6 +344,7 @@ function stopAllCameras() {
     w.photo.stopCamera();
     w.ktp_photo.stopCamera();
   });
+  scDocumentWidget.stopCamera();
 }
 window.addEventListener('beforeunload', stopAllCameras);
 
@@ -340,6 +363,12 @@ const MEMBER_FIELD_MAP = {
 };
 
 function showFieldError(field, message) {
+  if (field === 'sc_document') {
+    const hint = document.querySelector('[data-kind="sc_document"] .photo-hint');
+    if (hint) hint.textContent = message;
+    return;
+  }
+
   const memberMatch = field.match(/^members\[(\d+)\]\.(.+)$/);
   if (memberMatch) {
     const idx = Number(memberMatch[1]);
@@ -530,6 +559,8 @@ form.addEventListener('submit', async (e) => {
     purpose_category: selectedPurposeCategory ? selectedPurposeCategory.value : undefined,
     purpose: document.getElementById('purpose').value.trim(),
     accompanied_by: document.getElementById('accompanied_by').value.trim() || undefined,
+    sc_document: scDocumentWidget.getValue() || undefined,
+    sc_exemption_note: scExemptionNoteInput.value.trim() || undefined,
     vehicle_type: document.getElementById('vehicle').value || undefined,
     vehicle_brand: document.getElementById('vehicleBrand').value.trim() || undefined,
     plate_number: document.getElementById('plate').value.trim() || undefined,
