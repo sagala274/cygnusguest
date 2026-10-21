@@ -7,6 +7,13 @@ const cancelBtn = document.getElementById('cancelBtn');
 const membersContainer = document.getElementById('membersContainer');
 const addMemberBtn = document.getElementById('addMemberBtn');
 
+// Ikon dekoratif di tiap pilihan Tujuan Menghadap Kepada/Kategori
+// Keperluan -- ditaruh statis di HTML lewat data-icon (bukan dipanggil
+// icon() langsung di markup, karena itu HTML statis, bukan di-render JS).
+document.querySelectorAll('.device-option-icon[data-icon]').forEach((el) => {
+  el.innerHTML = icon(el.dataset.icon);
+});
+
 // Popup hasil pendaftaran (berhasil/gagal) -- sebelumnya berupa kotak
 // ringkasan di atas formulir yang gampang terlewat (apalagi di formulir
 // sepanjang ini). Sekarang muncul sebagai modal supaya hasilnya pasti

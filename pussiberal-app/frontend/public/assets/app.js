@@ -44,6 +44,13 @@ const ICONS = {
   grip: '<circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/>',
   copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5,15 H4 a2,2 0 0 1 -2,-2 V4 a2,2 0 0 1 2,-2 H15 a2,2 0 0 1 2,2 V5"/>',
   check: '<polyline points="4,13 9,18 20,6"/>',
+  flag: '<line x1="5" y1="3" x2="5" y2="21"/><path d="M5,4 H18 L15,8 L18,12 H5 Z"/>',
+  anchor: '<circle cx="12" cy="5" r="2"/><line x1="12" y1="7" x2="12" y2="21"/><line x1="8" y1="11" x2="16" y2="11"/><path d="M5,13 a7,7.5 0 0 0 14,0"/>',
+  building: '<rect x="5" y="3" width="14" height="18" rx="1"/><line x1="8" y1="7" x2="8" y2="19"/><line x1="12" y1="7" x2="12" y2="19"/><line x1="16" y1="7" x2="16" y2="19"/><line x1="5" y1="11" x2="19" y2="11"/><line x1="5" y1="15" x2="19" y2="15"/>',
+  gear: '<circle cx="12" cy="12" r="3.2"/><line x1="12" y1="2.5" x2="12" y2="5.5"/><line x1="12" y1="18.5" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5.5" y2="12"/><line x1="18.5" y1="12" x2="21.5" y2="12"/><line x1="5.1" y1="5.1" x2="7.2" y2="7.2"/><line x1="16.8" y1="16.8" x2="18.9" y2="18.9"/><line x1="18.9" y1="5.1" x2="16.8" y2="7.2"/><line x1="7.2" y1="16.8" x2="5.1" y2="18.9"/>',
+  monitor: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="12" y1="16" x2="12" y2="20"/>',
+  truck: '<rect x="2" y="8" width="11" height="9" rx="1"/><path d="M13,11 H17 L20,14 V17 H13 Z"/><circle cx="6.5" cy="18.5" r="1.6"/><circle cx="16.5" cy="18.5" r="1.6"/>',
+  dots: '<circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/>',
 };
 
 function icon(name, extraClass) {

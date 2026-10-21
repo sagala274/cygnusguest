@@ -727,6 +727,55 @@ input:focus, select:focus, textarea:focus {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px 14px;
 }
 
+/* Ikon kecil di setiap pilihan (Tujuan Menghadap/Kategori Keperluan) --
+   murni dekoratif untuk mempertegas gaya "cyber security" yang diminta,
+   warna berubah navy-penuh saat pilihannya dicentang/dipilih. */
+#guestForm .device-option-icon {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 7px;
+  background: var(--accent-soft); color: var(--navy);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s, color .12s;
+}
+#guestForm .device-option-icon .icon { width: 16px; height: 16px; }
+#guestForm .device-option:has(input:checked) .device-option-icon { background: var(--navy); color: #fff; }
+
+/* Band judul tiap bagian formulir (badge heksagon bernomor + judul/
+   subjudul + identitas PUSSIBERAL) -- mengikuti mockup yang diberikan,
+   tapi TETAP TERANG (bukan tema gelap) supaya mudah dibaca: hanya band
+   judul ini yang berwarna navy, seluruh kolom input di bawahnya tetap
+   putih seperti biasa. Pola grid tipis di background jadi sentuhan
+   "cyber" tanpa mengorbankan keterbacaan. Bleed ke tepi .section lewat
+   margin negatif sebesar padding .section itu sendiri (24px/26px).*/
+#guestForm .section-head-band {
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  margin: -24px -26px 22px; padding: 20px 26px;
+  background-color: #0a2a6e;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0 1px, transparent 1px 26px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 1px, transparent 1px 26px),
+    linear-gradient(120deg, #06184a 0%, #0d2e7a 55%, #1458c9 100%);
+}
+#guestForm .step-hex {
+  flex-shrink: 0; width: 50px; height: 50px;
+  background: linear-gradient(135deg, #2b7fe0, #0a2a6e);
+  clip-path: polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px; font-weight: 800; color: #fff;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.18);
+}
+#guestForm .section-head-text { flex: 1; min-width: 220px; }
+#guestForm .section-head-text h2 { margin: 0 0 3px; font-size: 19px; font-weight: 800; color: #fff; }
+#guestForm .section-head-text p { margin: 0; font-size: 12.5px; color: #c3d2f5; }
+#guestForm .section-head-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+#guestForm .section-head-brand img { width: 32px; height: 32px; }
+#guestForm .section-head-brand-name { font-size: 12px; font-weight: 800; color: #fff; letter-spacing: .5px; }
+#guestForm .section-head-brand-sub { font-size: 9px; color: #6fa3c9; letter-spacing: 1px; }
+#guestForm .section-head-actions { display: flex; justify-content: flex-end; margin-bottom: 18px; }
+@media (max-width: 640px) {
+  #guestForm .section-head-brand { display: none; }
+}
+
 .confirm-checkbox input[type="checkbox"] { accent-color: #000; }
 .confirm-checkbox span { font-size: 12.5px; font-weight: 600; color: #344054; line-height: 1.4; }
 
