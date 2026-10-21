@@ -194,17 +194,32 @@ button, input, select, textarea { font: inherit; }
      di bawah) -- topbar punya dropdown (notifikasi, profil) yang meluas
      secara visual ke bawah, ke area .content; kalau z-index-nya sama,
      .content (belakangan di urutan DOM) menutupi dropdown itu. */
-  position: relative; z-index: 5; isolation: isolate; overflow: hidden;
+  /* overflow:hidden SENGAJA tidak dipakai di sini (beda dari .dash-hero
+     yang pola dekorasinya sama) -- topbar punya dropdown notifikasi/profil
+     yang meluas ke BAWAH batas 68px-nya (lihat komentar z-index di atas);
+     overflow:hidden akan memotong/menyembunyikan dropdown itu. Pola grid
+     ::before di bawah tetap otomatis pas 68px tanpa overflow:hidden, karena
+     background-image pada elemen tidak pernah "meluber" dari kotaknya
+     sendiri -- beda dengan konten anak biasa. */
+  position: relative; z-index: 5; isolation: isolate;
   height: 68px;
   /* Foto kapal TNI-AL (aset yang sama dengan banner Dashboard) sebagai
      latar topbar di SEMUA halaman, bukan cuma Dashboard -- gradasi gelap
-     di atasnya menjaga kontras teks tetap tinggi. */
+     di atasnya menjaga kontras teks tetap tinggi. Lapisan PALING ATAS
+     (gradient pertama) memudar ke warna gelap senada latar .main di 18%
+     terbawah -- tanpa ini, tepi bawah topbar terlihat seperti sambungan
+     patah/glitch terhadap latar "cyber" milik .main yang langsung ada di
+     baliknya (foto berhenti mendadak, pola grid .main langsung mulai
+     tanpa transisi). Dipakai lewat background-image (lapisan warna biasa),
+     BUKAN mask-image -- mask akan ikut memudarkan/berisiko menyembunyikan
+     dropdown notifikasi/profil yang jadi anak elemen ini juga. */
   background-image:
+    linear-gradient(to bottom, transparent 0%, transparent 78%, #060c1e 100%),
     radial-gradient(circle at 92% 15%, rgba(56, 217, 255, .20), transparent 55%),
     linear-gradient(100deg, rgba(5, 11, 28, .92) 0%, rgba(11, 31, 77, .86) 45%, rgba(10, 63, 114, .70) 100%),
     url('dashboard-hero.jpg');
-  background-size: auto, auto, cover;
-  background-position: center, center, 50% 38%;
+  background-size: auto, auto, auto, cover;
+  background-position: center, center, center, 50% 38%;
   background-repeat: no-repeat;
   border-bottom: 1px solid rgba(125, 226, 255, .18);
   display: flex; align-items: center; justify-content: space-between;
