@@ -188,15 +188,40 @@ button, input, select, textarea { font: inherit; }
      di bawah) -- topbar punya dropdown (notifikasi, profil) yang meluas
      secara visual ke bawah, ke area .content; kalau z-index-nya sama,
      .content (belakangan di urutan DOM) menutupi dropdown itu. */
-  position: relative; z-index: 5;
-  height: 57px; background: rgba(6, 14, 30, .68); backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(125, 226, 255, .14);
+  position: relative; z-index: 5; isolation: isolate; overflow: hidden;
+  height: 68px;
+  /* Foto kapal TNI-AL (aset yang sama dengan banner Dashboard) sebagai
+     latar topbar di SEMUA halaman, bukan cuma Dashboard -- gradasi gelap
+     di atasnya menjaga kontras teks tetap tinggi. */
+  background-image:
+    radial-gradient(circle at 92% 15%, rgba(56, 217, 255, .20), transparent 55%),
+    linear-gradient(100deg, rgba(5, 11, 28, .92) 0%, rgba(11, 31, 77, .86) 45%, rgba(10, 63, 114, .70) 100%),
+    url('dashboard-hero.jpg');
+  background-size: auto, auto, cover;
+  background-position: center, center, 50% 38%;
+  background-repeat: no-repeat;
+  border-bottom: 1px solid rgba(125, 226, 255, .18);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 28px 0 36px;
 }
+/* Garis grid tipis a la "cyber", teknik sama dengan .dash-hero::before di
+   banner Dashboard -- memudar ke kanan lewat mask supaya tidak
+   mengganggu ikon/profil di sisi kanan topbar. */
+.topbar::before {
+  content: '';
+  position: absolute; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(125, 226, 255, .12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 226, 255, .12) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, .95), transparent 85%);
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, .95), transparent 85%);
+}
 
-.top-title { font-weight: 800; font-size: 16px; color: #fff; }
-.top-right { display: flex; align-items: center; gap: 18px; }
+.top-title { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 2px; }
+.top-title-main { font-weight: 800; font-size: 16px; color: #fff; }
+.top-title-sub { font-size: 10.5px; font-weight: 600; color: #93a8cf; letter-spacing: .4px; }
+.top-right { position: relative; z-index: 1; display: flex; align-items: center; gap: 18px; }
 
 .topbar-icons { display: flex; align-items: center; gap: 6px; }
 .topbar-icon-btn {

@@ -885,6 +885,18 @@ function renderNav(active) {
       .join('');
   }
 
+  /* Subjudul topbar ("Pengamanan PUSSIBERAL") -- disuntik lewat JS (bukan
+     ditulis ulang di 18 file HTML) supaya konsisten di semua halaman.
+     Teks judul aslinya (mis. "Dashboard") dibungkus ulang jadi dua baris. */
+  const topTitleEl = document.querySelector('.top-title');
+  if (topTitleEl && !topTitleEl.querySelector('.top-title-main')) {
+    const mainText = topTitleEl.textContent.trim();
+    topTitleEl.innerHTML = `
+      <span class="top-title-main">${escapeHtml(mainText)}</span>
+      <span class="top-title-sub">Pengamanan PUSSIBERAL</span>
+    `;
+  }
+
   /* Lonceng notifikasi & tombol mode tampilan di topbar -- disuntik lewat JS
      (bukan ditulis ulang di tiap file HTML) supaya semua halaman otomatis
      konsisten. Lonceng sudah fungsional nyata (initNotifications()); toggle
