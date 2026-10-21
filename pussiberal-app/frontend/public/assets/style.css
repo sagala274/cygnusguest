@@ -69,10 +69,16 @@ button, input, select, textarea { font: inherit; }
    Dashboard). */
 .sidebar {
   width: 250px;
-  min-height: 100vh;
-  position: relative;
+  /* sticky + height:100vh (bukan min-height + position:relative seperti
+     sebelumnya) -- supaya sidebar TIDAK ikut melar mengikuti tinggi
+     .main saat kontennya lebih panjang dari layar (flex stretch bawaan),
+     dan tidak ikut tergeser ke atas saat halaman di-scroll ke bawah.
+     Batas bawah halaman jadi tetap sejajar bawah sidebar. overflow-y:auto
+     sebagai jaga-jaga kalau menu navigasinya sendiri lebih panjang dari
+     tinggi layar (mis. di layar pendek). */
+  position: sticky; top: 0; height: 100vh;
   isolation: isolate;
-  overflow: hidden;
+  overflow-x: hidden; overflow-y: auto;
   background:
     radial-gradient(circle at 50% -10%, rgba(56, 217, 255, .18), transparent 55%),
     linear-gradient(180deg, #050b1c 0%, #0b1830 40%, #0a2247 100%);
