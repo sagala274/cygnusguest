@@ -206,15 +206,16 @@ button, input, select, textarea { font: inherit; }
   /* Foto kapal TNI-AL (aset yang sama dengan banner Dashboard) sebagai
      latar topbar di SEMUA halaman, bukan cuma Dashboard -- gradasi gelap
      di atasnya menjaga kontras teks tetap tinggi. Lapisan PALING ATAS
-     (gradient pertama) memudar ke warna gelap senada latar .main di 18%
-     terbawah -- tanpa ini, tepi bawah topbar terlihat seperti sambungan
-     patah/glitch terhadap latar "cyber" milik .main yang langsung ada di
-     baliknya (foto berhenti mendadak, pola grid .main langsung mulai
-     tanpa transisi). Dipakai lewat background-image (lapisan warna biasa),
-     BUKAN mask-image -- mask akan ikut memudarkan/berisiko menyembunyikan
+     (gradient pertama) memudar BERTAHAP dari transparan (atas) ke gelap
+     senada latar .main (bawah) di SELURUH tinggi topbar, bukan cuma di
+     sebagian kecil -- percobaan sebelumnya yang memudarkan hanya di 18%
+     terbawah masih terlihat seperti garis/pita patah (transisinya terlalu
+     mendadak untuk tinggi 68px ini, terutama di atas foto yang detail).
+     Dipakai lewat background-image (lapisan warna biasa), BUKAN
+     mask-image -- mask akan ikut memudarkan/berisiko menyembunyikan
      dropdown notifikasi/profil yang jadi anak elemen ini juga. */
   background-image:
-    linear-gradient(to bottom, transparent 0%, transparent 78%, #060c1e 100%),
+    linear-gradient(to bottom, transparent 0%, #060c1e 100%),
     radial-gradient(circle at 92% 15%, rgba(56, 217, 255, .20), transparent 55%),
     linear-gradient(100deg, rgba(5, 11, 28, .92) 0%, rgba(11, 31, 77, .86) 45%, rgba(10, 63, 114, .70) 100%),
     url('dashboard-hero.jpg');
