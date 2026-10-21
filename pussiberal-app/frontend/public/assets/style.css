@@ -708,6 +708,25 @@ input:focus, select:focus, textarea:focus {
 .device-option input[type="radio"] { accent-color: #000; }
 .device-option span { font-size: 13px; font-weight: 600; color: #172033; }
 
+/* Formulir Pendaftaran Tamu -- murni rapi-rapi tampilan (tidak mengubah
+   struktur/interaksi apa pun), di-scope lewat #guestForm supaya tidak
+   memengaruhi .device-option/.device-options di halaman lain (Verifikasi,
+   Konfigurasi AI, modal edit Bank Data, dst). Pilihan Tujuan Menghadap &
+   Kategori Keperluan disusun jadi grid (bukan satu kolom panjang ke bawah,
+   yang sebelumnya menyisakan banyak ruang kosong) -- Kebijakan Perangkat
+   Elektronik sengaja TIDAK ikut digrid karena teksnya panjang. Setiap
+   pilihan juga diberi kartu tipis supaya terlihat lebih rapi & padat. */
+#guestForm .device-option {
+  border: 1px solid #e4e7ec; border-radius: 7px; padding: 10px 13px;
+  transition: border-color .12s, background .12s;
+}
+#guestForm .device-option:hover { border-color: #c9ced8; }
+#guestForm .device-option:has(input:checked) { border-color: var(--navy); background: #f5f7fc; }
+#guestForm #target_officials,
+#guestForm #purpose_category {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px 14px;
+}
+
 .confirm-checkbox input[type="checkbox"] { accent-color: #000; }
 .confirm-checkbox span { font-size: 12.5px; font-weight: 600; color: #344054; line-height: 1.4; }
 
