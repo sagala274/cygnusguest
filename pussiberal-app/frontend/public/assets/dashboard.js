@@ -1,6 +1,12 @@
 requireAuth();
 renderNav('dashboard');
 
+// Ikon heksagon di judul kartu yang markup-nya statis di dashboard.html
+// (Ringkasan Tamu, Ringkasan Personel, dst) -- yang disuntik lewat JS di
+// bawah (priorityCards/midCards) diisi ulang masing-masing setelah
+// innerHTML-nya ditulis.
+fillIconPlaceholders();
+
 const user = getUser();
 const isAdmin = user && user.role === 'admin';
 const canSeeVisitChart = user && ['admin', 'verifikator'].includes(user.role);
@@ -378,9 +384,12 @@ async function load() {
       priorityCards.push(`
         <div class="form-card" id="attendanceDonutCard">
           <div class="section">
-            <h2 class="section-title">Kondisi Absensi Hari Ini</h2>
+            <div class="section-title-group">
+              <span class="section-icon-hex" data-icon="shield"></span>
+              <h2 class="section-title">Kondisi Absensi Hari Ini</h2>
+            </div>
             ${renderDonut(attendanceSegments, totalPersonnel, 'Personel', 'attendance')}
-            <p class="page-description" style="margin:10px 0 0;">Klik salah satu kelompok untuk lihat daftar personelnya.</p>
+            <p class="hint-callout">${icon('info')}<span>Klik salah satu kelompok untuk lihat daftar personelnya.</span></p>
             ${canSeeAttendanceTrend ? '<a class="link dashboard-card-link" href="absensi">Lihat detail &rarr;</a>' : ''}
           </div>
         </div>
@@ -419,6 +428,7 @@ async function load() {
       `);
     }
     document.getElementById('attendancePriorityRow').innerHTML = priorityCards.join('');
+    fillIconPlaceholders(document.getElementById('attendancePriorityRow'));
     document.querySelectorAll('#attendancePriorityRow .alert-card-row.is-clickable').forEach((row) => {
       row.addEventListener('click', () => openAttendanceBucketModal(row.dataset.bucketKey));
     });
@@ -428,7 +438,10 @@ async function load() {
     midCards.push(`
       <div class="form-card">
         <div class="section">
-          <h2 class="section-title">Status Pendaftaran</h2>
+          <div class="section-title-group">
+            <span class="section-icon-hex" data-icon="clipboard"></span>
+            <h2 class="section-title">Status Pendaftaran</h2>
+          </div>
           ${renderDonut(registrationSegments, total, 'Total', 'registration')}
           <a class="link dashboard-card-link" href="daftar-tamu">Lihat semua pendaftaran &rarr;</a>
         </div>
@@ -438,7 +451,10 @@ async function load() {
     midCards.push(`
       <div class="form-card">
         <div class="section">
-          <h2 class="section-title">Statistik Perangkat Elektronik</h2>
+          <div class="section-title-group">
+            <span class="section-icon-hex" data-icon="monitor"></span>
+            <h2 class="section-title">Statistik Perangkat Elektronik</h2>
+          </div>
           ${renderBarList(
             deviceStats.map((s) => ({ label: deviceStatusLabel(s.device_status), count: s.count, color: DEVICE_COLOR[s.device_status] || '#98a2b3' })),
             deviceStats.reduce((sum, s) => sum + s.count, 0),
@@ -463,7 +479,10 @@ async function load() {
       midCards.push(`
         <div class="form-card">
           <div class="section">
-            <h2 class="section-title">Kategori Keamanan Personel</h2>
+            <div class="section-title-group">
+              <span class="section-icon-hex" data-icon="checkCircle"></span>
+              <h2 class="section-title">Kategori Keamanan Personel</h2>
+            </div>
             <div>${rows || '<p style="color:var(--muted);font-size:12.5px;">Belum ada data.</p>'}</div>
             <a class="link dashboard-card-link" href="bank-data">Lihat Bank Data &rarr;</a>
           </div>
@@ -472,6 +491,7 @@ async function load() {
     }
     const midRow = document.getElementById('dashboardMidRow');
     midRow.innerHTML = midCards.join('');
+    fillIconPlaceholders(midRow);
     wireDonutTooltip('registration', registrationSegments);
 
     const attendanceDonutCard = document.getElementById('attendanceDonutCard');

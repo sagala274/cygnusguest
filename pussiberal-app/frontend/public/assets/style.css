@@ -342,6 +342,49 @@ button, input, select, textarea { font: inherit; }
 .page-title-icon .icon { width: 19px; height: 19px; }
 .page-description { margin: 0 0 22px; color: #344054; font-size: 14px; line-height: 1.65; max-width: 790px; }
 
+/* Badge heksagon di judul kartu (Ringkasan Tamu, Ringkasan Personel, dst)
+   -- pola yang sama dengan .step-hex di Formulir Pendaftaran, dijadikan
+   class global (bukan di-scope ke satu halaman) supaya bisa dipakai di
+   kartu Dashboard juga. Ikon diisi lewat JS (lihat dashboard.js) dari
+   atribut data-icon, bukan ditulis langsung -- markup section-nya statis
+   di HTML. */
+.section-title-group { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.section-header-row .section-title-group { margin-bottom: 0; }
+.section-title-group .section-title { margin: 0; }
+.section-icon-hex {
+  flex-shrink: 0; width: 36px; height: 36px;
+  background: linear-gradient(135deg, #2b7fe0, #0a2a6e);
+  clip-path: polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+}
+.section-icon-hex .icon { width: 17px; height: 17px; }
+
+/* Kartu statistik (.stat-card) diberi aksen garis kiri berwarna, mengikuti
+   warna bubble ikonnya sendiri (class .icon-bubble-* yang sudah ada) --
+   murni CSS tambahan, tidak mengubah markup/komponen stat-card yang sudah
+   ada (dashboard.js tidak disentuh untuk ini). */
+.stat-card:has(.icon-bubble-accent) { border-left: 4px solid var(--accent); }
+.stat-card:has(.icon-bubble-blue) { border-left: 4px solid #175cd3; }
+.stat-card:has(.icon-bubble-success) { border-left: 4px solid var(--success); }
+.stat-card:has(.icon-bubble-amber) { border-left: 4px solid var(--amber); }
+.stat-card:has(.icon-bubble-teal) { border-left: 4px solid #0e6b6b; }
+.stat-card:has(.icon-bubble-danger) { border-left: 4px solid var(--danger); }
+.stat-card:has(.icon-bubble-purple) { border-left: 4px solid #6b21a8; }
+.stat-card:has(.icon-bubble-pink) { border-left: 4px solid #be185d; }
+.stat-card:has(.icon-bubble-teal-dark) { border-left: 4px solid #0d9488; }
+
+/* Kotak hint biru muda + ikon (mis. "Klik salah satu kelompok...") --
+   dipakai lewat class baru .hint-callout, dipasang manual di teks yang
+   relevan (lihat dashboard.js/dashboard.html), tidak mengganti .page-
+   description polos yang masih dipakai di tempat lain. */
+.hint-callout {
+  display: flex; align-items: center; gap: 10px; margin-top: 10px;
+  padding: 10px 14px; border-radius: 8px;
+  background: var(--accent-soft); color: #1a3a7a; font-size: 12.5px; line-height: 1.5;
+}
+.hint-callout .icon { flex-shrink: 0; width: 16px; height: 16px; color: var(--accent); }
+
 /* Form card -- aksen gradasi tipis di tepi atas (konsisten dengan tema
    cyber) + tampilan sedikit lebih padat, berlaku di SEMUA halaman karena
    ".form-card"/".section" dipakai bersama di mana-mana. */

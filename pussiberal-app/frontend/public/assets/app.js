@@ -51,11 +51,24 @@ const ICONS = {
   monitor: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="12" y1="16" x2="12" y2="20"/>',
   truck: '<rect x="2" y="8" width="11" height="9" rx="1"/><path d="M13,11 H17 L20,14 V17 H13 Z"/><circle cx="6.5" cy="18.5" r="1.6"/><circle cx="16.5" cy="18.5" r="1.6"/>',
   dots: '<circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/>',
+  info: '<circle cx="12" cy="12" r="8.5"/><line x1="12" y1="11" x2="12" y2="16.5"/><line x1="12" y1="7.5" x2="12" y2="7.5"/>',
 };
 
 function icon(name, extraClass) {
   const body = ICONS[name] || '';
   return `<svg class="icon${extraClass ? ' ' + extraClass : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+}
+
+// Mengisi placeholder ikon yang ditulis lewat atribut data-icon (mis.
+// `<span class="section-icon-hex" data-icon="people"></span>`) -- dipakai
+// untuk markup statis di HTML maupun potongan HTML yang baru disuntik
+// lewat innerHTML, karena icon() sendiri tidak bisa dipanggil langsung di
+// dalam HTML statis. root opsional (default seluruh dokumen) supaya bisa
+// dipanggil ulang hanya pada bagian yang baru disuntik.
+function fillIconPlaceholders(root) {
+  (root || document).querySelectorAll('[data-icon]').forEach((el) => {
+    el.innerHTML = icon(el.dataset.icon);
+  });
 }
 
 /* Sesi login sengaja disimpan di sessionStorage (bukan localStorage) supaya
