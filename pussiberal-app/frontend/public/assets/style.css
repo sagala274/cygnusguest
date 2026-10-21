@@ -348,9 +348,15 @@ button, input, select, textarea { font: inherit; }
    kartu Dashboard juga. Ikon diisi lewat JS (lihat dashboard.js) dari
    atribut data-icon, bukan ditulis langsung -- markup section-nya statis
    di HTML. */
-.section-title-group { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+/* align-items:flex-start (bukan center) -- supaya badge-nya selalu rata
+   ATAS dengan judul, konsisten di posisi yang sama persis antar-kartu,
+   baik judulnya cuma satu baris maupun melebar jadi dua baris (mis.
+   "Statistik Perangkat Elektronik" vs "Status Pendaftaran" bersebelahan
+   -- align-items:center sebelumnya membuat badge keduanya jadi tidak
+   sejajar karena tinggi judulnya beda). */
+.section-title-group { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
 .section-header-row .section-title-group { margin-bottom: 0; }
-.section-title-group .section-title { margin: 0; }
+.section-title-group .section-title { margin: 0; padding-top: 2px; }
 .section-icon-hex {
   flex-shrink: 0; width: 36px; height: 36px;
   background: linear-gradient(135deg, #2b7fe0, #0a2a6e);
