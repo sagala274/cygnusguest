@@ -562,7 +562,12 @@ input:focus, select:focus, textarea:focus {
     linear-gradient(135deg, rgba(5, 11, 28, .88) 0%, rgba(11, 31, 77, .80) 45%, rgba(10, 63, 114, .68) 78%, rgba(6, 35, 52, .82) 100%),
     url('dashboard-hero.jpg');
   background-size: auto, auto, cover;
-  background-position: center, center, center;
+  /* Posisi vertikal foto digeser ke bawah sumbernya (bukan tengah lagi) --
+     supaya yang terlihat di jendela crop yang pendek ini tim VBSS & kapal
+     850 (di bagian bawah foto aslinya), bukan kapal 371 yang sudah jadi
+     fokus di latar topbar (lihat .topbar) -- supaya keduanya tidak terlihat
+     sama persis. */
+  background-position: center, center, center 74%;
   background-repeat: no-repeat, no-repeat, no-repeat;
   box-shadow: 0 14px 34px rgba(4, 12, 30, .28);
 }
