@@ -5,7 +5,7 @@ const pool = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { formatJakartaDateTime, formatJakartaDate, todayJakarta, nowJakartaLocal } = require('../utils/datetime');
 const asyncHandler = require('../utils/asyncHandler');
-const { isWeekend } = require('../utils/attendance');
+const { isWeekend, isAutoHadirWeekday, toDateKey } = require('../utils/attendance');
 
 const router = express.Router();
 router.use(authenticate);
@@ -48,6 +48,10 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
   // logika di GET /api/attendance. Memakai todayStr (WIB) yang sudah
   // dihitung di atas, BUKAN CURDATE() MySQL -- lihat todayJakarta().
   const todayIsWeekend = isWeekend(todayStr);
+  // Senin-Kamis: yang belum diisi otomatis dianggap "hadir" (lihat
+  // GET /api/attendance) -- dihitung ulang di sini juga supaya kartu pie
+  // chart & daftar "Perlu Perhatian" konsisten dengan tampilan harian.
+  const todayAutoHadir = !todayIsWeekend && isAutoHadirWeekday(todayStr);
 
   let attendanceStats = null;
   if (['admin', 'verifikator', 'pimpinan'].includes(req.user.role)) {
@@ -58,12 +62,13 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
       WHERE p.is_active = 1
       GROUP BY ar.status
     `, { today: todayStr });
-    if (todayIsWeekend) {
+    if (todayIsWeekend || todayAutoHadir) {
+      const mergeInto = todayIsWeekend ? 'libur' : 'hadir';
       const nullRow = attendanceStats.find((r) => r.status === null);
       if (nullRow) {
-        const liburRow = attendanceStats.find((r) => r.status === 'libur');
-        if (liburRow) liburRow.count += nullRow.count;
-        else attendanceStats.push({ status: 'libur', count: nullRow.count });
+        const targetRow = attendanceStats.find((r) => r.status === mergeInto);
+        if (targetRow) targetRow.count += nullRow.count;
+        else attendanceStats.push({ status: mergeInto, count: nullRow.count });
         attendanceStats = attendanceStats.filter((r) => r.status !== null);
       }
     }
@@ -75,10 +80,11 @@ router.get('/dashboard', requireRole('admin', 'pos_depan', 'verifikator', 'pimpi
   // Keterangan" ditaruh lebih dulu karena lebih mendesak dari sekadar
   // belum diisi (yang masih mungkin diisi nanti di hari yang sama). Di hari
   // Sabtu/Minggu, yang belum diisi TIDAK dianggap perlu perhatian (dianggap
-  // libur), kecuali yang memang sudah ditandai "Tanpa Keterangan".
+  // libur); Senin-Kamis juga tidak (otomatis dianggap hadir) -- kecuali yang
+  // memang sudah ditandai "Tanpa Keterangan".
   let attendanceAttention = null;
   if (['admin', 'verifikator', 'pimpinan'].includes(req.user.role)) {
-    const belumDiisiCondition = todayIsWeekend ? '1=0' : 'ar.status IS NULL';
+    const belumDiisiCondition = (todayIsWeekend || todayAutoHadir) ? '1=0' : 'ar.status IS NULL';
     [attendanceAttention] = await pool.query(`
       SELECT p.id, p.full_name, p.rank_info, p.position, p.security_category, ar.status, ar.notes AS attendance_notes
       FROM personnel p
@@ -128,6 +134,9 @@ router.get('/attendance-trend', requireRole('admin', 'verifikator', 'pimpinan'),
   const [activeRows] = await pool.query('SELECT COUNT(*) AS activeCount FROM personnel WHERE is_active = 1');
   const activeCount = activeRows[0].activeCount;
 
+  const now = nowJakartaLocal();
+  const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
   const hadir = periods.map(() => 0);
   rows.forEach((row) => {
     const t = new Date(row.attendance_date).getTime();
@@ -136,8 +145,24 @@ router.get('/attendance-trend', requireRole('admin', 'verifikator', 'pimpinan'),
     if (row.status === 'hadir' || row.status === 'terlambat' || row.status === 'dinas_dalam') hadir[idx] += 1;
   });
 
-  const now = nowJakartaLocal();
-  const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  // Personel yang belum sempat diisi pada hari Senin-Kamis otomatis dianggap
+  // "hadir" (lihat GET /api/attendance) -- ditambahkan juga ke grafik tren
+  // supaya tidak melaporkan persentase lebih rendah dari kenyataan hanya
+  // karena belum ada yang membuka halaman Absensi Personel hari itu.
+  const recordedCountByDate = {};
+  rows.forEach((row) => {
+    const key = toDateKey(row.attendance_date);
+    recordedCountByDate[key] = (recordedCountByDate[key] || 0) + 1;
+  });
+  periods.forEach((p, idx) => {
+    const effectiveEnd = p.end.getTime() < tomorrowStart.getTime() ? p.end : tomorrowStart;
+    for (let t = p.start.getTime(); t < effectiveEnd.getTime(); t += 86400000) {
+      const dateKey = toDateKey(new Date(t));
+      if (!isAutoHadirWeekday(dateKey)) continue;
+      const recorded = recordedCountByDate[dateKey] || 0;
+      hadir[idx] += Math.max(0, activeCount - recorded);
+    }
+  });
 
   res.json({
     data: periods.map((p, i) => {

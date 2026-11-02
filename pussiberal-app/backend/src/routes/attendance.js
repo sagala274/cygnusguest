@@ -5,7 +5,7 @@ const pool = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { logAudit } = require('../utils/audit');
 const asyncHandler = require('../utils/asyncHandler');
-const { categoryOrderSql, ATTENDANCE_STATUSES, isWeekend } = require('../utils/attendance');
+const { categoryOrderSql, ATTENDANCE_STATUSES, isWeekend, isAutoHadirWeekday, toDateKey } = require('../utils/attendance');
 const { formatJakartaDate } = require('../utils/datetime');
 
 const router = express.Router();
@@ -26,15 +26,6 @@ const STATUS_SHORT = {
   hadir: 'H', wfh: 'WFH', dinas_dalam: 'DD', dinas_luar: 'DL', sakit: 'S', ijin: 'I',
   cuti: 'C', pendidikan: 'P', bko: 'BKO', libur: 'L', terlambat: 'T', tanpa_keterangan: 'TK',
 };
-
-// Komponen tanggal LOKAL (bukan toISOString yang UTC) -- sama seperti pola
-// isWeekend()/nowJakartaLocal() yang sudah dipakai di aplikasi ini, supaya
-// tanggal pada attendance_records (kolom DATE) tidak bergeser sehari saat
-// dicocokkan dengan daftar tanggal rentang laporan.
-function toDateKey(value) {
-  const d = value instanceof Date ? value : new Date(value);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 function addDays(dateStr, amount) {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -64,12 +55,17 @@ router.get('/', requireRole('admin', 'verifikator', 'pimpinan'), asyncHandler(as
     { date }
   );
 
-  // Sabtu/Minggu otomatis dianggap "libur" untuk yang belum diisi -- bukan
-  // ditulis ke database, cukup dihitung saat dibaca, supaya tetap bisa
-  // ditimpa manual (mis. ada yang piket) dan tidak memenuhi tabel dengan
-  // baris "libur" untuk tanggal yang mungkin tidak pernah dibuka siapa pun.
+  // Sabtu/Minggu otomatis dianggap "libur", Senin-Kamis otomatis dianggap
+  // "hadir" untuk yang belum diisi -- bukan ditulis ke database, cukup
+  // dihitung saat dibaca, supaya tetap bisa ditimpa manual (mis. ada yang
+  // piket di akhir pekan, atau ada yang izin di hari kerja) dan tidak
+  // memenuhi tabel dengan baris yang mungkin tidak pernah dibuka siapa pun.
+  // Jumat sengaja TIDAK ikut default "hadir" (ritme kegiatan hari itu beda),
+  // tetap harus diisi manual seperti sebelumnya.
   if (isWeekend(date)) {
     rows.forEach((r) => { if (r.status === null) r.status = 'libur'; });
+  } else if (isAutoHadirWeekday(date)) {
+    rows.forEach((r) => { if (r.status === null) r.status = 'hadir'; });
   }
 
   res.json({ data: rows, date });
@@ -124,13 +120,16 @@ router.get('/export', requireRole('admin', 'verifikator', 'pimpinan'), asyncHand
     recordsByPersonnel[r.personnel_id][key] = { status: r.status, notes: r.notes };
   });
 
-  // Sabtu/Minggu yang belum diisi dianggap "libur" -- sama seperti logika
-  // GET /api/attendance untuk satu tanggal, supaya laporan rentang tanggal
-  // konsisten dengan tampilan harian di halaman Absensi Personel.
+  // Sabtu/Minggu yang belum diisi dianggap "libur", Senin-Kamis yang belum
+  // diisi dianggap "hadir" -- sama seperti logika GET /api/attendance untuk
+  // satu tanggal, supaya laporan rentang tanggal konsisten dengan tampilan
+  // harian di halaman Absensi Personel.
   function statusFor(personnelId, dateKey) {
     const rec = recordsByPersonnel[personnelId] && recordsByPersonnel[personnelId][dateKey];
     if (rec) return rec.status;
-    return isWeekend(dateKey) ? 'libur' : null;
+    if (isWeekend(dateKey)) return 'libur';
+    if (isAutoHadirWeekday(dateKey)) return 'hadir';
+    return null;
   }
 
   const reportRows = personnelRows.map((p) => {
@@ -418,6 +417,25 @@ router.get('/export', requireRole('admin', 'verifikator', 'pimpinan'), asyncHand
   doc.end();
 }));
 
+// Dipakai bersama oleh /save (satu tanggal) & /save-range (banyak tanggal
+// sekaligus) -- status = null berarti hapus/kosongkan status yang sudah
+// pernah diisi untuk tanggal itu.
+async function upsertAttendanceEntry(personnelId, date, status, notes, userId) {
+  if (status === null) {
+    await pool.execute(
+      'DELETE FROM attendance_records WHERE personnel_id = :personnel_id AND attendance_date = :date',
+      { personnel_id: personnelId, date }
+    );
+  } else {
+    await pool.execute(
+      `INSERT INTO attendance_records (personnel_id, attendance_date, status, notes, recorded_by)
+       VALUES (:personnel_id, :date, :status, :notes, :userId)
+       ON DUPLICATE KEY UPDATE status = :status, notes = :notes, recorded_by = :userId`,
+      { personnel_id: personnelId, date, status, notes, userId }
+    );
+  }
+}
+
 // POST /api/attendance/save  { date, entries: [{ personnel_id, status, notes }] }
 // status = null berarti hapus/kosongkan status yang sudah pernah diisi.
 router.post('/save', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
@@ -445,29 +463,58 @@ router.post('/save', requireRole('admin', 'verifikator'), asyncHandler(async (re
   }
 
   for (const entry of entries) {
-    if (entry.status === null) {
-      await pool.execute(
-        'DELETE FROM attendance_records WHERE personnel_id = :personnel_id AND attendance_date = :date',
-        { personnel_id: entry.personnel_id, date }
-      );
-    } else {
-      await pool.execute(
-        `INSERT INTO attendance_records (personnel_id, attendance_date, status, notes, recorded_by)
-         VALUES (:personnel_id, :date, :status, :notes, :userId)
-         ON DUPLICATE KEY UPDATE status = :status, notes = :notes, recorded_by = :userId`,
-        {
-          personnel_id: entry.personnel_id,
-          date,
-          status: entry.status,
-          notes: entry.notes && String(entry.notes).trim() ? String(entry.notes).trim() : null,
-          userId: req.user.sub,
-        }
-      );
-    }
+    const notes = entry.notes && String(entry.notes).trim() ? String(entry.notes).trim() : null;
+    await upsertAttendanceEntry(entry.personnel_id, date, entry.status, notes, req.user.sub);
   }
 
   await logAudit(req.user.sub, 'save_attendance', 'attendance', null, { date, count: entries.length });
   res.json({ data: { date, saved: entries.length } });
+}));
+
+// POST /api/attendance/save-range  { personnel_id, status, notes, date_from, date_to }
+// Mengisi status yang SAMA untuk satu personel di seluruh tanggal dalam
+// rentang (mis. Cuti/Dinas Luar/Pendidikan/Ijin beberapa hari sekaligus) --
+// supaya tidak perlu mengisi satu per satu tiap hari. status = null berarti
+// menghapus/mengosongkan seluruh rentang itu (mis. rencana cuti batal).
+router.post('/save-range', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
+  const { personnel_id, status, notes, date_from, date_to } = req.body || {};
+  if (!Number.isInteger(personnel_id)) {
+    return res.status(400).json({ error: 'ID personel tidak valid' });
+  }
+  if (status !== null && !ATTENDANCE_STATUSES.includes(status)) {
+    return res.status(400).json({ error: 'Status absensi tidak valid' });
+  }
+  if (!isValidDate(date_from) || !isValidDate(date_to)) {
+    return res.status(400).json({ error: 'Tanggal "dari" dan "sampai" wajib diisi dengan format YYYY-MM-DD' });
+  }
+  if (date_from > date_to) {
+    return res.status(400).json({ error: 'Tanggal "dari" tidak boleh setelah tanggal "sampai"' });
+  }
+  if (notes && String(notes).length > 255) {
+    return res.status(400).json({ error: 'Keterangan maksimal 255 karakter' });
+  }
+
+  // Dibatasi 180 hari (~6 bulan) -- cukup longgar untuk penugasan/dinas luar
+  // jangka panjang, tapi tetap membatasi ukuran satu permintaan.
+  const dateList = [];
+  let cursor = date_from;
+  while (cursor <= date_to) {
+    if (dateList.length >= 180) {
+      return res.status(400).json({ error: 'Rentang tanggal maksimal 180 hari' });
+    }
+    dateList.push(cursor);
+    cursor = addDays(cursor, 1);
+  }
+
+  const trimmedNotes = notes && String(notes).trim() ? String(notes).trim() : null;
+  for (const dateKey of dateList) {
+    await upsertAttendanceEntry(personnel_id, dateKey, status, trimmedNotes, req.user.sub);
+  }
+
+  await logAudit(req.user.sub, 'save_attendance_range', 'attendance', null, {
+    personnel_id, status, date_from, date_to, days: dateList.length,
+  });
+  res.json({ data: { personnel_id, status, date_from, date_to, days: dateList.length } });
 }));
 
 module.exports = router;

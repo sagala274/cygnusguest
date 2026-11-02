@@ -168,6 +168,40 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="rangeModal">
+  <div class="modal-card" style="max-width: 480px;">
+    <div class="modal-head">
+      <h2 id="rangeModalTitle">Isi Rentang Tanggal</h2>
+      <button type="button" class="modal-close" id="rangeModalCloseBtn"><span class="icon-slot" id="rangeModalCloseIconSlot"></span></button>
+    </div>
+    <div class="modal-body">
+      <p class="page-description" id="rangeModalDesc" style="margin-top:0;">Terapkan satu status untuk seluruh tanggal dalam rentang ini sekaligus (mis. Cuti/Dinas Luar/Pendidikan/Ijin beberapa hari) -- tidak perlu mengisi satu per satu tiap hari.</p>
+      <form id="rangeForm" class="grid">
+        <div class="field full">
+          <label for="rangeStatus">STATUS ABSENSI <span class="required">*</span></label>
+          <select id="rangeStatus" required></select>
+        </div>
+        <div class="field">
+          <label for="rangeFromDate">DARI TANGGAL <span class="required">*</span></label>
+          <input id="rangeFromDate" type="date" required>
+        </div>
+        <div class="field">
+          <label for="rangeToDate">SAMPAI TANGGAL <span class="required">*</span></label>
+          <input id="rangeToDate" type="date" required>
+        </div>
+        <div class="field full">
+          <label for="rangeNotes">KETERANGAN <span class="label-note">Opsional, berlaku sama untuk semua tanggal</span></label>
+          <input id="rangeNotes" maxlength="255">
+        </div>
+        <div class="full modal-actions">
+          <button type="button" class="btn" id="rangeCancelBtn">Batal</button>
+          <button type="submit" class="btn btn-accent" id="rangeSubmitBtn">Terapkan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script src="assets/app.js"></script>
 <script src="assets/absensi.js"></script>
 </body>

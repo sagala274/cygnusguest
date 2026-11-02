@@ -19,6 +19,28 @@ function isWeekend(dateStr) {
   return day === 0 || day === 6;
 }
 
+// Senin-Kamis (bukan Jumat -- ritme kegiatan hari itu beda, sengaja
+// dikecualikan) otomatis dianggap "hadir" untuk personel yang belum diisi
+// absensinya -- permintaan pengguna supaya cukup mengedit personel yang
+// TIDAK masuk, bukan mengisi "Hadir" satu per satu untuk semua orang tiap
+// hari. Sama seperti isWeekend(): dihitung dari komponen tanggal lokal,
+// bukan ditulis ke database (lihat pemakaiannya di routes/attendance.js &
+// routes/reports.js), supaya tetap bisa ditimpa manual kapan saja.
+function isAutoHadirWeekday(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const day = new Date(y, m - 1, d).getDay();
+  return day >= 1 && day <= 4;
+}
+
+// Komponen tanggal LOKAL (bukan toISOString yang UTC) sebagai "YYYY-MM-DD"
+// -- dipakai di routes/attendance.js & routes/reports.js supaya kolom DATE
+// dari database (attendance_date) tidak bergeser sehari saat dicocokkan
+// dengan tanggal hasil perhitungan JS lainnya.
+function toDateKey(value) {
+  const d = value instanceof Date ? value : new Date(value);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 // Data awal dari "DAFTAR NAMA PERSONEL PUSSIBERAL 2026" -- hanya dimasukkan
 // sekali saat tabel personnel masih kosong (lihat ensurePersonnelTables).
 const SEED_PERSONNEL = [
@@ -193,5 +215,5 @@ async function ensureAttendanceStatusEnum() {
 
 module.exports = {
   ensurePersonnelTables, ensureAttendanceStatusEnum, ensurePersonnelAnalysisColumns,
-  CATEGORY_ORDER, ATTENDANCE_STATUSES, categoryOrderSql, isWeekend,
+  CATEGORY_ORDER, ATTENDANCE_STATUSES, categoryOrderSql, isWeekend, isAutoHadirWeekday, toDateKey,
 };

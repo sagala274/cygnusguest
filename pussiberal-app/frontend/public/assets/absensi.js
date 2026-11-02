@@ -244,36 +244,58 @@ function personnelNameHtml(r) {
   return `${escapeHtml(r.full_name)}${mark}`;
 }
 
+// Baris personel dibuat sebagai flex-row ("kartu baris"), BUKAN <table>, supaya
+// seluruh kontrol (status, keterangan, aksi) muat tanpa perlu scroll ke samping
+// di layar sempit/HP -- sebelumnya kolom Status Absensi & Keterangan ada jauh
+// di kanan tabel lebar, harus discroll dulu untuk dicapai. Status dipindah ke
+// dekat "No" (kiri), dan Keterangan ditampilkan langsung sebagai teks di bawah
+// nama (bukan kolom lebar sendiri) -- diedit lewat tombol catatan yang membuka
+// baris input kecil di bawahnya, bukan input yang selalu memakan lebar baris.
 function personnelRowHtml(r, no) {
+  const metaParts = [r.rank_info || '-', r.position].filter(Boolean);
+  if (r.personnel_notes) metaParts.push(r.personnel_notes);
+  const metaHtml = metaParts.map((p) => escapeHtml(p)).join(' &middot; ');
+  const hasNote = !!(r.attendance_notes && r.attendance_notes.trim());
+
   if (!canEditAttendance) {
     return `
-      <tr data-personnel-id="${r.personnel_id}">
-        <td><span class="no-with-warning">${no}${securityCategoryWarningIconHtml(r.security_category)}</span></td>
-        <td>${personnelNameHtml(r)}</td>
-        <td>${escapeHtml(r.rank_info || '-')}</td>
-        <td>${escapeHtml(r.position)}${r.personnel_notes ? ` <span class="label-note">(${escapeHtml(r.personnel_notes)})</span>` : ''}</td>
-        <td class="attendance-status-cell">${statusBadgeHtml(r.status)}</td>
-        <td>${escapeHtml(r.attendance_notes || '-')}</td>
-      </tr>
+      <div class="attn-row" data-personnel-id="${r.personnel_id}">
+        <div class="attn-no-status">
+          <span class="attn-no no-with-warning"><span class="attn-no-text">${no}</span>${securityCategoryWarningIconHtml(r.security_category)}</span>
+          ${statusBadgeHtml(r.status)}
+        </div>
+        <div class="attn-person">
+          <div class="attn-person-name">${personnelNameHtml(r)}</div>
+          <div class="attn-person-meta">${metaHtml}</div>
+          ${hasNote ? `<div class="attn-person-note">${icon('note')} ${escapeHtml(r.attendance_notes)}</div>` : ''}
+        </div>
+      </div>
     `;
   }
+
   return `
-    <tr data-personnel-id="${r.personnel_id}">
-      <td class="drag-handle-cell"><span class="drag-handle" draggable="true" title="Geser untuk urutkan">${icon('grip')}</span></td>
-      <td><span class="no-with-warning">${no}${securityCategoryWarningIconHtml(r.security_category)}</span></td>
-      <td>${personnelNameHtml(r)}</td>
-      <td>${escapeHtml(r.rank_info || '-')}</td>
-      <td>${escapeHtml(r.position)}${r.personnel_notes ? ` <span class="label-note">(${escapeHtml(r.personnel_notes)})</span>` : ''}</td>
-      <td class="attendance-status-cell">
-        <select class="attendance-status-select" data-personnel-id="${r.personnel_id}">${statusOptionsHtml(r.status)}</select>
+    <div class="attn-row" data-personnel-id="${r.personnel_id}">
+      <div class="attn-no-status">
+        <span class="attn-no no-with-warning"><span class="attn-no-text">${no}</span>${securityCategoryWarningIconHtml(r.security_category)}</span>
+        <select class="attendance-status-select attn-status-select" data-personnel-id="${r.personnel_id}">${statusOptionsHtml(r.status)}</select>
         <span class="attendance-row-flash" data-flash-for="${r.personnel_id}"></span>
-      </td>
-      <td><input type="text" class="attendance-notes-input" data-personnel-id="${r.personnel_id}" maxlength="255" placeholder="Keterangan (opsional)" value="${escapeHtml(r.attendance_notes || '')}"></td>
-      <td style="white-space:nowrap;">
-        <button type="button" class="btn btn-small edit-personnel-btn" data-id="${r.personnel_id}">Edit</button>
-        <button type="button" class="btn btn-small btn-danger delete-personnel-btn" data-id="${r.personnel_id}" data-name="${escapeHtml(r.full_name)}" style="margin-left:6px;">Hapus</button>
-      </td>
-    </tr>
+      </div>
+      <div class="attn-person">
+        <div class="attn-person-name">${personnelNameHtml(r)}</div>
+        <div class="attn-person-meta">${metaHtml}</div>
+        ${hasNote ? `<div class="attn-person-note">${icon('note')} ${escapeHtml(r.attendance_notes)}</div>` : ''}
+      </div>
+      <div class="attn-row-tools">
+        <button type="button" class="attn-icon-btn attn-note-btn${hasNote ? ' has-note' : ''}" data-personnel-id="${r.personnel_id}" title="Keterangan">${icon('note')}</button>
+        <button type="button" class="attn-icon-btn attn-range-btn" data-id="${r.personnel_id}" data-name="${escapeHtml(r.full_name)}" title="Isi rentang tanggal">${icon('calendar')}</button>
+        <span class="drag-handle attn-icon-btn" draggable="true" title="Geser untuk urutkan">${icon('grip')}</span>
+        <button type="button" class="attn-icon-btn edit-personnel-btn" data-id="${r.personnel_id}" title="Edit personel">${icon('pencil')}</button>
+        <button type="button" class="attn-icon-btn attn-icon-btn-danger delete-personnel-btn" data-id="${r.personnel_id}" data-name="${escapeHtml(r.full_name)}" title="Hapus personel">${icon('trash')}</button>
+      </div>
+      <div class="attn-note-edit-row" data-note-row-for="${r.personnel_id}" hidden>
+        <input type="text" class="attendance-notes-input" data-personnel-id="${r.personnel_id}" maxlength="255" placeholder="Keterangan (opsional)" value="${escapeHtml(r.attendance_notes || '')}">
+      </div>
+    </div>
   `;
 }
 
@@ -286,24 +308,8 @@ function categoryCardHtml(category, members, startNo) {
           <h2 class="section-title">${escapeHtml(category)} <span class="optional-badge">${members.length} personel</span></h2>
           ${canEditAttendance ? `<button type="button" class="btn btn-small add-personnel-btn" data-category="${escapeHtml(category)}">+ Tambah Personel</button>` : ''}
         </div>
-        ${canEditAttendance ? `<p class="page-description" style="margin:-6px 0 14px;">Geser ikon <span style="display:inline-flex;vertical-align:middle;">${icon('grip')}</span> untuk mengurutkan personel (mis. berdasarkan senioritas pangkat/NRP).</p>` : ''}
-        <div class="table-wrap">
-          <table data-category="${escapeHtml(category)}">
-            <thead>
-              <tr>
-                ${canEditAttendance ? '<th style="width:28px;"></th>' : ''}
-                <th style="width:40px;">No</th>
-                <th>Nama</th>
-                <th>Pangkat/Korps/NRP/NIP</th>
-                <th>Jabatan</th>
-                <th style="width:220px;">Status Absensi</th>
-                <th>Keterangan</th>
-                ${canEditAttendance ? '<th></th>' : ''}
-              </tr>
-            </thead>
-            <tbody>${rowsHtml}</tbody>
-          </table>
-        </div>
+        ${canEditAttendance ? `<p class="page-description" style="margin:-6px 0 14px;">Geser ikon <span style="display:inline-flex;vertical-align:middle;">${icon('grip')}</span> untuk mengurutkan personel (mis. berdasarkan senioritas pangkat/NRP). Ikon <span style="display:inline-flex;vertical-align:middle;">${icon('calendar')}</span> mengisi status untuk rentang beberapa tanggal sekaligus (mis. Cuti/Dinas Luar).</p>` : ''}
+        <div class="attn-group-rows" data-category="${escapeHtml(category)}">${rowsHtml}</div>
       </div>
     </div>
   `;
@@ -339,6 +345,12 @@ function wireRowEvents() {
   groupsContainer.querySelectorAll('.attendance-notes-input').forEach((input) => {
     input.addEventListener('blur', () => saveEntry(Number(input.dataset.personnelId)));
   });
+  groupsContainer.querySelectorAll('.attn-note-btn').forEach((btn) => {
+    btn.addEventListener('click', () => toggleNoteRow(Number(btn.dataset.personnelId)));
+  });
+  groupsContainer.querySelectorAll('.attn-range-btn').forEach((btn) => {
+    btn.addEventListener('click', () => openRangeModal(Number(btn.dataset.id), btn.dataset.name));
+  });
   groupsContainer.querySelectorAll('.add-personnel-btn').forEach((btn) => {
     btn.addEventListener('click', () => openCreateModal(btn.dataset.category));
   });
@@ -348,9 +360,44 @@ function wireRowEvents() {
   groupsContainer.querySelectorAll('.delete-personnel-btn').forEach((btn) => {
     btn.addEventListener('click', () => deletePersonnel(Number(btn.dataset.id), btn.dataset.name));
   });
-  groupsContainer.querySelectorAll('table[data-category]').forEach((table) => {
-    wireDragReorder(table.querySelector('tbody'), table.dataset.category);
+  groupsContainer.querySelectorAll('.attn-group-rows[data-category]').forEach((rowsWrap) => {
+    wireDragReorder(rowsWrap, rowsWrap.dataset.category);
   });
+}
+
+// Tombol catatan ("Keterangan") membuka/menutup baris input kecil di bawah
+// baris personel itu, bukan kolom lebar yang selalu tampil -- supaya baris
+// tetap ringkas dan tidak memaksa scroll ke samping (lihat personnelRowHtml).
+function toggleNoteRow(personnelId) {
+  const noteRow = groupsContainer.querySelector(`.attn-note-edit-row[data-note-row-for="${personnelId}"]`);
+  if (!noteRow) return;
+  noteRow.hidden = !noteRow.hidden;
+  if (!noteRow.hidden) noteRow.querySelector('.attendance-notes-input').focus();
+}
+
+// Perbarui pratinjau teks Keterangan & status tombol catatan tanpa me-render
+// ulang seluruh daftar (supaya pesan "Tersimpan" di saveEntry() tidak
+// langsung hilang tertimpa render ulang).
+function updateNotePreview(personnelId) {
+  const row = document.querySelector(`.attn-row[data-personnel-id="${personnelId}"]`);
+  if (!row) return;
+  const rowData = rows.find((r) => r.personnel_id === personnelId);
+  const hasNote = !!(rowData && rowData.attendance_notes && rowData.attendance_notes.trim());
+
+  const noteBtn = row.querySelector('.attn-note-btn');
+  if (noteBtn) noteBtn.classList.toggle('has-note', hasNote);
+
+  let previewEl = row.querySelector('.attn-person-note');
+  if (hasNote) {
+    if (!previewEl) {
+      previewEl = document.createElement('div');
+      previewEl.className = 'attn-person-note';
+      row.querySelector('.attn-person').appendChild(previewEl);
+    }
+    previewEl.innerHTML = `${icon('note')} ${escapeHtml(rowData.attendance_notes)}`;
+  } else if (previewEl) {
+    previewEl.remove();
+  }
 }
 
 // ---- Geser-urutkan (drag-and-drop) personel per kelompok -- supaya bisa
@@ -359,45 +406,45 @@ function wireRowEvents() {
 // (tidak memindahkan personel ke kategori lain lewat geser).
 let draggedRow = null;
 
-function wireDragReorder(tbody, category) {
-  Array.from(tbody.rows).forEach((tr) => {
-    const handle = tr.querySelector('.drag-handle');
+function wireDragReorder(rowsWrap, category) {
+  Array.from(rowsWrap.children).forEach((row) => {
+    const handle = row.querySelector('.drag-handle');
     if (!handle) return;
 
     handle.addEventListener('dragstart', (e) => {
-      draggedRow = tr;
-      tr.classList.add('is-dragging');
+      draggedRow = row;
+      row.classList.add('is-dragging');
       e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', tr.dataset.personnelId);
+      e.dataTransfer.setData('text/plain', row.dataset.personnelId);
     });
     handle.addEventListener('dragend', () => {
-      tr.classList.remove('is-dragging');
-      if (draggedRow === tr) {
-        saveReorder(tbody, category);
+      row.classList.remove('is-dragging');
+      if (draggedRow === row) {
+        saveReorder(rowsWrap, category);
         draggedRow = null;
       }
     });
 
-    tr.addEventListener('dragover', (e) => {
-      if (!draggedRow || draggedRow === tr || draggedRow.parentElement !== tbody) return;
+    row.addEventListener('dragover', (e) => {
+      if (!draggedRow || draggedRow === row || draggedRow.parentElement !== rowsWrap) return;
       e.preventDefault();
-      const rect = tr.getBoundingClientRect();
+      const rect = row.getBoundingClientRect();
       const before = (e.clientY - rect.top) / rect.height < 0.5;
-      tbody.insertBefore(draggedRow, before ? tr : tr.nextSibling);
+      rowsWrap.insertBefore(draggedRow, before ? row : row.nextSibling);
     });
   });
 }
 
-async function saveReorder(tbody, category) {
-  const personnelIds = Array.from(tbody.rows).map((tr) => Number(tr.dataset.personnelId));
+async function saveReorder(rowsWrap, category) {
+  const personnelIds = Array.from(rowsWrap.children).map((row) => Number(row.dataset.personnelId));
 
   // Perbarui angka "No" langsung di tampilan tanpa menunggu server, supaya
   // terasa responsif selagi tersimpan di belakang layar. Diambil dari nilai
   // TERKECIL yang sudah ada (bukan cuma baris pertama) karena baris yang
   // tadinya di posisi pertama bisa saja ikut tergeser oleh drag ini.
-  const existingNumbers = Array.from(tbody.rows).map((tr) => Number(tr.cells[1].textContent));
+  const existingNumbers = Array.from(rowsWrap.children).map((row) => Number(row.querySelector('.attn-no-text').textContent));
   const firstNo = Math.min(...existingNumbers);
-  Array.from(tbody.rows).forEach((tr, i) => { tr.cells[1].textContent = firstNo + i; });
+  Array.from(rowsWrap.children).forEach((row, i) => { row.querySelector('.attn-no-text').textContent = firstNo + i; });
 
   try {
     await api('/personnel/reorder', { method: 'PUT', body: JSON.stringify({ category, personnel_ids: personnelIds }) });
@@ -432,7 +479,7 @@ function populateCategoryList() {
 
 async function saveEntry(personnelId) {
   resultBox.style.display = 'none';
-  const row = document.querySelector(`tr[data-personnel-id="${personnelId}"]`);
+  const row = document.querySelector(`.attn-row[data-personnel-id="${personnelId}"]`);
   const select = row.querySelector('.attendance-status-select');
   const notesInput = row.querySelector('.attendance-notes-input');
   const flash = row.querySelector('.attendance-row-flash');
@@ -458,6 +505,9 @@ async function saveEntry(personnelId) {
       rowData.attendance_notes = notes;
     }
     renderSummary();
+    updateNotePreview(personnelId);
+    const noteRow = row.querySelector('.attn-note-edit-row');
+    if (noteRow) noteRow.hidden = true;
 
     flash.classList.remove('is-error');
     flash.textContent = 'Tersimpan';
@@ -730,3 +780,80 @@ exportReportModal.addEventListener('click', (e) => { if (e.target === exportRepo
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && exportReportModal.classList.contains('open')) closeExportReportModal(); });
 document.getElementById('exportXlsxBtn').addEventListener('click', () => downloadAttendanceReport('xlsx', 'xlsx'));
 document.getElementById('exportPdfBtn').addEventListener('click', () => downloadAttendanceReport('pdf', 'pdf'));
+
+// ---- Isi Rentang Tanggal (Cuti/Dinas Luar/Pendidikan/Ijin, dst.) ----
+// Menerapkan satu status yang sama untuk satu personel di banyak tanggal
+// sekaligus lewat POST /attendance/save-range, supaya tidak perlu membuka
+// tiap tanggal satu per satu untuk personel yang sedang cuti/dinas luar/
+// pendidikan/ijin berhari-hari.
+let rangeTargetPersonnelId = null;
+const rangeModal = document.getElementById('rangeModal');
+const rangeForm = document.getElementById('rangeForm');
+const rangeStatus = document.getElementById('rangeStatus');
+const rangeFromDate = document.getElementById('rangeFromDate');
+const rangeToDate = document.getElementById('rangeToDate');
+const rangeNotes = document.getElementById('rangeNotes');
+
+function openRangeModal(personnelId, personnelName) {
+  resultBox.style.display = 'none';
+  rangeTargetPersonnelId = personnelId;
+  document.getElementById('rangeModalTitle').textContent = `Isi Rentang Tanggal -- ${personnelName}`;
+  rangeForm.reset();
+  rangeStatus.innerHTML = statusOptionsHtml(null);
+  const anchor = /^\d{4}-\d{2}-\d{2}$/.test(dateInput.value) ? dateInput.value : todayDateString();
+  rangeFromDate.value = anchor;
+  rangeToDate.value = anchor;
+  rangeModal.classList.add('open');
+}
+
+function closeRangeModal() {
+  rangeModal.classList.remove('open');
+  rangeTargetPersonnelId = null;
+}
+
+rangeForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (rangeTargetPersonnelId === null) return;
+  resultBox.style.display = 'none';
+
+  if (!rangeStatus.value) {
+    showMessage('Pilih status absensi terlebih dahulu.', true);
+    return;
+  }
+  if (rangeFromDate.value > rangeToDate.value) {
+    showMessage('Tanggal "Dari" tidak boleh setelah tanggal "Sampai".', true);
+    return;
+  }
+
+  try {
+    const res = await api('/attendance/save-range', {
+      method: 'POST',
+      body: JSON.stringify({
+        personnel_id: rangeTargetPersonnelId,
+        status: rangeStatus.value,
+        notes: rangeNotes.value.trim() || null,
+        date_from: rangeFromDate.value,
+        date_to: rangeToDate.value,
+      }),
+    });
+    const days = res && res.data ? res.data.days : 0;
+    showMessage(`Status "${STATUS_LABELS[rangeStatus.value]}" diterapkan untuk ${days} hari (${formatDateRangeLabel(rangeFromDate.value, rangeToDate.value)}).`, false);
+    closeRangeModal();
+    // Muat ulang kalau tanggal yang sedang dilihat ada di dalam rentang yang
+    // baru diisi, supaya langsung terlihat berubah tanpa pindah tanggal dulu.
+    if (dateInput.value >= rangeFromDate.value && dateInput.value <= rangeToDate.value) load();
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+});
+
+function formatDateRangeLabel(from, to) {
+  if (from === to) return formatDate(from);
+  return `${formatDate(from)} s.d. ${formatDate(to)}`;
+}
+
+document.getElementById('rangeModalCloseIconSlot').innerHTML = icon('close');
+document.getElementById('rangeModalCloseBtn').addEventListener('click', closeRangeModal);
+document.getElementById('rangeCancelBtn').addEventListener('click', closeRangeModal);
+rangeModal.addEventListener('click', (e) => { if (e.target === rangeModal) closeRangeModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && rangeModal.classList.contains('open')) closeRangeModal(); });

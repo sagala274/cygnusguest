@@ -49,20 +49,68 @@
 .attendance-summary-chip.is-clickable { cursor: pointer; transition: border-color .12s, box-shadow .12s; }
 .attendance-summary-chip.is-clickable:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(16,24,40,.08); }
 
-.attendance-status-select { height: 36px; padding: 0 8px; font-size: 12.5px; min-width: 160px; }
-.attendance-notes-input { height: 36px; padding: 0 8px; font-size: 12.5px; min-width: 160px; }
-td.attendance-status-cell { white-space: nowrap; }
-.attendance-row-flash { color: var(--success); font-size: 11px; font-weight: 700; margin-left: 8px; }
+.attendance-status-select { height: 34px; padding: 0 6px; font-size: 12px; min-width: 128px; }
+.attendance-notes-input { height: 36px; padding: 0 8px; font-size: 12.5px; }
+.attendance-row-flash { color: var(--success); font-size: 11px; font-weight: 700; white-space: nowrap; }
 .attendance-row-flash.is-error { color: var(--danger); }
 
+/* ---- Baris personel sebagai "kartu baris" flex (bukan <table>) --------
+   Diubah dari tabel lebar (dulu: No | drag | Nama | Pangkat | Jabatan |
+   Status | Keterangan | Aksi, kolom Status & Keterangan jauh di kanan,
+   perlu discroll ke samping) jadi baris flex yang MELIPAT ke bawah di
+   layar sempit -- Status dipindah dekat "No" (kiri, sesuai permintaan),
+   Keterangan jadi teks ringkas di bawah nama (bukan kolom lebar sendiri),
+   dan seluruh aksi (catatan, isi rentang, geser-urutkan, edit, hapus) jadi
+   tombol ikon kecil yang tetap ikut melipat -- tidak ada lagi yang perlu
+   discroll ke samping untuk dicapai, di desktop maupun HP. */
+.attn-group-rows { display: flex; flex-direction: column; }
+.attn-row {
+  display: flex; align-items: flex-start; flex-wrap: wrap; gap: 8px 10px;
+  padding: 10px 4px; border-bottom: 1px solid #eef0f3;
+}
+.attn-row:last-child { border-bottom: none; }
+.attn-row.is-dragging { opacity: .4; }
+
+.attn-no-status { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.attn-no { font-size: 12.5px; font-weight: 700; color: var(--muted); min-width: 18px; }
+
+.attn-person { flex: 1 1 180px; min-width: 150px; }
+.attn-person-name { font-weight: 700; color: var(--navy); font-size: 13.5px; line-height: 1.35; }
+.attn-person-meta { color: var(--muted); font-size: 11.5px; margin-top: 2px; line-height: 1.4; }
+.attn-person-note {
+  display: flex; align-items: flex-start; gap: 5px; margin-top: 4px;
+  color: #475467; font-size: 11.5px; font-style: italic; line-height: 1.4;
+}
+.attn-person-note .icon { width: 13px; height: 13px; flex: 0 0 auto; margin-top: 1px; opacity: .7; }
+
+.attn-row-tools { display: flex; align-items: center; gap: 3px; flex: 0 0 auto; margin-left: auto; }
+.attn-icon-btn {
+  width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 7px; border: 1px solid transparent; background: transparent; color: #667085;
+  cursor: pointer; transition: background .12s, color .12s, border-color .12s;
+}
+.attn-icon-btn .icon { width: 15.5px; height: 15.5px; }
+.attn-icon-btn:hover { background: #f2f4f7; color: var(--navy); border-color: #e4e7ec; }
+.attn-icon-btn.has-note { color: var(--accent); background: var(--accent-soft); }
+.attn-icon-btn-danger { color: var(--danger); opacity: .55; }
+.attn-icon-btn-danger:hover { opacity: 1; background: var(--danger-soft, #fef3f2); border-color: #fda29b; }
+
+.attn-note-edit-row { flex: 1 1 100%; order: 10; }
+.attn-note-edit-row .attendance-notes-input { width: 100%; }
+
 /* Geser-urutkan personel per kelompok (drag-and-drop) */
-.drag-handle-cell { width: 28px; text-align: center; }
-.drag-handle { display: inline-flex; cursor: grab; color: #98a2b3; }
+.drag-handle { cursor: grab; }
 .drag-handle:active { cursor: grabbing; }
-.drag-handle .icon { width: 16px; height: 16px; }
-tr.is-dragging { opacity: .4; }
 
 @media (max-width: 700px) {
   .attendance-date-bar { flex-direction: column; align-items: stretch; }
   .attendance-save-status { margin-left: 0; }
+
+  /* Status Absensi tetap di baris pertama (dekat "No"), tapi melebar penuh
+     supaya nama opsi (mis. "Tanpa Keterangan") tidak terpotong di layar
+     sempit -- baris Nama/Pangkat/Jabatan pindah ke baris berikutnya. */
+  .attn-no-status { flex: 1 1 100%; }
+  .attn-status-select { flex: 1; min-width: 0; }
+  .attn-person { flex-basis: 100%; }
+  .attn-row-tools { flex-basis: 100%; justify-content: flex-start; margin-left: 0; }
 }
