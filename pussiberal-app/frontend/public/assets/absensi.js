@@ -800,6 +800,14 @@ const rangeToDate = document.getElementById('rangeToDate');
 const rangeNotes = document.getElementById('rangeNotes');
 const rangePersonnelSearch = document.getElementById('rangePersonnelSearch');
 const rangePersonnelList = document.getElementById('rangePersonnelList');
+const rangeSyncHint = document.getElementById('rangeSyncHint');
+
+// true setelah pengguna MENGUBAH SENDIRI tanggal dari/sampai -- dipakai
+// supaya sinkronisasi otomatis (lihat lookupRangeSync) tidak menimpa
+// tanggal yang memang sudah sengaja diubah manual.
+let rangeDatesTouched = false;
+rangeFromDate.addEventListener('input', () => { rangeDatesTouched = true; });
+rangeToDate.addEventListener('input', () => { rangeDatesTouched = true; });
 
 function rangePersonnelListHtml() {
   const groups = [];
@@ -850,6 +858,8 @@ function openRangeModal(personnelId, personnelName) {
   rangeTargetPersonnelId = personnelId;
   document.getElementById('rangeModalTitle').textContent = `Isi Rentang Tanggal -- ${personnelName}`;
   rangeForm.reset();
+  rangeDatesTouched = false;
+  rangeSyncHint.innerHTML = '';
 
   // Status & Keterangan personel ini pada tanggal yang sedang dilihat dipakai
   // sebagai awalan -- kalau sudah diisi lewat baris hariannya, tidak perlu
@@ -866,6 +876,11 @@ function openRangeModal(personnelId, personnelName) {
   rangePersonnelList.innerHTML = rangePersonnelListHtml();
 
   rangeModal.classList.add('open');
+
+  // Kalau Keterangan sudah terisi (dari baris harian di atas) dan PERSIS
+  // sama dengan kegiatan personel lain, langsung sinkronkan begitu modal
+  // dibuka -- tidak perlu menunggu pengguna mengetik ulang.
+  if (rangeNotes.value.trim().length >= 3) lookupRangeSync(rangeNotes.value.trim());
 }
 
 function closeRangeModal() {
@@ -874,6 +889,48 @@ function closeRangeModal() {
 }
 
 rangePersonnelSearch.addEventListener('input', filterRangePersonnelList);
+
+// ---- Sinkronisasi otomatis lewat kecocokan Keterangan -----------------
+// Kalau Keterangan yang diketik PERSIS SAMA (tanpa peduli besar/kecil huruf)
+// dengan kegiatan yang sudah pernah diisi untuk personel lain (mis. "Satgas
+// Siber Koops TNI Timika" milik Kapten Hafizh), rentang tanggal & personel
+// yang terlibat otomatis disalin dari situ -- supaya tidak perlu dicari
+// manual tanggal berapa personel lain itu sudah diisi untuk kegiatan yang
+// sama persis.
+let rangeSyncTimer = null;
+rangeNotes.addEventListener('input', () => {
+  clearTimeout(rangeSyncTimer);
+  rangeSyncHint.innerHTML = '';
+  const q = rangeNotes.value.trim();
+  if (q.length < 3) return;
+  rangeSyncTimer = setTimeout(() => lookupRangeSync(q), 400);
+});
+
+async function lookupRangeSync(q) {
+  let match;
+  try {
+    const res = await api(`/attendance/find-by-notes?q=${encodeURIComponent(q)}&exclude_personnel_id=${rangeTargetPersonnelId}`);
+    match = res && res.data;
+  } catch (err) {
+    return; // cuma bantuan, bukan validasi wajib -- diam saja kalau gagal
+  }
+  // Keterangan di kolom bisa saja sudah berubah lagi selagi menunggu respons
+  // server (pengguna lanjut mengetik) -- batalkan kalau sudah tidak relevan.
+  if (!match || rangeNotes.value.trim().toLowerCase() !== q.toLowerCase()) return;
+
+  if (!rangeDatesTouched) {
+    rangeFromDate.value = match.date_from;
+    rangeToDate.value = match.date_to;
+  }
+  if (STATUS_ORDER.includes(match.status)) rangeStatus.value = match.status;
+  match.personnel.forEach((p) => {
+    const cb = rangePersonnelList.querySelector(`input[type="checkbox"][value="${p.id}"]`);
+    if (cb && !cb.disabled) cb.checked = true;
+  });
+
+  const names = match.personnel.map((p) => p.full_name).join(', ');
+  rangeSyncHint.innerHTML = `${icon('check')}<span>Disinkronkan dengan kegiatan yang sama milik <strong>${escapeHtml(names)}</strong>: ${formatDateRangeLabel(match.date_from, match.date_to)}.</span>`;
+}
 
 rangeForm.addEventListener('submit', async (e) => {
   e.preventDefault();

@@ -417,6 +417,57 @@ router.get('/export', requireRole('admin', 'verifikator', 'pimpinan'), asyncHand
   doc.end();
 }));
 
+// GET /api/attendance/find-by-notes?q=...&exclude_personnel_id=...
+// Dipakai modal "Isi Rentang Tanggal" supaya kalau Keterangan yang diketik
+// PERSIS SAMA (tanpa peduli besar/kecil huruf & spasi di pinggir) dengan
+// kegiatan yang sudah pernah diisi untuk personel lain (mis. "Satgas Siber
+// Koops TNI Timika"), rentang tanggal & daftar personelnya bisa langsung
+// disinkronkan -- tidak perlu dicari/diingat manual tanggal berapa personel
+// lain itu sudah diisi untuk kegiatan yang sama.
+router.get('/find-by-notes', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  if (!q) return res.json({ data: null });
+  const excludePersonnelId = Number.isInteger(Number(req.query.exclude_personnel_id)) ? Number(req.query.exclude_personnel_id) : null;
+
+  const [matchRows] = await pool.execute(
+    `SELECT ar.personnel_id, p.full_name, ar.status, ar.attendance_date
+     FROM attendance_records ar
+     JOIN personnel p ON p.id = ar.personnel_id
+     WHERE p.is_active = 1 AND LOWER(TRIM(ar.notes)) = LOWER(:notes)`,
+    { notes: q }
+  );
+
+  const personnelMap = new Map();
+  let dateFrom = null;
+  let dateTo = null;
+  const statusCounts = {};
+  matchRows.forEach((r) => {
+    if (excludePersonnelId !== null && r.personnel_id === excludePersonnelId) return;
+    const dateKey = toDateKey(r.attendance_date);
+    if (!dateFrom || dateKey < dateFrom) dateFrom = dateKey;
+    if (!dateTo || dateKey > dateTo) dateTo = dateKey;
+    statusCounts[r.status] = (statusCounts[r.status] || 0) + 1;
+    if (!personnelMap.has(r.personnel_id)) personnelMap.set(r.personnel_id, r.full_name);
+  });
+
+  if (!personnelMap.size) return res.json({ data: null });
+
+  // Kalau statusnya ternyata tidak seragam antar personel (jarang terjadi),
+  // ambil yang paling banyak dipakai -- tetap lebih berguna daripada tidak
+  // menyarankan status sama sekali.
+  const status = Object.entries(statusCounts).sort((a, b) => b[1] - a[1])[0][0];
+
+  res.json({
+    data: {
+      notes: q,
+      status,
+      date_from: dateFrom,
+      date_to: dateTo,
+      personnel: Array.from(personnelMap, ([id, full_name]) => ({ id, full_name })),
+    },
+  });
+}));
+
 // Dipakai bersama oleh /save (satu tanggal) & /save-range (banyak tanggal
 // sekaligus) -- status = null berarti hapus/kosongkan status yang sudah
 // pernah diisi untuk tanggal itu.

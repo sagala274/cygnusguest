@@ -100,6 +100,16 @@
 .attn-note-edit-row { flex: 1 1 100%; order: 10; }
 .attn-note-edit-row .attendance-notes-input { width: 100%; }
 
+/* Muncul di bawah kolom Keterangan modal "Isi Rentang Tanggal" saat teks yang
+   diketik PERSIS SAMA dengan kegiatan yang sudah diisi untuk personel lain --
+   tanggal & daftar personelnya otomatis disinkronkan, ini cuma konfirmasinya. */
+.range-sync-hint:empty { display: none; }
+.range-sync-hint {
+  display: flex; align-items: flex-start; gap: 6px; margin-top: 8px; padding: 8px 10px;
+  background: var(--accent-soft); color: #1a3a7a; border-radius: 7px; font-size: 12px; line-height: 1.5;
+}
+.range-sync-hint .icon { width: 15px; height: 15px; flex: 0 0 auto; margin-top: 1px; }
+
 /* ---- Daftar centang personel di modal "Isi Rentang Tanggal" -- supaya satu
    kegiatan/status yang sama (mis. Dinas Luar bersama) bisa diterapkan ke
    beberapa personel sekaligus, bukan satu per satu. Dikelompokkan per
