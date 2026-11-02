@@ -169,13 +169,13 @@
 </div>
 
 <div class="modal-overlay" id="rangeModal">
-  <div class="modal-card" style="max-width: 480px;">
+  <div class="modal-card" style="max-width: 540px;">
     <div class="modal-head">
       <h2 id="rangeModalTitle">Isi Rentang Tanggal</h2>
       <button type="button" class="modal-close" id="rangeModalCloseBtn"><span class="icon-slot" id="rangeModalCloseIconSlot"></span></button>
     </div>
     <div class="modal-body">
-      <p class="page-description" id="rangeModalDesc" style="margin-top:0;">Terapkan satu status untuk seluruh tanggal dalam rentang ini sekaligus (mis. Cuti/Dinas Luar/Pendidikan/Ijin beberapa hari) -- tidak perlu mengisi satu per satu tiap hari.</p>
+      <p class="page-description" id="rangeModalDesc" style="margin-top:0;">Terapkan satu status untuk seluruh tanggal dalam rentang ini sekaligus (mis. Cuti/Dinas Luar/Pendidikan/Ijin beberapa hari) -- tidak perlu mengisi satu per satu tiap hari. Status & Keterangan personel ini pada tanggal yang sedang dilihat otomatis dipakai sebagai awalan di bawah.</p>
       <form id="rangeForm" class="grid">
         <div class="field full">
           <label for="rangeStatus">STATUS ABSENSI <span class="required">*</span></label>
@@ -192,6 +192,11 @@
         <div class="field full">
           <label for="rangeNotes">KETERANGAN <span class="label-note">Opsional, berlaku sama untuk semua tanggal</span></label>
           <input id="rangeNotes" maxlength="255">
+        </div>
+        <div class="field full">
+          <label for="rangePersonnelSearch">PERSONEL YANG TERLIBAT <span class="label-note">Centang personel lain yang ikut kegiatan/status yang sama (mis. Dinas Luar bersama)</span></label>
+          <input id="rangePersonnelSearch" placeholder="Cari nama personel untuk ditambahkan...">
+          <div id="rangePersonnelList" class="range-personnel-list"></div>
         </div>
         <div class="full modal-actions">
           <button type="button" class="btn" id="rangeCancelBtn">Batal</button>

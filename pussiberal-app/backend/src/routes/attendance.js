@@ -471,15 +471,21 @@ router.post('/save', requireRole('admin', 'verifikator'), asyncHandler(async (re
   res.json({ data: { date, saved: entries.length } });
 }));
 
-// POST /api/attendance/save-range  { personnel_id, status, notes, date_from, date_to }
-// Mengisi status yang SAMA untuk satu personel di seluruh tanggal dalam
-// rentang (mis. Cuti/Dinas Luar/Pendidikan/Ijin beberapa hari sekaligus) --
-// supaya tidak perlu mengisi satu per satu tiap hari. status = null berarti
-// menghapus/mengosongkan seluruh rentang itu (mis. rencana cuti batal).
+// POST /api/attendance/save-range  { personnel_ids, status, notes, date_from, date_to }
+// Mengisi status (& keterangan) yang SAMA untuk SATU ATAU BEBERAPA personel
+// sekaligus di seluruh tanggal dalam rentang (mis. Cuti/Dinas Luar/
+// Pendidikan/Ijin beberapa hari, atau satu kegiatan/Dinas Luar yang sama
+// diikuti beberapa personel bersamaan) -- supaya tidak perlu mengisi satu
+// per satu tiap personel & tiap hari. status = null berarti menghapus/
+// mengosongkan seluruh rentang itu untuk personel-personel tsb.
 router.post('/save-range', requireRole('admin', 'verifikator'), asyncHandler(async (req, res) => {
-  const { personnel_id, status, notes, date_from, date_to } = req.body || {};
-  if (!Number.isInteger(personnel_id)) {
-    return res.status(400).json({ error: 'ID personel tidak valid' });
+  const { personnel_ids, status, notes, date_from, date_to } = req.body || {};
+  const ids = Array.isArray(personnel_ids) ? [...new Set(personnel_ids)] : [];
+  if (!ids.length || !ids.every((id) => Number.isInteger(id))) {
+    return res.status(400).json({ error: 'Pilih minimal satu personel yang valid' });
+  }
+  if (ids.length > 200) {
+    return res.status(400).json({ error: 'Jumlah personel terlalu banyak dalam satu permintaan' });
   }
   if (status !== null && !ATTENDANCE_STATUSES.includes(status)) {
     return res.status(400).json({ error: 'Status absensi tidak valid' });
@@ -505,16 +511,24 @@ router.post('/save-range', requireRole('admin', 'verifikator'), asyncHandler(asy
     dateList.push(cursor);
     cursor = addDays(cursor, 1);
   }
+  // Gabungan jumlah personel x jumlah hari juga dibatasi -- mencegah satu
+  // permintaan memicu puluhan ribu query sekaligus (mis. 200 personel x
+  // 180 hari), walau masing-masing batasnya sendiri masih di bawah limit.
+  if (ids.length * dateList.length > 5000) {
+    return res.status(400).json({ error: 'Kombinasi jumlah personel & rentang tanggal terlalu besar. Persempit salah satunya.' });
+  }
 
   const trimmedNotes = notes && String(notes).trim() ? String(notes).trim() : null;
-  for (const dateKey of dateList) {
-    await upsertAttendanceEntry(personnel_id, dateKey, status, trimmedNotes, req.user.sub);
+  for (const personnelId of ids) {
+    for (const dateKey of dateList) {
+      await upsertAttendanceEntry(personnelId, dateKey, status, trimmedNotes, req.user.sub);
+    }
   }
 
   await logAudit(req.user.sub, 'save_attendance_range', 'attendance', null, {
-    personnel_id, status, date_from, date_to, days: dateList.length,
+    personnel_ids: ids, status, date_from, date_to, days: dateList.length,
   });
-  res.json({ data: { personnel_id, status, date_from, date_to, days: dateList.length } });
+  res.json({ data: { personnel_ids: ids, status, date_from, date_to, days: dateList.length } });
 }));
 
 module.exports = router;

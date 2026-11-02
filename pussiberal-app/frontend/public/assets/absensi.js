@@ -278,10 +278,12 @@ function personnelRowHtml(r, no) {
       <div class="attn-no-status">
         <span class="attn-no no-with-warning"><span class="attn-no-text">${no}</span>${securityCategoryWarningIconHtml(r.security_category)}</span>
         <select class="attendance-status-select attn-status-select" data-personnel-id="${r.personnel_id}">${statusOptionsHtml(r.status)}</select>
-        <span class="attendance-row-flash" data-flash-for="${r.personnel_id}"></span>
       </div>
       <div class="attn-person">
-        <div class="attn-person-name">${personnelNameHtml(r)}</div>
+        <div class="attn-person-name-row">
+          <div class="attn-person-name">${personnelNameHtml(r)}</div>
+          <span class="attendance-row-flash" data-flash-for="${r.personnel_id}"></span>
+        </div>
         <div class="attn-person-meta">${metaHtml}</div>
         ${hasNote ? `<div class="attn-person-note">${icon('note')} ${escapeHtml(r.attendance_notes)}</div>` : ''}
       </div>
@@ -782,10 +784,13 @@ document.getElementById('exportXlsxBtn').addEventListener('click', () => downloa
 document.getElementById('exportPdfBtn').addEventListener('click', () => downloadAttendanceReport('pdf', 'pdf'));
 
 // ---- Isi Rentang Tanggal (Cuti/Dinas Luar/Pendidikan/Ijin, dst.) ----
-// Menerapkan satu status yang sama untuk satu personel di banyak tanggal
-// sekaligus lewat POST /attendance/save-range, supaya tidak perlu membuka
-// tiap tanggal satu per satu untuk personel yang sedang cuti/dinas luar/
-// pendidikan/ijin berhari-hari.
+// Menerapkan satu status (& keterangan) yang sama untuk satu ATAU BEBERAPA
+// personel sekaligus di banyak tanggal lewat POST /attendance/save-range --
+// supaya tidak perlu membuka tiap tanggal satu per satu untuk personel yang
+// sedang cuti/dinas luar/pendidikan/ijin berhari-hari, dan kalau beberapa
+// personel ikut kegiatan/Dinas Luar yang SAMA, tanggalnya bisa langsung
+// disinkronkan ke semua personel itu dalam satu kali "Terapkan" (dicentang
+// lewat daftar personel di bawah form, bukan harus diulang satu-satu).
 let rangeTargetPersonnelId = null;
 const rangeModal = document.getElementById('rangeModal');
 const rangeForm = document.getElementById('rangeForm');
@@ -793,16 +798,73 @@ const rangeStatus = document.getElementById('rangeStatus');
 const rangeFromDate = document.getElementById('rangeFromDate');
 const rangeToDate = document.getElementById('rangeToDate');
 const rangeNotes = document.getElementById('rangeNotes');
+const rangePersonnelSearch = document.getElementById('rangePersonnelSearch');
+const rangePersonnelList = document.getElementById('rangePersonnelList');
+
+function rangePersonnelListHtml() {
+  const groups = [];
+  const indexByCategory = {};
+  rows.forEach((r) => {
+    if (!(r.category in indexByCategory)) {
+      indexByCategory[r.category] = groups.length;
+      groups.push({ category: r.category, members: [] });
+    }
+    groups[indexByCategory[r.category]].members.push(r);
+  });
+
+  return groups
+    .map((g) => `
+      <div class="range-personnel-group">
+        <div class="range-personnel-group-title">${escapeHtml(g.category)}</div>
+        ${g.members
+          .map((r) => {
+            const isPrimary = r.personnel_id === rangeTargetPersonnelId;
+            return `
+              <label class="range-personnel-item${isPrimary ? ' is-primary' : ''}" data-search="${escapeHtml(r.full_name.toLowerCase())}">
+                <input type="checkbox" value="${r.personnel_id}" ${isPrimary ? 'checked disabled' : ''}>
+                <span>${escapeHtml(r.full_name)}${isPrimary ? ' <span class="label-note">(personel ini)</span>' : ''}</span>
+              </label>
+            `;
+          })
+          .join('')}
+      </div>
+    `)
+    .join('');
+}
+
+function filterRangePersonnelList() {
+  const q = rangePersonnelSearch.value.trim().toLowerCase();
+  rangePersonnelList.querySelectorAll('.range-personnel-group').forEach((group) => {
+    let anyVisible = false;
+    group.querySelectorAll('.range-personnel-item').forEach((item) => {
+      const match = !q || item.dataset.search.includes(q);
+      item.style.display = match ? '' : 'none';
+      if (match) anyVisible = true;
+    });
+    group.style.display = anyVisible ? '' : 'none';
+  });
+}
 
 function openRangeModal(personnelId, personnelName) {
   resultBox.style.display = 'none';
   rangeTargetPersonnelId = personnelId;
   document.getElementById('rangeModalTitle').textContent = `Isi Rentang Tanggal -- ${personnelName}`;
   rangeForm.reset();
-  rangeStatus.innerHTML = statusOptionsHtml(null);
+
+  // Status & Keterangan personel ini pada tanggal yang sedang dilihat dipakai
+  // sebagai awalan -- kalau sudah diisi lewat baris hariannya, tidak perlu
+  // diketik ulang di sini, tinggal disesuaikan rentang tanggalnya.
+  const current = rows.find((r) => r.personnel_id === personnelId);
+  rangeStatus.innerHTML = statusOptionsHtml(current ? current.status : null);
+  rangeNotes.value = (current && current.attendance_notes) || '';
+
   const anchor = /^\d{4}-\d{2}-\d{2}$/.test(dateInput.value) ? dateInput.value : todayDateString();
   rangeFromDate.value = anchor;
   rangeToDate.value = anchor;
+
+  rangePersonnelSearch.value = '';
+  rangePersonnelList.innerHTML = rangePersonnelListHtml();
+
   rangeModal.classList.add('open');
 }
 
@@ -810,6 +872,8 @@ function closeRangeModal() {
   rangeModal.classList.remove('open');
   rangeTargetPersonnelId = null;
 }
+
+rangePersonnelSearch.addEventListener('input', filterRangePersonnelList);
 
 rangeForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -824,12 +888,13 @@ rangeForm.addEventListener('submit', async (e) => {
     showMessage('Tanggal "Dari" tidak boleh setelah tanggal "Sampai".', true);
     return;
   }
+  const personnelIds = Array.from(rangePersonnelList.querySelectorAll('input[type="checkbox"]:checked')).map((cb) => Number(cb.value));
 
   try {
     const res = await api('/attendance/save-range', {
       method: 'POST',
       body: JSON.stringify({
-        personnel_id: rangeTargetPersonnelId,
+        personnel_ids: personnelIds,
         status: rangeStatus.value,
         notes: rangeNotes.value.trim() || null,
         date_from: rangeFromDate.value,
@@ -837,7 +902,8 @@ rangeForm.addEventListener('submit', async (e) => {
       }),
     });
     const days = res && res.data ? res.data.days : 0;
-    showMessage(`Status "${STATUS_LABELS[rangeStatus.value]}" diterapkan untuk ${days} hari (${formatDateRangeLabel(rangeFromDate.value, rangeToDate.value)}).`, false);
+    const personLabel = personnelIds.length > 1 ? `${personnelIds.length} personel` : '1 personel';
+    showMessage(`Status "${STATUS_LABELS[rangeStatus.value]}" diterapkan untuk ${personLabel}, ${days} hari (${formatDateRangeLabel(rangeFromDate.value, rangeToDate.value)}).`, false);
     closeRangeModal();
     // Muat ulang kalau tanggal yang sedang dilihat ada di dalam rentang yang
     // baru diisi, supaya langsung terlihat berubah tanpa pindah tanggal dulu.
